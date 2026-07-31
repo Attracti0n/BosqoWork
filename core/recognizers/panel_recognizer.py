@@ -12,8 +12,13 @@ class PanelRecognizer:
 
         panel = PanelData()
 
+        #
+        # Null object
+        #
+
         if obj is None:
 
+            panel.Reason = "NULL_OBJECT"
             panel.Message = "Object is None."
 
             return panel
@@ -40,11 +45,15 @@ class PanelRecognizer:
 
             else:
 
+                panel.Reason = "UNSUPPORTED"
+
                 panel.Message = "Unsupported object."
 
                 return panel
 
         except Exception as e:
+
+            panel.Reason = "ANALYSIS_ERROR"
 
             panel.Message = str(e)
 
@@ -56,17 +65,23 @@ class PanelRecognizer:
 
         if geometry.Thickness <= 0:
 
+            panel.Reason = "ZERO_THICKNESS"
+
             panel.Message = "Not a panel."
 
             return panel
 
         if geometry.Width <= geometry.Thickness:
 
+            panel.Reason = "INVALID_WIDTH"
+
             panel.Message = "Invalid width."
 
             return panel
 
         if geometry.Length <= geometry.Thickness:
+
+            panel.Reason = "INVALID_LENGTH"
 
             panel.Message = "Invalid length."
 
@@ -77,6 +92,8 @@ class PanelRecognizer:
         #
 
         panel.IsPanel = True
+
+        panel.Reason = "PANEL"
 
         panel.Length = geometry.Length
         panel.Width = geometry.Width

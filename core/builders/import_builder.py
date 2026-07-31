@@ -1,30 +1,28 @@
 import FreeCAD
 
 from objects.bosqo_part import create_part
-
 from core.recognizers.panel_recognizer import PanelRecognizer
 
 
 class ImportBuilder:
+
 
     @staticmethod
     def build(document, objects):
 
         parts = []
 
-        imported = 0
-        skipped = 0
-        errors = 0
 
         for obj in objects:
+
 
             try:
 
                 panel = PanelRecognizer.recognize(obj)
 
+
             except Exception as error:
 
-                errors += 1
 
                 FreeCAD.Console.PrintWarning(
                     f"{obj.Label}: {error}\n"
@@ -32,32 +30,10 @@ class ImportBuilder:
 
                 continue
 
-            #
-            # Not a panel
-            #
+
 
             if not panel.IsPanel:
 
-                #
-                # Expected geometries
-                #
-
-                if panel.Reason in [
-
-                    "ZERO_THICKNESS",
-                    "INVALID_WIDTH",
-                    "INVALID_LENGTH"
-
-                ]:
-
-                    skipped += 1
-                    continue
-
-                #
-                # Unexpected problem
-                #
-
-                errors += 1
 
                 FreeCAD.Console.PrintWarning(
                     f"{obj.Label}: {panel.Message}\n"
@@ -65,11 +41,15 @@ class ImportBuilder:
 
                 continue
 
+
+
             #
             # Create BOSQO Part
             #
 
             part = create_part(document)
+
+
 
             #
             # Basic properties
@@ -77,17 +57,26 @@ class ImportBuilder:
 
             part.Label = obj.Label
 
-            part.Length = panel.Length
-            part.Width = panel.Width
-            part.Thickness = panel.Thickness
+
+            part.Length = abs(panel.Length)
+
+            part.Width = abs(panel.Width)
+
+            part.Thickness = abs(panel.Thickness)
+
+
 
             #
-            # Orientation
+            # Axis mapping
             #
 
             part.LengthAxis = panel.LengthAxis
+
             part.WidthAxis = panel.WidthAxis
+
             part.ThicknessAxis = panel.ThicknessAxis
+
+
 
             #
             # Source
@@ -95,23 +84,95 @@ class ImportBuilder:
 
             part.Source = "Imported"
 
-            #
-            # Geometry origin
-            #
 
-            if panel.BoundBox:
-
-                part.OriginX = panel.BoundBox.XMin
-                part.OriginY = panel.BoundBox.YMin
-                part.OriginZ = panel.BoundBox.ZMin
 
             #
-            # Keep reference to original object
+            # Keep original object
             #
 
             if hasattr(part, "OriginalObject"):
 
-                part.OriginalObject = panel.Object
+                part.OriginalObject = obj
+
+
+
+            #
+            # Recover real position
+            #
+            # Imported meshes usually have Placement = 0.
+            # The position is stored in the geometry coordinates.
+            #
+
+            bound = None
+
+
+            if hasattr(obj, "Mesh"):
+
+                bound = obj.Mesh.BoundBox
+
+
+            elif hasattr(obj, "Shape"):
+
+                bound = obj.Shape.BoundBox
+
+
+
+            if bound:
+
+
+                part.Placement.Base = FreeCAD.Vector(
+
+                    bound.XMin,
+                    bound.YMin,
+                    bound.ZMin
+
+                )
+
+
+                FreeCAD.Console.PrintMessage(
+                    "\n===== RECOVERED POSITION =====\n"
+                )
+
+
+                FreeCAD.Console.PrintMessage(
+                    f"Position: {part.Placement.Base}\n"
+                )
+
+
+
+            #
+            # Recover rotation
+            #
+
+            if hasattr(obj, "Placement"):
+
+
+                part.Placement.Rotation = obj.Placement.Rotation
+
+
+
+                FreeCAD.Console.PrintMessage(
+                    "\n===== ORIGINAL ROTATION =====\n"
+                )
+
+
+                FreeCAD.Console.PrintMessage(
+                    f"{obj.Placement.Rotation}\n"
+                )
+
+
+
+            #
+            # Reset parametric coordinates
+            #
+
+            part.baseX = 0
+
+            part.baseY = 0
+
+            part.baseZ = 0
+
+
 
             #
             # Hide original object
@@ -121,17 +182,45 @@ class ImportBuilder:
 
                 obj.ViewObject.Visibility = False
 
+
+
             parts.append(part)
 
-            imported += 1
+
 
         document.recompute()
 
-        FreeCAD.Console.PrintMessage("\n")
-        FreeCAD.Console.PrintMessage("===== IMPORT SUMMARY =====\n")
-        FreeCAD.Console.PrintMessage(f"Panels imported : {imported}\n")
-        FreeCAD.Console.PrintMessage(f"Skipped objects : {skipped}\n")
-        FreeCAD.Console.PrintMessage(f"Errors          : {errors}\n")
-        FreeCAD.Console.PrintMessage("==========================\n")
+
+
+        FreeCAD.Console.PrintMessage(
+            "\n===== IMPORT FINISHED =====\n"
+        )
+
+
+
+        for part in parts:
+
+
+            FreeCAD.Console.PrintMessage(
+                f"{part.Label}\n"
+            )
+
+
+            FreeCAD.Console.PrintMessage(
+                f"Placement = {part.Placement}\n"
+            )
+
+
+            FreeCAD.Console.PrintMessage(
+                f"Position = {part.Placement.Base}\n\n"
+            )
+
+
+
+        FreeCAD.Console.PrintMessage(
+            f"{len(parts)} Bosqo Parts created.\n"
+        )
+
+
 
         return parts

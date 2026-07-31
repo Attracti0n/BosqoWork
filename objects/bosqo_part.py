@@ -1,11 +1,12 @@
+import FreeCAD
 import os
 
 from constants import ICONS_DIR
-
 from core.builders.geometry_builder import GeometryBuilder
 
 
 class BosqoPart:
+
 
     def __init__(self, obj):
 
@@ -15,174 +16,97 @@ class BosqoPart:
 
         ViewProviderBosqoPart(obj.ViewObject)
 
+
+
     #
     # Properties
     #
 
     def initProperties(self, obj):
 
+
         if not obj.Label:
+
             obj.Label = "Part"
+
+
 
         #
         # Identification
         #
 
-        self.addString(
-            obj,
-            "Code",
-            "",
-            "Identification"
-        )
+        self.addString(obj, "Code", "", "Identification")
 
-        self.addString(
-            obj,
-            "PartType",
-            "",
-            "Identification"
-        )
+        self.addString(obj, "PartType", "", "Identification")
 
-        self.addString(
-            obj,
-            "Role",
-            "",
-            "Identification"
-        )
+        self.addString(obj, "Role", "", "Identification")
+
+
 
         #
         # Dimensions
         #
 
-        self.addLength(
-            obj,
-            "Length",
-            0,
-            "Dimensions"
-        )
+        self.addLength(obj, "Length", 0, "Dimensions")
 
-        self.addLength(
-            obj,
-            "Width",
-            0,
-            "Dimensions"
-        )
+        self.addLength(obj, "Width", 0, "Dimensions")
 
-        self.addLength(
-            obj,
-            "Thickness",
-            0,
-            "Dimensions"
-        )
+        self.addLength(obj, "Thickness", 0, "Dimensions")
+
+
 
         #
-        # Geometry
+        # Compatibility coordinates
         #
 
-        self.addLength(
-            obj,
-            "OriginX",
-            0,
-            "Geometry"
-        )
+        self.addLength(obj, "baseX", 0, "Geometry")
 
-        self.addLength(
-            obj,
-            "OriginY",
-            0,
-            "Geometry"
-        )
+        self.addLength(obj, "baseY", 0, "Geometry")
 
-        self.addLength(
-            obj,
-            "OriginZ",
-            0,
-            "Geometry"
-        )
+        self.addLength(obj, "baseZ", 0, "Geometry")
+
+
 
         #
         # Axis mapping
         #
 
-        self.addString(
-            obj,
-            "LengthAxis",
-            "Z",
-            "Geometry"
-        )
+        self.addString(obj, "LengthAxis", "Z", "Geometry")
 
-        self.addString(
-            obj,
-            "WidthAxis",
-            "X",
-            "Geometry"
-        )
+        self.addString(obj, "WidthAxis", "X", "Geometry")
 
-        self.addString(
-            obj,
-            "ThicknessAxis",
-            "Y",
-            "Geometry"
-        )
+        self.addString(obj, "ThicknessAxis", "Y", "Geometry")
+
+
 
         #
         # Material
         #
 
-        self.addString(
-            obj,
-            "Material",
-            "",
-            "Material"
-        )
+        self.addString(obj, "Material", "", "Material")
 
-        self.addString(
-            obj,
-            "MaterialCode",
-            "",
-            "Material"
-        )
+        self.addString(obj, "MaterialCode", "", "Material")
 
-        self.addString(
-            obj,
-            "GrainDirection",
-            "",
-            "Material"
-        )
+        self.addString(obj, "GrainDirection", "", "Material")
+
+
 
         #
         # Edgebanding
         #
 
-        self.addString(
-            obj,
-            "EdgeTop",
-            "",
-            "Edgebanding"
-        )
+        self.addString(obj, "EdgeTop", "", "Edgebanding")
 
-        self.addString(
-            obj,
-            "EdgeBottom",
-            "",
-            "Edgebanding"
-        )
+        self.addString(obj, "EdgeBottom", "", "Edgebanding")
 
-        self.addString(
-            obj,
-            "EdgeLeft",
-            "",
-            "Edgebanding"
-        )
+        self.addString(obj, "EdgeLeft", "", "Edgebanding")
 
-        self.addString(
-            obj,
-            "EdgeRight",
-            "",
-            "Edgebanding"
-        )
+        self.addString(obj, "EdgeRight", "", "Edgebanding")
+
+
 
         #
-        # Parent module
+        # Parent
         #
 
         if not hasattr(obj, "Parent"):
@@ -194,8 +118,10 @@ class BosqoPart:
                 "Parent module"
             )
 
+
+
         #
-        # Original imported object
+        # Imported source
         #
 
         if not hasattr(obj, "OriginalObject"):
@@ -207,6 +133,8 @@ class BosqoPart:
                 "Original imported object"
             )
 
+
+
         #
         # Source
         #
@@ -217,6 +145,8 @@ class BosqoPart:
             "",
             "Bosqo"
         )
+
+
 
     #
     # Helpers
@@ -244,6 +174,8 @@ class BosqoPart:
                 value
             )
 
+
+
     def addLength(
         self,
         obj,
@@ -263,8 +195,12 @@ class BosqoPart:
             setattr(
                 obj,
                 name,
-                value
+                FreeCAD.Units.Quantity(
+                    f"{abs(value)} mm"
+                )
             )
+
+
 
     #
     # Data
@@ -278,7 +214,30 @@ class BosqoPart:
 
         for key, value in data.items():
 
+
+            #
+            # Placement is native FreeCAD property
+            #
+
+            if key == "Placement":
+
+                obj.Placement = value
+
+                continue
+
+
+
             if hasattr(obj, key):
+
+
+                if key in [
+                    "Length",
+                    "Width",
+                    "Thickness"
+                ]:
+
+                    value = abs(value)
+
 
                 setattr(
                     obj,
@@ -286,19 +245,27 @@ class BosqoPart:
                     value
                 )
 
+
+
     #
     # Geometry
     #
 
     def execute(self, obj):
 
+
         shape = GeometryBuilder.createBox(obj)
+
 
         if shape is None:
 
             return
 
+
+
         obj.Shape = shape
+
+
 
     #
     # Serialization
@@ -308,16 +275,22 @@ class BosqoPart:
 
         return None
 
+
     def __setstate__(self, state):
 
         return None
 
 
+
+
 class ViewProviderBosqoPart:
+
 
     def __init__(self, view_object):
 
         view_object.Proxy = self
+
+
 
     def getIcon(self):
 
@@ -325,6 +298,8 @@ class ViewProviderBosqoPart:
             ICONS_DIR,
             "part.svg"
         )
+
+
 
 
 #
@@ -338,6 +313,8 @@ def create_part(doc):
         "BosqoPart"
     )
 
+
     BosqoPart(part)
+
 
     return part

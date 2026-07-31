@@ -4,81 +4,142 @@ import Part
 
 class GeometryBuilder:
 
+
     @staticmethod
     def createBox(obj):
+
+
+        #
+        # Validate dimensions
+        #
 
         if (
             obj.Length <= 0
             or obj.Width <= 0
             or obj.Thickness <= 0
         ):
+
             return None
 
+
+
         #
-        # Assign size to each global axis
+        # Global axis dimensions
         #
 
         size = {
+
             "X": 0.0,
             "Y": 0.0,
             "Z": 0.0
+
         }
 
-        size[obj.LengthAxis] = float(obj.Length)
-        size[obj.WidthAxis] = float(obj.Width)
-        size[obj.ThicknessAxis] = float(obj.Thickness)
+
 
         #
-        # Origin
+        # Assign dimensions according to detected orientation
+        #
+
+        size[obj.LengthAxis] = abs(float(obj.Length))
+
+        size[obj.WidthAxis] = abs(float(obj.Width))
+
+        size[obj.ThicknessAxis] = abs(float(obj.Thickness))
+
+
+
+        #
+        # Create local box
+        #
+
+        shape = Part.makeBox(
+
+            size["X"],
+            size["Y"],
+            size["Z"]
+
+        )
+
+
+
+        #
+        # Restore imported position
         #
 
         if hasattr(obj, "OriginalObject") and obj.OriginalObject:
 
+
             source = obj.OriginalObject
+
+
+            bound = None
+
+
+
+            #
+            # Mesh objects
+            #
 
             if hasattr(source, "Mesh"):
 
-                box = source.Mesh.BoundBox
+
+                bound = source.Mesh.BoundBox
+
+
+
+            #
+            # Part objects
+            #
 
             elif hasattr(source, "Shape"):
 
-                box = source.Shape.BoundBox
 
-            else:
+                bound = source.Shape.BoundBox
 
-                box = None
 
-            if box:
 
-                origin = FreeCAD.Vector(
-                    box.XMin,
-                    box.YMin,
-                    box.ZMin
+            #
+            # Move geometry to original coordinates
+            #
+
+            if bound:
+
+
+                shape.translate(
+
+                    FreeCAD.Vector(
+
+                        bound.XMin,
+                        bound.YMin,
+                        bound.ZMin
+
+                    )
+
                 )
 
-            else:
 
-                origin = FreeCAD.Vector(
-                    float(obj.OriginX),
-                    float(obj.OriginY),
-                    float(obj.OriginZ)
+
+            #
+            # Restore original rotation
+            #
+
+            if hasattr(source, "Placement"):
+
+
+                rotation = source.Placement.Rotation
+
+
+                shape.rotate(
+
+                    FreeCAD.Vector(0,0,0),
+
+                    rotation.Axis,
+
+                    rotation.Angle
+
                 )
 
-        else:
 
-            origin = FreeCAD.Vector(
-                float(obj.OriginX),
-                float(obj.OriginY),
-                float(obj.OriginZ)
-            )
 
-        #
-        # Create box
-        #
-
-        return Part.makeBox(
-            size["X"],
-            size["Y"],
-            size["Z"],
-            origin
-        )
+        return shape

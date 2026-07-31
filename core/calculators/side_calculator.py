@@ -32,15 +32,15 @@ class SideCalculator:
 
         if code == "LS":
 
-            part.OriginX = 0
-            part.OriginY = 0
-            part.OriginZ = 0
+            part.baseX = 0
+            part.baseY = 0
+            part.baseZ = 0
 
         elif code == "RS":
 
-            part.OriginX = module.Width - part.Thickness
-            part.OriginY = 0
-            part.OriginZ = 0
+            part.baseX = module.Width - part.Thickness
+            part.baseY = 0
+            part.baseZ = 0
 
         #
         # BOSQO data

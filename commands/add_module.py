@@ -2,7 +2,7 @@ import FreeCAD
 import FreeCADGui
 import os
 
-from constants import ICONS_DIR
+from app_paths import ICONS_DIR
 
 from dialogs.module_dialog import ModuleDialog
 from objects.bosqo_module import create_module

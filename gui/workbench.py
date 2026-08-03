@@ -5,6 +5,8 @@ import FreeCADGui
 import commands.add_module
 import commands.add_part
 import commands.project_properties
+import commands.import_parts
+
 
 ICON_PATH = os.path.join(
     os.path.dirname(__file__),
@@ -14,51 +16,86 @@ ICON_PATH = os.path.join(
     "bosqo.svg"
 )
 
+
+
 class BosqoWorkbench(FreeCADGui.Workbench):
     """BosqoWork Workbench"""
 
+
     MenuText = "BosqoWork"
+
     ToolTip = "Proyectista de muebles"
+
     Icon = ICON_PATH
+
+
 
     def Initialize(self):
         """Called once when FreeCAD starts."""
+
+
+
+        #
+        # Main toolbar
+        #
 
         self.appendToolbar(
             "Bosqo",
             [
                 "Bosqo_AddModule",
-                "Bosqo_ProjectProperties",
                 "Bosqo_AddPart",
-                "Bosqo_AnalyzeGeometry",
+                "Bosqo_ProjectProperties",
                 "Bosqo_ImportParts",
-                "Bosqo_AnalyzeOrientation",
-                "Bosqo_AnalyzePlanes",
-                "Bosqo_AnalyzePanel",
             ]
-    )
+        )
+
+
+
+        #
+        # Main menu
+        #
+
         self.appendMenu(
             "BosqoWork",
             [
                 "Bosqo_AddModule",
-                "Bosqo_ProjectProperties",
                 "Bosqo_AddPart",
-                "Bosqo_AnalyzeGeometry",
+                "Bosqo_ProjectProperties",
                 "Bosqo_ImportParts",
-                "Bosqo_AnalyzeOrientation",
-                "Bosqo_AnalyzePlanes",
-                "Bosqo_AnalyzePanel",
             ]
         )
 
+
+
+        #
+        # Development tools
+        #
+        # Later we can create:
+        #
+        # BosqoWork
+        #   └── Tools
+        #          ├── Analyze Geometry
+        #          ├── Analyze Panel
+        #          └── Diagnostics
+        #
+        # For now hidden from normal workflow.
+        #
+
+
+
     def Activated(self):
-        """Called when the workbench becomes active."""
+
         pass
+
+
 
     def Deactivated(self):
-        """Called when the workbench is deactivated."""
+
         pass
 
+
+
     def GetClassName(self):
+
         return "Gui::PythonWorkbench"
 

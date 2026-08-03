@@ -2,7 +2,7 @@ import FreeCAD
 import FreeCADGui
 import os
 
-from constants import ICONS_DIR
+from app_paths import ICONS_DIR
 
 from core.analyzers.plane_analyzer import PlaneAnalyzer
 

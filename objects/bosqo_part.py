@@ -1,10 +1,11 @@
 import FreeCAD
 import os
 
-from constants import ICONS_DIR
+from app_paths import ICONS_DIR
 
 from core.builders.geometry_builder import GeometryBuilder
 from core.builders.placement_builder import PlacementBuilder
+
 
 
 class BosqoPart:
@@ -16,7 +17,10 @@ class BosqoPart:
 
         self.initProperties(obj)
 
-        ViewProviderBosqoPart(obj.ViewObject)
+        ViewProviderBosqoPart(
+            obj.ViewObject
+        )
+
 
 
     #
@@ -31,59 +35,194 @@ class BosqoPart:
             obj.Label = "Part"
 
 
+
         #
         # Identification
         #
 
-        self.addString(obj, "Code", "", "Identification")
-        self.addString(obj, "PartType", "", "Identification")
-        self.addString(obj, "Role", "", "Identification")
+        self.addString(
+            obj,
+            "Code",
+            "",
+            "Identification"
+        )
+
+        self.addString(
+            obj,
+            "PartType",
+            "",
+            "Identification"
+        )
+
+        self.addString(
+            obj,
+            "Role",
+            "",
+            "Identification"
+        )
+
 
 
         #
         # Dimensions
         #
 
-        self.addLength(obj, "Length", 0, "Dimensions")
-        self.addLength(obj, "Width", 0, "Dimensions")
-        self.addLength(obj, "Thickness", 0, "Dimensions")
+        self.addLength(
+            obj,
+            "Length",
+            0,
+            "Dimensions"
+        )
+
+        self.addLength(
+            obj,
+            "Width",
+            0,
+            "Dimensions"
+        )
+
+        self.addLength(
+            obj,
+            "Thickness",
+            0,
+            "Dimensions"
+        )
+
 
 
         #
-        # Position (used by generated parts)
+        # Position
         #
 
-        self.addLength(obj, "baseX", 0, "Geometry")
-        self.addLength(obj, "baseY", 0, "Geometry")
-        self.addLength(obj, "baseZ", 0, "Geometry")
+        self.addLength(
+            obj,
+            "baseX",
+            0,
+            "Geometry"
+        )
+
+        self.addLength(
+            obj,
+            "baseY",
+            0,
+            "Geometry"
+        )
+
+        self.addLength(
+            obj,
+            "baseZ",
+            0,
+            "Geometry"
+        )
+
 
 
         #
         # Axis mapping
         #
 
-        self.addString(obj, "LengthAxis", "Z", "Geometry")
-        self.addString(obj, "WidthAxis", "X", "Geometry")
-        self.addString(obj, "ThicknessAxis", "Y", "Geometry")
+        self.addString(
+            obj,
+            "LengthAxis",
+            "Z",
+            "Geometry"
+        )
+
+        self.addString(
+            obj,
+            "WidthAxis",
+            "X",
+            "Geometry"
+        )
+
+        self.addString(
+            obj,
+            "ThicknessAxis",
+            "Y",
+            "Geometry"
+        )
+
+
+
+        #
+        # Geometry analysis
+        #
+
+        self.addString(
+            obj,
+            "GeometryStatus",
+            "Not analyzed",
+            "Geometry"
+        )
+
+        self.addString(
+            obj,
+            "GeometryData",
+            "",
+            "Geometry"
+        )
+
 
 
         #
         # Material
         #
 
-        self.addString(obj, "Material", "", "Material")
-        self.addString(obj, "MaterialCode", "", "Material")
-        self.addString(obj, "GrainDirection", "", "Material")
+        self.addString(
+            obj,
+            "Material",
+            "",
+            "Material"
+        )
+
+        self.addString(
+            obj,
+            "MaterialCode",
+            "",
+            "Material"
+        )
+
+        self.addString(
+            obj,
+            "GrainDirection",
+            "",
+            "Material"
+        )
+
 
 
         #
         # Edgebanding
         #
 
-        self.addString(obj, "EdgeTop", "", "Edgebanding")
-        self.addString(obj, "EdgeBottom", "", "Edgebanding")
-        self.addString(obj, "EdgeLeft", "", "Edgebanding")
-        self.addString(obj, "EdgeRight", "", "Edgebanding")
+        self.addString(
+            obj,
+            "EdgeTop",
+            "",
+            "Edgebanding"
+        )
+
+        self.addString(
+            obj,
+            "EdgeBottom",
+            "",
+            "Edgebanding"
+        )
+
+        self.addString(
+            obj,
+            "EdgeLeft",
+            "",
+            "Edgebanding"
+        )
+
+        self.addString(
+            obj,
+            "EdgeRight",
+            "",
+            "Edgebanding"
+        )
+
 
 
         #
@@ -100,8 +239,9 @@ class BosqoPart:
             )
 
 
+
         #
-        # Original imported object
+        # Original object
         #
 
         if not hasattr(obj, "OriginalObject"):
@@ -112,6 +252,7 @@ class BosqoPart:
                 "Bosqo",
                 "Original imported object"
             )
+
 
 
         #
@@ -126,11 +267,18 @@ class BosqoPart:
         )
 
 
+
     #
     # Helpers
     #
 
-    def addString(self, obj, name, value, group):
+    def addString(
+        self,
+        obj,
+        name,
+        value,
+        group
+    ):
 
         if not hasattr(obj, name):
 
@@ -140,10 +288,21 @@ class BosqoPart:
                 group
             )
 
-            setattr(obj, name, value)
+            setattr(
+                obj,
+                name,
+                value
+            )
 
 
-    def addLength(self, obj, name, value, group):
+
+    def addLength(
+        self,
+        obj,
+        name,
+        value,
+        group
+    ):
 
         if not hasattr(obj, name):
 
@@ -162,15 +321,21 @@ class BosqoPart:
             )
 
 
+
     #
     # Data
     #
 
-    def setData(self, obj, data):
+    def setData(
+        self,
+        obj,
+        data
+    ):
 
         for key, value in data.items():
 
             if hasattr(obj, key):
+
 
                 if key in (
                     "Length",
@@ -180,11 +345,34 @@ class BosqoPart:
 
                     value = abs(value)
 
+
                 setattr(
                     obj,
                     key,
                     value
                 )
+
+
+
+    #
+    # Part Data
+    #
+
+    def getPartData(
+        self,
+        obj
+    ):
+
+        from core.data.part_data import PartData
+
+
+        data = PartData()
+
+
+        return data.fromObject(
+            obj
+        )
+
 
 
     #
@@ -193,23 +381,34 @@ class BosqoPart:
 
     def execute(self, obj):
 
-        shape = GeometryBuilder.createBox(obj)
+
+        shape = GeometryBuilder.createBox(
+            obj
+        )
+
 
         if shape is None:
 
             return
 
+
+
         #
-        # Geometry is always local.
+        # Geometry stays local
         #
 
         obj.Shape = shape
 
+
+
         #
-        # Placement is handled independently.
+        # Apply final position
         #
 
-        PlacementBuilder.update(obj)
+        PlacementBuilder.update(
+            obj
+        )
+
 
 
     #
@@ -226,6 +425,9 @@ class BosqoPart:
         return None
 
 
+
+
+
 class ViewProviderBosqoPart:
 
 
@@ -234,12 +436,16 @@ class ViewProviderBosqoPart:
         view_object.Proxy = self
 
 
+
     def getIcon(self):
 
         return os.path.join(
             ICONS_DIR,
             "part.svg"
         )
+
+
+
 
 
 #
@@ -253,6 +459,10 @@ def create_part(doc):
         "BosqoPart"
     )
 
-    BosqoPart(part)
+
+    BosqoPart(
+        part
+    )
+
 
     return part

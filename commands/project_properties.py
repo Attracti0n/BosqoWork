@@ -2,7 +2,7 @@ import FreeCAD
 import FreeCADGui
 import os
 
-from constants import ICONS_DIR
+from app_paths import ICONS_DIR
 from utils.document_properties import initialize_project_properties
 from dialogs.project_properties_dialog import ProjectPropertiesDialog
 

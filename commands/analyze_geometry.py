@@ -2,9 +2,9 @@ import FreeCAD
 import FreeCADGui
 import os
 
-from constants import ICONS_DIR
+from app_paths import ICONS_DIR
 
-from core.analyzers.geometry_analyzer import GeometryAnalyzer
+from core.analyzers.panel_geometry_analyzer import PanelGeometryAnalyzer
 
 
 class AnalyzeGeometryCommand:
@@ -21,14 +21,17 @@ class AnalyzeGeometryCommand:
 
             "MenuText": "Analyze Geometry",
 
-            "ToolTip": "Analyze selected geometry"
+            "ToolTip": "Analyze complete panel geometry"
 
         }
 
 
+
     def Activated(self):
 
+
         selection = FreeCADGui.Selection.getSelection()
+
 
         if not selection:
 
@@ -38,76 +41,159 @@ class AnalyzeGeometryCommand:
 
             return
 
+
+
         obj = selection[0]
 
-        try:
 
-            data = GeometryAnalyzer.analyze(
-                obj
+        geometry = PanelGeometryAnalyzer.analyze(
+            obj
+        )
+
+
+
+        FreeCAD.Console.PrintMessage(
+            "\n===== PANEL GEOMETRY =====\n"
+        )
+
+
+        #
+        # Dimensions
+        #
+
+        FreeCAD.Console.PrintMessage(
+            "\n--- Dimensions ---\n"
+        )
+
+
+        FreeCAD.Console.PrintMessage(
+            f"Length    : {geometry.Length}\n"
+        )
+
+        FreeCAD.Console.PrintMessage(
+            f"Width     : {geometry.Width}\n"
+        )
+
+        FreeCAD.Console.PrintMessage(
+            f"Thickness : {geometry.Thickness}\n"
+        )
+
+
+
+        #
+        # Axis
+        #
+
+        FreeCAD.Console.PrintMessage(
+            "\n--- Axis ---\n"
+        )
+
+
+        FreeCAD.Console.PrintMessage(
+            f"Length Axis    : {geometry.LengthAxis}\n"
+        )
+
+        FreeCAD.Console.PrintMessage(
+            f"Width Axis     : {geometry.WidthAxis}\n"
+        )
+
+        FreeCAD.Console.PrintMessage(
+            f"Thickness Axis : {geometry.ThicknessAxis}\n"
+        )
+
+
+
+        #
+        # Faces
+        #
+
+        FreeCAD.Console.PrintMessage(
+            "\n--- Faces ---\n"
+        )
+
+
+        for face in geometry.Faces:
+
+
+            FreeCAD.Console.PrintMessage(
+                f"\n{face.Name}\n"
+            )
+
+
+            if face.Face is None:
+
+                FreeCAD.Console.PrintMessage(
+                    "Not detected\n"
+                )
+
+                continue
+
+
+            FreeCAD.Console.PrintMessage(
+                f"Area   : {face.Area}\n"
             )
 
             FreeCAD.Console.PrintMessage(
-                "\n"
+                f"Center : {face.Center}\n"
             )
 
             FreeCAD.Console.PrintMessage(
-                "===== Geometry =====\n"
+                f"Normal : {face.Normal}\n"
+            )
+
+
+
+        #
+        # Edges
+        #
+
+        FreeCAD.Console.PrintMessage(
+            "\n--- Edges ---\n"
+        )
+
+
+        for edge in geometry.Edges:
+
+
+            FreeCAD.Console.PrintMessage(
+                f"\n{edge.Name}\n"
+            )
+
+
+            if edge.Edge is None:
+
+                FreeCAD.Console.PrintMessage(
+                    "Not detected\n"
+                )
+
+                continue
+
+
+            FreeCAD.Console.PrintMessage(
+                f"Length : {edge.Length}\n"
             )
 
             FreeCAD.Console.PrintMessage(
-                f"Length      : {data.Length}\n"
+                f"Axis   : {edge.Axis}\n"
             )
 
             FreeCAD.Console.PrintMessage(
-                f"Width       : {data.Width}\n"
+                f"Center : {edge.Center}\n"
             )
 
-            FreeCAD.Console.PrintMessage(
-                f"Thickness   : {data.Thickness}\n"
-            )
 
-            FreeCAD.Console.PrintMessage(
-                f"Orientation : {data.Orientation}\n"
-            )
 
-            FreeCAD.Console.PrintMessage(
-                f"Area        : {data.Area}\n"
-            )
+        FreeCAD.Console.PrintMessage(
+            "\n===== ANALYSIS FINISHED =====\n"
+        )
 
-            FreeCAD.Console.PrintMessage(
-                f"Volume      : {data.Volume}\n"
-            )
-
-            FreeCAD.Console.PrintMessage(
-                f"Faces       : {data.Faces}\n"
-            )
-
-            FreeCAD.Console.PrintMessage(
-                f"Edges       : {data.Edges}\n"
-            )
-
-            FreeCAD.Console.PrintMessage(
-                f"Vertices    : {data.Vertices}\n"
-            )
-
-            FreeCAD.Console.PrintMessage(
-                f"Solid       : {data.IsSolid}\n"
-            )
-
-            FreeCAD.Console.PrintMessage(
-                "====================\n"
-            )
-
-        except Exception as error:
-
-            FreeCAD.Console.PrintError(
-                str(error) + "\n"
-            )
 
 
     def IsActive(self):
 
-        return True
+        return FreeCAD.ActiveDocument is not None
+
+
 
 
 FreeCADGui.addCommand(

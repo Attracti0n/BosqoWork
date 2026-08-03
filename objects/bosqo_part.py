@@ -224,22 +224,6 @@ class BosqoPart:
         )
 
 
-
-        #
-        # Parent
-        #
-
-        if not hasattr(obj, "Parent"):
-
-            obj.addProperty(
-                "App::PropertyLink",
-                "Parent",
-                "Bosqo",
-                "Parent module"
-            )
-
-
-
         #
         # Original object
         #

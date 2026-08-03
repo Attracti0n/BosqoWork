@@ -47,7 +47,8 @@ class BosqoWorkbench(FreeCADGui.Workbench):
                 "Bosqo_ProjectProperties",
                 "Bosqo_ImportParts",
                 "Bosqo_CutList",
-                "Bosqo_CutListReport"
+                "Bosqo_CutListReport",
+                "Bosqo_CreateModuleFromSelection",
             ]
         )
 
@@ -65,7 +66,8 @@ class BosqoWorkbench(FreeCADGui.Workbench):
                 "Bosqo_ProjectProperties",
                 "Bosqo_ImportParts",
                 "Bosqo_CutList",
-                "Bosqo_CutListReport"
+                "Bosqo_CutListReport",
+                "Bosqo_CreateModuleFromSelection",
             ]
         )
 

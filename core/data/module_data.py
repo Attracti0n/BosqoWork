@@ -1,3 +1,6 @@
+from core.data.part_data import PartData
+
+
 class ModuleData:
 
 
@@ -15,7 +18,6 @@ class ModuleData:
         self.Type = ""
 
 
-
         #
         # Dimensions
         #
@@ -27,7 +29,6 @@ class ModuleData:
         self.Depth = 0
 
 
-
         #
         # Parts
         #
@@ -35,13 +36,11 @@ class ModuleData:
         self.Parts = []
 
 
-
         #
         # Status
         #
 
         self.Status = "Created"
-
 
 
     #
@@ -58,7 +57,6 @@ class ModuleData:
         )
 
 
-
     #
     # Load from FreeCAD module
     #
@@ -69,10 +67,21 @@ class ModuleData:
     ):
 
 
+        self.Parts = []
+
+
+        #
+        # Identification
+        #
+
         if hasattr(obj, "Label"):
 
             self.Name = obj.Label
 
+
+        if hasattr(obj, "Code"):
+
+            self.Code = obj.Code
 
 
         if hasattr(obj, "Type"):
@@ -80,11 +89,13 @@ class ModuleData:
             self.Type = obj.Type
 
 
+        #
+        # Dimensions
+        #
 
         if hasattr(obj, "Width"):
 
             self.Width = obj.Width
-
 
 
         if hasattr(obj, "Height"):
@@ -92,44 +103,42 @@ class ModuleData:
             self.Height = obj.Height
 
 
-
         if hasattr(obj, "Depth"):
 
             self.Depth = obj.Depth
 
 
-
         #
-        # Read children
+        # Parts
         #
 
         if hasattr(obj, "Group"):
 
-
-            from core.data.part_data import PartData
-
-
             for child in obj.Group:
 
+                #
+                # Only BosqoPart objects
+                #
 
-                if hasattr(child, "Proxy"):
+                if not hasattr(
+                    child,
+                    "Length"
+                ):
+                    continue
 
 
-                    data = PartData()
+                part = PartData()
 
-                    data.fromObject(
-                        child
-                    )
+                part.fromObject(
+                    child
+                )
 
-
-                    self.addPart(
-                        data
-                    )
-
+                self.addPart(
+                    part
+                )
 
 
         return self
-
 
 
     #
@@ -140,13 +149,11 @@ class ModuleData:
 
         return {
 
-
             "Name": self.Name,
 
             "Code": self.Code,
 
             "Type": self.Type,
-
 
             "Width": self.Width,
 
@@ -154,14 +161,14 @@ class ModuleData:
 
             "Depth": self.Depth,
 
-
             "Status": self.Status,
 
+            "Parts": [
 
-            "Parts":
-                [
-                    part.toDict()
-                    for part in self.Parts
-                ]
+                part.toDict()
+
+                for part in self.Parts
+
+            ]
 
         }

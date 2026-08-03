@@ -7,27 +7,33 @@ from dialogs.module_dialog import ModuleDialog
 from core.builders.module_builder import ModuleBuilder
 
 
-
 class BosqoModule:
 
 
-    def __init__(self, obj):
+    def __init__(
+        self,
+        obj
+    ):
 
         obj.Proxy = self
 
-        self.initProperties(obj)
+        self.initProperties(
+            obj
+        )
 
         ViewProviderBosqoModule(
             obj.ViewObject
         )
 
 
-
     #
     # Properties
     #
 
-    def initProperties(self, obj):
+    def initProperties(
+        self,
+        obj
+    ):
 
 
         if not obj.Label:
@@ -35,13 +41,14 @@ class BosqoModule:
             obj.Label = "Module"
 
 
-
         #
         # Type
         #
 
-        if not hasattr(obj, "Type"):
-
+        if not hasattr(
+            obj,
+            "Type"
+        ):
 
             obj.addProperty(
                 "App::PropertyEnumeration",
@@ -49,7 +56,6 @@ class BosqoModule:
                 "Bosqo",
                 "Module type"
             )
-
 
             obj.Type = [
 
@@ -61,75 +67,69 @@ class BosqoModule:
 
             ]
 
-
             obj.Type = "Módulo bajo"
 
 
-
         #
-        # Width
+        # Dimensions
         #
 
-        if not hasattr(obj, "Width"):
+        self.addLength(
+            obj,
+            "Width",
+            600
+        )
 
+        self.addLength(
+            obj,
+            "Height",
+            720
+        )
+
+        self.addLength(
+            obj,
+            "Depth",
+            560
+        )
+
+
+    #
+    # Helpers
+    #
+
+    def addLength(
+        self,
+        obj,
+        name,
+        value
+    ):
+
+        if not hasattr(
+            obj,
+            name
+        ):
 
             obj.addProperty(
                 "App::PropertyLength",
-                "Width",
-                "Bosqo",
-                "Module width"
+                name,
+                "Bosqo"
             )
 
-
-            obj.Width = 600
-
-
-
-        #
-        # Height
-        #
-
-        if not hasattr(obj, "Height"):
-
-
-            obj.addProperty(
-                "App::PropertyLength",
-                "Height",
-                "Bosqo",
-                "Module height"
+            setattr(
+                obj,
+                name,
+                value
             )
-
-
-            obj.Height = 720
-
-
-
-        #
-        # Depth
-        #
-
-        if not hasattr(obj, "Depth"):
-
-
-            obj.addProperty(
-                "App::PropertyLength",
-                "Depth",
-                "Bosqo",
-                "Module depth"
-            )
-
-
-            obj.Depth = 560
-
-
 
 
     #
     # Data
     #
 
-    def getData(self, obj):
-
+    def getData(
+        self,
+        obj
+    ):
 
         return {
 
@@ -146,22 +146,18 @@ class BosqoModule:
         }
 
 
-
     def setData(
         self,
         obj,
         data
     ):
 
-
         for key, value in data.items():
-
 
             if hasattr(
                 obj,
                 key
             ):
-
 
                 setattr(
                     obj,
@@ -169,6 +165,49 @@ class BosqoModule:
                     value
                 )
 
+
+    #
+    # Parts
+    #
+
+    def addPart(
+        self,
+        obj,
+        part
+    ):
+
+        #
+        # Add to FreeCAD group
+        #
+
+        if part not in obj.Group:
+
+            obj.addObject(
+                part
+            )
+
+
+    def removePart(
+        self,
+        obj,
+        part
+    ):
+
+        if part in obj.Group:
+
+            obj.removeObject(
+                part
+            )
+
+
+    def getParts(
+        self,
+        obj
+    ):
+
+        return list(
+            obj.Group
+        )
 
 
     #
@@ -182,28 +221,23 @@ class BosqoModule:
 
         from core.data.module_data import ModuleData
 
-
         data = ModuleData()
-
 
         return data.fromObject(
             obj
         )
 
 
-
     #
     # FreeCAD
     #
 
-    def execute(self, obj):
-
-        #
-        # Module has no geometry.
-        #
+    def execute(
+        self,
+        obj
+    ):
 
         pass
-
 
 
     def onChanged(
@@ -212,15 +246,12 @@ class BosqoModule:
         prop
     ):
 
-        #
-        # Geometry is rebuilt explicitly.
-        #
-
         pass
 
 
-
-    def getIcon(self):
+    def getIcon(
+        self
+    ):
 
         return os.path.join(
             ICONS_DIR,
@@ -228,17 +259,19 @@ class BosqoModule:
         )
 
 
-
-    def __getstate__(self):
-
-        return None
-
-
-
-    def __setstate__(self, state):
+    def __getstate__(
+        self
+    ):
 
         return None
 
+
+    def __setstate__(
+        self,
+        state
+    ):
+
+        return None
 
 
 
@@ -246,73 +279,77 @@ class BosqoModule:
 class ViewProviderBosqoModule:
 
 
-
-    def __init__(self, view_object):
+    def __init__(
+        self,
+        view_object
+    ):
 
         view_object.Proxy = self
 
 
-
-    def attach(self, view_object):
-
-        pass
-
-
-
-    def updateData(self, obj, prop):
+    def attach(
+        self,
+        view_object
+    ):
 
         pass
 
 
-
-    def onChanged(self, view_object, prop):
+    def updateData(
+        self,
+        obj,
+        prop
+    ):
 
         pass
 
 
+    def onChanged(
+        self,
+        view_object,
+        prop
+    ):
 
-    def doubleClicked(self, view_object):
+        pass
 
+
+    def doubleClicked(
+        self,
+        view_object
+    ):
 
         obj = view_object.Object
 
-
         dialog = ModuleDialog(
-            obj.Proxy.getData(obj)
+            obj.Proxy.getData(
+                obj
+            )
         )
 
-
         if dialog.exec():
-
 
             obj.Proxy.setData(
                 obj,
                 dialog.getData()
             )
 
-
             ModuleBuilder.build(
                 obj
             )
 
-
             obj.Document.recompute()
-
-
 
         return True
 
 
-
-    def getIcon(self):
+    def getIcon(
+        self
+    ):
 
         return os.path.join(
             ICONS_DIR,
             "module.svg"
         )
-
-
-
 
 
 #
@@ -321,25 +358,23 @@ class ViewProviderBosqoModule:
 
 def create_module(
     doc,
-    data
+    data=None
 ):
-
 
     module = doc.addObject(
         "App::DocumentObjectGroupPython",
-        "Module"
+        "BosqoModule"
     )
-
 
     BosqoModule(
         module
     )
 
+    if data:
 
-    module.Proxy.setData(
-        module,
-        data
-    )
-
+        module.Proxy.setData(
+            module,
+            data
+        )
 
     return module

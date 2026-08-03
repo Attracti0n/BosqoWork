@@ -2,6 +2,7 @@ from core.data.cut_list import CutList
 from core.data.cut_list_item import CutListItem
 
 
+
 class CutListGenerator:
 
 
@@ -10,37 +11,77 @@ class CutListGenerator:
         manufacturing
     ):
 
+
         cutlist = CutList()
+
+
 
         #
         # Project information
         #
 
-        if hasattr(manufacturing, "Name"):
+        if hasattr(
+            manufacturing,
+            "Name"
+        ):
 
             cutlist.Project = manufacturing.Name
 
             cutlist.Module = manufacturing.Name
 
-        if hasattr(manufacturing, "Type"):
+
+
+        if hasattr(
+            manufacturing,
+            "Type"
+        ):
 
             cutlist.Type = manufacturing.Type
 
+
+
         #
-        # Parts
+        # Project with modules
         #
 
-        for part in manufacturing.Parts:
+        if hasattr(
+            manufacturing,
+            "Modules"
+        ):
 
-            item = CutListItem()
 
-            item.fromManufacturingData(
-                part
-            )
+            for module in manufacturing.Modules:
 
-            cutlist.addItem(
-                item
-            )
+
+                for part in module.Parts:
+
+
+                    self.addPart(
+                        cutlist,
+                        part
+                    )
+
+
+
+        #
+        # Loose parts
+        #
+
+        if hasattr(
+            manufacturing,
+            "Parts"
+        ):
+
+
+            for part in manufacturing.Parts:
+
+
+                self.addPart(
+                    cutlist,
+                    part
+                )
+
+
 
         #
         # Summary
@@ -50,7 +91,34 @@ class CutListGenerator:
             cutlist
         )
 
+
         return cutlist
+
+
+
+    #
+    # Add manufacturing part
+    #
+
+    def addPart(
+        self,
+        cutlist,
+        part
+    ):
+
+
+        item = CutListItem()
+
+
+        item.fromManufacturingData(
+            part
+        )
+
+
+        cutlist.addItem(
+            item
+        )
+
 
 
     #
@@ -62,11 +130,15 @@ class CutListGenerator:
         cutlist
     ):
 
+
         summary = cutlist.Summary
+
+
 
         summary.TotalUniqueParts = len(
             cutlist.Items
         )
+
 
         summary.TotalParts = sum(
 
@@ -75,6 +147,8 @@ class CutListGenerator:
             for item in cutlist.Items
 
         )
+
+
 
         materials = {}
 
@@ -86,7 +160,11 @@ class CutListGenerator:
 
         totalEdgeLength = 0.0
 
+
+
         for item in cutlist.Items:
+
+
 
             #
             # Materials
@@ -94,9 +172,12 @@ class CutListGenerator:
 
             material = item.Material
 
+
             if not material:
 
                 material = "Undefined"
+
+
 
             materials[material] = (
 
@@ -109,56 +190,72 @@ class CutListGenerator:
 
             )
 
+
+
             #
-            # Area (mm²)
+            # Area
             #
 
             area = (
 
                 float(item.Length)
 
-                * float(item.Width)
+                *
+                float(item.Width)
 
             )
+
 
             totalArea += (
 
                 area
 
-                * item.Quantity
+                *
+                item.Quantity
 
             )
 
+
+
             #
-            # Volume (mm³)
+            # Volume
             #
 
             volume = (
 
                 area
 
-                * float(item.Thickness)
+                *
+                float(item.Thickness)
 
             )
+
 
             totalVolume += (
 
                 volume
 
-                * item.Quantity
+                *
+                item.Quantity
 
             )
+
+
 
             #
             # Operations
             #
 
             totalOperations += len(
+
                 item.Operations
+
             )
 
+
+
             #
-            # Edge length
+            # Edges
             #
 
             for edge in (
@@ -170,15 +267,24 @@ class CutListGenerator:
 
             ):
 
+
                 if edge:
 
-                    if edge in ("1", "True", True):
+
+                    if edge in (
+                        "1",
+                        "True",
+                        True
+                    ):
+
 
                         totalEdgeLength += (
 
                             float(item.Length)
 
                         )
+
+
 
         summary.Materials = materials
 

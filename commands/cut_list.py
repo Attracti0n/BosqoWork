@@ -1,11 +1,18 @@
 import FreeCAD
 import FreeCADGui
 
+
 from core.data.module_data import ModuleData
 from core.data.module_manufacturing_data import ModuleManufacturingData
+
+from core.data.project_data import ProjectData
+from core.data.project_manufacturing_data import ProjectManufacturingData
+
+
 from core.reports.cutlist_generator import CutListGenerator
 
 from dialogs.cut_list_dialog import CutListDialog
+
 
 
 class CutListCommand:
@@ -24,69 +31,111 @@ class CutListCommand:
         }
 
 
+
     def Activated(self):
+
 
         selection = FreeCADGui.Selection.getSelection()
 
+
         if not selection:
 
+
             FreeCAD.Console.PrintError(
-                "No module selected.\n"
+                "No object selected.\n"
             )
 
             return
 
 
-        module = selection[0]
+
+        obj = selection[0]
 
 
-        #
-        # Module -> ModuleData
-        #
 
-        moduleData = ModuleData()
+        manufacturing = None
 
-        moduleData.fromObject(
-            module
-        )
 
 
         #
-        # ModuleData -> Manufacturing
+        # Bosqo Module
         #
 
-        manufacturing = ModuleManufacturingData()
+        if hasattr(obj, "Proxy") and obj.Proxy.__class__.__name__ == "BosqoModule":
 
-        manufacturing.fromModuleData(
-            moduleData
-        )
+
+            moduleData = ModuleData()
+
+
+            moduleData.fromObject(
+                obj
+            )
+
+
+            manufacturing = ModuleManufacturingData()
+
+
+            manufacturing.fromModuleData(
+                moduleData
+            )
+
 
 
         #
-        # Manufacturing -> CutList
+        # Imported project / BosqoParts
+        #
+
+        else:
+
+
+            project = ProjectData()
+
+
+            project.fromDocument()
+
+
+
+            manufacturing = ProjectManufacturingData()
+
+
+            manufacturing.fromProjectData(
+                project
+            )
+
+
+
+        #
+        # Generate CutList
         #
 
         generator = CutListGenerator()
+
 
         cutlist = generator.generate(
             manufacturing
         )
 
 
+
         #
-        # Show dialog
+        # Dialog
         #
 
         dialog = CutListDialog(
             cutlist
         )
 
+
         dialog.exec_()
+
 
 
     def IsActive(self):
 
         return FreeCAD.ActiveDocument is not None
+
+
+
 
 
 FreeCADGui.addCommand(

@@ -1,5 +1,8 @@
 import FreeCAD
 import FreeCADGui
+import os
+
+from app_paths import ICONS_DIR
 
 from core.data.project_data import ProjectData
 from core.data.project_manufacturing_data import ProjectManufacturingData
@@ -15,7 +18,10 @@ class CutListReportCommand:
 
         return {
 
-            "Pixmap": "",
+            "Pixmap": os.path.join(
+                ICONS_DIR,
+                "report_fabrication.svg"
+            ),
 
             "MenuText": "Informe de fabricación",
 

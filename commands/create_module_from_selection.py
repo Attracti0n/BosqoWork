@@ -1,5 +1,8 @@
 import FreeCAD
 import FreeCADGui
+import os
+
+from app_paths import ICONS_DIR
 
 from dialogs.module_dialog import ModuleDialog
 from objects.bosqo_module import create_module
@@ -12,7 +15,10 @@ class CreateModuleFromSelectionCommand:
 
         return {
 
-            "Pixmap": "",
+            "Pixmap": os.path.join(
+                ICONS_DIR,
+                "select_to_group.svg"
+            ),
 
             "MenuText": "Crear módulo desde selección",
 

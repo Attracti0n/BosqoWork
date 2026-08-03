@@ -40,18 +40,27 @@ class BosqoWorkbench(FreeCADGui.Workbench):
         #
 
         self.appendToolbar(
-            "Bosqo",
+            "Crear",
             [
                 "Bosqo_AddModule",
                 "Bosqo_AddPart",
                 "Bosqo_ProjectProperties",
+            ]
+        )
+        self.appendToolbar(
+            "Import",
+            [
                 "Bosqo_ImportParts",
-                "Bosqo_CutList",
-                "Bosqo_CutListReport",
                 "Bosqo_CreateModuleFromSelection",
             ]
         )
-
+        self.appendToolbar(
+            "Fabricación",
+            [
+                "Bosqo_CutList",
+                "Bosqo_CutListReport",
+            ]
+        )
 
 
         #
@@ -59,34 +68,27 @@ class BosqoWorkbench(FreeCADGui.Workbench):
         #
 
         self.appendMenu(
-            "BosqoWork",
+            "Crear",
             [
                 "Bosqo_AddModule",
                 "Bosqo_AddPart",
                 "Bosqo_ProjectProperties",
+            ]
+        )
+        self.appendMenu(
+            "Import",
+            [
                 "Bosqo_ImportParts",
-                "Bosqo_CutList",
-                "Bosqo_CutListReport",
                 "Bosqo_CreateModuleFromSelection",
             ]
         )
-
-
-
-        #
-        # Development tools
-        #
-        # Later we can create:
-        #
-        # BosqoWork
-        #   └── Tools
-        #          ├── Analyze Geometry
-        #          ├── Analyze Panel
-        #          └── Diagnostics
-        #
-        # For now hidden from normal workflow.
-        #
-
+        self.appendMenu(
+            "Fabricación",
+            [
+                "Bosqo_CutList",
+                "Bosqo_CutListReport",
+            ]
+        )
 
 
     def Activated(self):

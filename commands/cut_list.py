@@ -1,5 +1,8 @@
 import FreeCAD
 import FreeCADGui
+import os
+
+from app_paths import ICONS_DIR
 
 
 from core.data.module_data import ModuleData
@@ -22,11 +25,14 @@ class CutListCommand:
 
         return {
 
-            "Pixmap": "",
+            "Pixmap": os.path.join(
+                ICONS_DIR,
+                "cutting.svg"
+            ),
 
             "MenuText": "Cut List",
 
-            "ToolTip": "Generate cut list"
+            "ToolTip": "Crear cut list"
 
         }
 

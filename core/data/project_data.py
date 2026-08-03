@@ -4,7 +4,6 @@ from core.data.module_data import ModuleData
 from core.data.part_data import PartData
 
 
-
 class ProjectData:
 
 
@@ -17,7 +16,6 @@ class ProjectData:
         self.Modules = []
 
         self.Parts = []
-
 
 
     def fromDocument(
@@ -36,7 +34,6 @@ class ProjectData:
             return self
 
 
-
         self.Name = document.Label
 
         self.FileName = document.FileName
@@ -46,6 +43,12 @@ class ProjectData:
 
         self.Parts = []
 
+
+        #
+        # Read modules
+        #
+
+        moduleObjects = []
 
 
         for obj in document.Objects:
@@ -59,69 +62,76 @@ class ProjectData:
                 continue
 
 
-            proxy = obj.Proxy
-
-            proxyType = type(proxy).__name__
-
-
-
-            #
-            # Module
-            #
-
-            if proxyType == "BosqoModule":
-
-
-                module = ModuleData()
-
-                module.fromObject(
-                    obj
-                )
-
-                self.Modules.append(
-                    module
-                )
+            if type(obj.Proxy).__name__ != "BosqoModule":
 
                 continue
 
 
-
-            #
-            # Loose part
-            #
-
-            if proxyType == "BosqoPart":
+            moduleObjects.append(
+                obj
+            )
 
 
-                #
-                # Ignore parts inside modules
-                #
+            module = ModuleData()
 
-                if hasattr(
-                    obj,
-                    "Parent"
-                ):
+            module.fromObject(
+                obj
+            )
 
-                    if obj.Parent:
-
-                        continue
+            self.Modules.append(
+                module
+            )
 
 
+        #
+        # Read loose parts
+        #
 
-                part = PartData()
+        for obj in document.Objects:
 
-                part.fromObject(
-                    obj
-                )
 
-                self.Parts.append(
-                    part
-                )
+            if not hasattr(
+                obj,
+                "Proxy"
+            ):
 
+                continue
+
+
+            if type(obj.Proxy).__name__ != "BosqoPart":
+
+                continue
+
+
+            insideModule = False
+
+
+            for module in moduleObjects:
+
+                if obj in module.Group:
+
+                    insideModule = True
+
+                    break
+
+
+            if insideModule:
+
+                continue
+
+
+            part = PartData()
+
+            part.fromObject(
+                obj
+            )
+
+            self.Parts.append(
+                part
+            )
 
 
         return self
-
 
 
     def toDict(
@@ -131,36 +141,26 @@ class ProjectData:
 
         return {
 
-
             "Name":
-
                 self.Name,
 
-
             "FileName":
-
                 self.FileName,
 
+            "Modules": [
 
-            "Modules":
+                module.toDict()
 
-                [
+                for module in self.Modules
 
-                    module.toDict()
+            ],
 
-                    for module in self.Modules
+            "Parts": [
 
-                ],
+                part.toDict()
 
+                for part in self.Parts
 
-            "Parts":
-
-                [
-
-                    part.toDict()
-
-                    for part in self.Parts
-
-                ]
+            ]
 
         }

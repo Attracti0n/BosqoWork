@@ -94,7 +94,7 @@ class AddPartCommand:
 
     def IsActive(self):
 
-        return True
+        return FreeCAD.ActiveDocument is not None
 
 
 

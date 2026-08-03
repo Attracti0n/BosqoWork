@@ -1,137 +1,195 @@
+from core.data.cut_list import CutList
+from core.data.cut_list_item import CutListItem
+
+
 class CutListGenerator:
 
 
-    def __init__(self):
-
-        pass
-
-
-
-    #
-    # Generate cut list from manufacturing module
-    #
-
     def generate(
         self,
-        module_manufacturing
+        manufacturing
     ):
 
+        cutlist = CutList()
 
-        cutlist = []
+        #
+        # Project information
+        #
 
+        if hasattr(manufacturing, "Name"):
 
-        for part in module_manufacturing.Parts:
+            cutlist.Project = manufacturing.Name
 
+            cutlist.Module = manufacturing.Name
 
-            item = {
+        if hasattr(manufacturing, "Type"):
 
+            cutlist.Type = manufacturing.Type
 
-                "Code": part.Code,
+        #
+        # Parts
+        #
 
+        for part in manufacturing.Parts:
 
-                "PartNumber": part.PartNumber,
+            item = CutListItem()
 
+            item.fromManufacturingData(
+                part
+            )
 
-                "Description": part.Description,
-
-
-                "Role": part.Role,
-
-
-                "Length": part.Length,
-
-
-                "Width": part.Width,
-
-
-                "Thickness": part.Thickness,
-
-
-                "Quantity": part.Quantity,
-
-
-                "Material": part.Material,
-
-
-            }
-
-
-            cutlist.append(
+            cutlist.addItem(
                 item
             )
 
+        #
+        # Summary
+        #
 
+        self.buildSummary(
+            cutlist
+        )
 
         return cutlist
 
 
-
     #
-    # Text report
+    # Summary
     #
 
-    def toText(
+    def buildSummary(
         self,
-        module_manufacturing
+        cutlist
     ):
 
+        summary = cutlist.Summary
 
-        lines = []
-
-
-        lines.append(
-            "LISTA DE CORTE"
+        summary.TotalUniqueParts = len(
+            cutlist.Items
         )
 
+        summary.TotalParts = sum(
 
-        lines.append(
-            "============================"
+            item.Quantity
+
+            for item in cutlist.Items
+
         )
 
+        materials = {}
 
-        lines.append(
-            ""
-        )
+        totalArea = 0.0
 
+        totalVolume = 0.0
 
-        lines.append(
-            f"Modulo: {module_manufacturing.Name}"
-        )
+        totalOperations = 0
 
+        totalEdgeLength = 0.0
 
-        lines.append(
-            f"Tipo: {module_manufacturing.Type}"
-        )
+        for item in cutlist.Items:
 
+            #
+            # Materials
+            #
 
-        lines.append(
-            ""
-        )
+            material = item.Material
 
+            if not material:
 
-        lines.append(
-            "Codigo | Pieza | Largo | Ancho | Espesor | Cantidad"
-        )
+                material = "Undefined"
 
+            materials[material] = (
 
-        lines.append(
-            "---------------------------------------------------"
-        )
+                materials.get(
+                    material,
+                    0
+                )
 
-
-        for part in module_manufacturing.Parts:
-
-
-            lines.append(
-
-                f"{part.Code} | "
-                f"{part.Description} | "
-                f"{part.Length} | "
-                f"{part.Width} | "
-                f"{part.Thickness} | "
-                f"{part.Quantity}"
+                + item.Quantity
 
             )
 
+            #
+            # Area (mm²)
+            #
 
-        return "\n".join(lines)
+            area = (
+
+                float(item.Length)
+
+                * float(item.Width)
+
+            )
+
+            totalArea += (
+
+                area
+
+                * item.Quantity
+
+            )
+
+            #
+            # Volume (mm³)
+            #
+
+            volume = (
+
+                area
+
+                * float(item.Thickness)
+
+            )
+
+            totalVolume += (
+
+                volume
+
+                * item.Quantity
+
+            )
+
+            #
+            # Operations
+            #
+
+            totalOperations += len(
+                item.Operations
+            )
+
+            #
+            # Edge length
+            #
+
+            for edge in (
+
+                item.EdgeTop,
+                item.EdgeBottom,
+                item.EdgeLeft,
+                item.EdgeRight
+
+            ):
+
+                if edge:
+
+                    if edge in ("1", "True", True):
+
+                        totalEdgeLength += (
+
+                            float(item.Length)
+
+                        )
+
+        summary.Materials = materials
+
+        summary.TotalMaterials = len(
+            materials
+        )
+
+        summary.TotalArea = totalArea
+
+        summary.TotalVolume = totalVolume
+
+        summary.TotalOperations = totalOperations
+
+        summary.TotalEdgeLength = totalEdgeLength

@@ -7,5 +7,6 @@ import commands.import_parts
 import commands.analyze_orientation
 import commands.analyze_planes
 import commands.analyze_panel
+import commands.cut_list
 
 FreeCADGui.addWorkbench(BosqoWorkbench())

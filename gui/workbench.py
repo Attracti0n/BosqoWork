@@ -46,6 +46,7 @@ class BosqoWorkbench(FreeCADGui.Workbench):
                 "Bosqo_AddPart",
                 "Bosqo_ProjectProperties",
                 "Bosqo_ImportParts",
+                "Bosqo_CutList"
             ]
         )
 
@@ -62,6 +63,7 @@ class BosqoWorkbench(FreeCADGui.Workbench):
                 "Bosqo_AddPart",
                 "Bosqo_ProjectProperties",
                 "Bosqo_ImportParts",
+                "Bosqo_CutList"
             ]
         )
 

@@ -5,13 +5,11 @@ import os
 from constants import ICONS_DIR
 
 from dialogs.module_dialog import ModuleDialog
-
 from objects.bosqo_module import create_module
-
+from core.builders.module_builder import ModuleBuilder
 
 
 class AddModuleCommand:
-
 
     def GetResources(self):
 
@@ -28,11 +26,9 @@ class AddModuleCommand:
 
         }
 
-
     def Activated(self):
 
         doc = FreeCAD.ActiveDocument
-
 
         if doc is None:
 
@@ -42,33 +38,40 @@ class AddModuleCommand:
 
             return
 
-
         dialog = ModuleDialog()
 
-
-        if dialog.exec_():
-
+        if dialog.exec():
 
             data = dialog.getData()
 
+            #
+            # Create module
+            #
 
-            create_module(
+            module = create_module(
                 doc,
                 data
             )
 
+            #
+            # Generate module parts
+            #
+
+            ModuleBuilder.build(
+                module
+            )
+
+            #
+            # Update document
+            #
 
             doc.recompute()
 
-
             FreeCADGui.activeDocument().activeView().fitAll()
-
-
 
     def IsActive(self):
 
         return FreeCAD.ActiveDocument is not None
-
 
 
 FreeCADGui.addCommand(

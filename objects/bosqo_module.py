@@ -23,6 +23,7 @@ class BosqoModule:
     def initProperties(self, obj):
 
         if not obj.Label:
+
             obj.Label = "Module"
 
         #
@@ -39,11 +40,13 @@ class BosqoModule:
             )
 
             obj.Type = [
+
                 "Módulo bajo",
                 "Módulo alto",
                 "Columna",
                 "Armario",
                 "Personalizado"
+
             ]
 
             obj.Type = "Módulo bajo"
@@ -111,20 +114,11 @@ class BosqoModule:
 
     def setData(self, obj, data):
 
-        if "Label" in data:
-            obj.Label = data["Label"]
+        for key, value in data.items():
 
-        if "Type" in data:
-            obj.Type = data["Type"]
+            if hasattr(obj, key):
 
-        if "Width" in data:
-            obj.Width = data["Width"]
-
-        if "Height" in data:
-            obj.Height = data["Height"]
-
-        if "Depth" in data:
-            obj.Depth = data["Depth"]
+                setattr(obj, key, value)
 
     #
     # FreeCAD
@@ -133,7 +127,7 @@ class BosqoModule:
     def execute(self, obj):
 
         #
-        # The module itself has no geometry.
+        # Module has no geometry.
         #
 
         pass
@@ -141,9 +135,7 @@ class BosqoModule:
     def onChanged(self, obj, prop):
 
         #
-        # Nothing here.
-        # Rebuild is performed only after editing
-        # or module creation.
+        # Geometry is rebuilt explicitly.
         #
 
         pass
@@ -228,9 +220,5 @@ def create_module(doc, data):
         module,
         data
     )
-
-    ModuleBuilder.build(module)
-
-    doc.recompute()
 
     return module

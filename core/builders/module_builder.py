@@ -1,130 +1,102 @@
 import FreeCAD
 
 from objects.bosqo_part import create_part
-from library.parts_library import PARTS_LIBRARY
-from core.calculators.module_calculator import ModuleCalculator
+from core.generators.generator_factory import GeneratorFactory
 
 
 class ModuleBuilder:
 
-
     @staticmethod
     def build(module):
 
-
-        definitions = PARTS_LIBRARY["KitchenBase"]
-
-
         #
-        # Existing parts
+        # Get generator
         #
 
-        existing = {}
-
-
-        for part in module.Group:
-
-
-            if hasattr(part, "Code"):
-
-                existing[part.Code] = part
-
-
+        generator = GeneratorFactory.get(
+            module.Type
+        )
 
         #
-        # Build required parts
+        # Generate parts
         #
 
-        used = []
+        parts_data = generator.generate(
+            module
+        )
 
+        #
+        # Create or update parts
+        #
 
-        for definition in definitions:
+        for data in parts_data:
 
+            code = data["Code"]
 
-            code = definition["Code"]
+            part = ModuleBuilder.find(
+                module,
+                code
+            )
 
-
-
-            if code in existing:
-
-
-                part = existing[code]
-
-
-            else:
-
+            if part is None:
 
                 part = ModuleBuilder.create(
                     module
                 )
-
-                part.Code = code
-
-
-
-            data = ModuleCalculator.calculate(
-                module,
-                definition
-            )
-
-
 
             part.Proxy.setData(
                 part,
                 data
             )
 
-
             part.touch()
-
-
-            used.append(part)
-
-
 
         #
         # Remove obsolete parts
         #
 
+        valid_codes = {
+            data["Code"]
+            for data in parts_data
+        }
+
         for part in list(module.Group):
 
+            if (
+                hasattr(part, "Code")
+                and part.Code not in valid_codes
+            ):
 
-            if part not in used:
+                module.removeObject(part)
+                module.Document.removeObject(part.Name)
 
+    @staticmethod
+    def find(module, code):
 
-                module.removeObject(
-                    part
-                )
+        for part in module.Group:
 
+            if (
+                hasattr(part, "Code")
+                and part.Code == code
+            ):
 
-                try:
+                return part
 
-                    module.Document.removeObject(
-                        part.Name
-                    )
-
-                except:
-
-                    pass
-
-
-
-        module.Document.recompute()
-
-
+        return None
 
     @staticmethod
     def create(module):
-
 
         part = create_part(
             module.Document
         )
 
+        #
+        # Add part to module.
+        # Do NOT create a reverse PropertyLink,
+        # otherwise FreeCAD creates a cyclic graph (DAG error).
+        #
 
-        module.addObject(
-            part
-        )
-
+        module.addObject(part)
 
         return part

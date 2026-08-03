@@ -2,7 +2,9 @@ import FreeCAD
 import os
 
 from constants import ICONS_DIR
+
 from core.builders.geometry_builder import GeometryBuilder
+from core.builders.placement_builder import PlacementBuilder
 
 
 class BosqoPart:
@@ -17,7 +19,6 @@ class BosqoPart:
         ViewProviderBosqoPart(obj.ViewObject)
 
 
-
     #
     # Properties
     #
@@ -30,17 +31,13 @@ class BosqoPart:
             obj.Label = "Part"
 
 
-
         #
         # Identification
         #
 
         self.addString(obj, "Code", "", "Identification")
-
         self.addString(obj, "PartType", "", "Identification")
-
         self.addString(obj, "Role", "", "Identification")
-
 
 
         #
@@ -48,23 +45,17 @@ class BosqoPart:
         #
 
         self.addLength(obj, "Length", 0, "Dimensions")
-
         self.addLength(obj, "Width", 0, "Dimensions")
-
         self.addLength(obj, "Thickness", 0, "Dimensions")
 
 
-
         #
-        # Compatibility coordinates
+        # Position (used by generated parts)
         #
 
         self.addLength(obj, "baseX", 0, "Geometry")
-
         self.addLength(obj, "baseY", 0, "Geometry")
-
         self.addLength(obj, "baseZ", 0, "Geometry")
-
 
 
         #
@@ -72,11 +63,8 @@ class BosqoPart:
         #
 
         self.addString(obj, "LengthAxis", "Z", "Geometry")
-
         self.addString(obj, "WidthAxis", "X", "Geometry")
-
         self.addString(obj, "ThicknessAxis", "Y", "Geometry")
-
 
 
         #
@@ -84,11 +72,8 @@ class BosqoPart:
         #
 
         self.addString(obj, "Material", "", "Material")
-
         self.addString(obj, "MaterialCode", "", "Material")
-
         self.addString(obj, "GrainDirection", "", "Material")
-
 
 
         #
@@ -96,13 +81,9 @@ class BosqoPart:
         #
 
         self.addString(obj, "EdgeTop", "", "Edgebanding")
-
         self.addString(obj, "EdgeBottom", "", "Edgebanding")
-
         self.addString(obj, "EdgeLeft", "", "Edgebanding")
-
         self.addString(obj, "EdgeRight", "", "Edgebanding")
-
 
 
         #
@@ -119,9 +100,8 @@ class BosqoPart:
             )
 
 
-
         #
-        # Imported source
+        # Original imported object
         #
 
         if not hasattr(obj, "OriginalObject"):
@@ -132,7 +112,6 @@ class BosqoPart:
                 "Bosqo",
                 "Original imported object"
             )
-
 
 
         #
@@ -147,18 +126,11 @@ class BosqoPart:
         )
 
 
-
     #
     # Helpers
     #
 
-    def addString(
-        self,
-        obj,
-        name,
-        value,
-        group
-    ):
+    def addString(self, obj, name, value, group):
 
         if not hasattr(obj, name):
 
@@ -168,21 +140,10 @@ class BosqoPart:
                 group
             )
 
-            setattr(
-                obj,
-                name,
-                value
-            )
+            setattr(obj, name, value)
 
 
-
-    def addLength(
-        self,
-        obj,
-        name,
-        value,
-        group
-    ):
+    def addLength(self, obj, name, value, group):
 
         if not hasattr(obj, name):
 
@@ -201,43 +162,23 @@ class BosqoPart:
             )
 
 
-
     #
     # Data
     #
 
-    def setData(
-        self,
-        obj,
-        data
-    ):
+    def setData(self, obj, data):
 
         for key, value in data.items():
 
-
-            #
-            # Placement is native FreeCAD property
-            #
-
-            if key == "Placement":
-
-                obj.Placement = value
-
-                continue
-
-
-
             if hasattr(obj, key):
 
-
-                if key in [
+                if key in (
                     "Length",
                     "Width",
                     "Thickness"
-                ]:
+                ):
 
                     value = abs(value)
-
 
                 setattr(
                     obj,
@@ -246,25 +187,29 @@ class BosqoPart:
                 )
 
 
-
     #
-    # Geometry
+    # FreeCAD
     #
 
     def execute(self, obj):
 
-
         shape = GeometryBuilder.createBox(obj)
-
 
         if shape is None:
 
             return
 
-
+        #
+        # Geometry is always local.
+        #
 
         obj.Shape = shape
 
+        #
+        # Placement is handled independently.
+        #
+
+        PlacementBuilder.update(obj)
 
 
     #
@@ -281,8 +226,6 @@ class BosqoPart:
         return None
 
 
-
-
 class ViewProviderBosqoPart:
 
 
@@ -291,15 +234,12 @@ class ViewProviderBosqoPart:
         view_object.Proxy = self
 
 
-
     def getIcon(self):
 
         return os.path.join(
             ICONS_DIR,
             "part.svg"
         )
-
-
 
 
 #
@@ -313,8 +253,6 @@ def create_part(doc):
         "BosqoPart"
     )
 
-
     BosqoPart(part)
-
 
     return part

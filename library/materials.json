@@ -10,7 +10,7 @@
         "Supplier": "Gabarro",
         "Finish": "Crudo",
         "GrainDirection": "Sin veta",
-        "Price": 0.0,
+        "Price": 22.0,
         "Currency": "EUR"
     },
     {
@@ -23,6 +23,34 @@
         "SheetWidth": 2070.0,
         "Supplier": "Gabarro",
         "Finish": "Crudo",
+        "GrainDirection": "Sin veta",
+        "Price": 0.0,
+        "Currency": "EUR"
+    },
+    {
+        "Code": "123456",
+        "MaterialName": "Prueba 2",
+        "MaterialType": "Tablero",
+        "Category": "MDF",
+        "Thickness": 19.0,
+        "SheetLength": 2800.0,
+        "SheetWidth": 2070.0,
+        "Supplier": "Gabarro",
+        "Finish": "Crudo",
+        "GrainDirection": "Sin veta",
+        "Price": 0.0,
+        "Currency": "EUR"
+    },
+    {
+        "Code": "123344",
+        "MaterialName": "llsls",
+        "MaterialType": "Tablero",
+        "Category": "",
+        "Thickness": 0.0,
+        "SheetLength": 0.0,
+        "SheetWidth": 0.0,
+        "Supplier": "",
+        "Finish": "",
         "GrainDirection": "Sin veta",
         "Price": 0.0,
         "Currency": "EUR"

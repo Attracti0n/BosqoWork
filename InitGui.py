@@ -11,6 +11,6 @@ import commands.cut_list
 import commands.cutlist_report_command
 import commands.create_module_from_selection
 import commands.bom
-import commands.create_material
+import commands.materials
 
 FreeCADGui.addWorkbench(BosqoWorkbench())

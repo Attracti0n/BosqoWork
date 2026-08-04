@@ -4,61 +4,82 @@ import FreeCAD
 class ModuleCalculator:
 
 
-    THICKNESS = FreeCAD.Units.Quantity("19 mm")
-
-
     @staticmethod
-    def calculate(module, definition):
-
+    def calculate(
+        module,
+        definition
+    ):
 
         code = definition["Code"]
 
         role = definition["Role"]
 
 
-        thickness = ModuleCalculator.THICKNESS
+        #
+        # Module parameters
+        #
+
+        panel_thickness = module.PanelThickness
+
+        back_thickness = module.BackThickness
+
+        back_inset = module.BackInset
 
 
+        #
+        # Base data
+        #
 
         data = {
 
+            "Code":
+                code,
 
-            "Code": code,
+            "Role":
+                role,
 
-            "Role": role,
+            "Source":
+                "Module",
 
-            "Source": "Module",
+            "Material":
+                "",
 
-            "Material": "",
-
+            "MaterialCode":
+                "",
 
 
             #
             # Default orientation
             #
 
-            "LengthAxis": "Z",
+            "LengthAxis":
+                "Z",
 
-            "WidthAxis": "Y",
+            "WidthAxis":
+                "Y",
 
-            "ThicknessAxis": "X",
-
+            "ThicknessAxis":
+                "X",
 
 
             #
             # Default placement
             #
 
-            "Placement": FreeCAD.Placement(
+            "Placement":
+                FreeCAD.Placement(
 
-                FreeCAD.Vector(0,0,0),
+                    FreeCAD.Vector(
+                        0,
+                        0,
+                        0
+                    ),
 
-                FreeCAD.Rotation()
+                    FreeCAD.Rotation()
 
-            )
+                )
 
         }
-
 
 
         #
@@ -67,13 +88,17 @@ class ModuleCalculator:
 
         if role == "Side":
 
+            data["Length"] = (
+                module.Height
+            )
 
-            data["Length"] = module.Height
+            data["Width"] = (
+                module.Depth
+            )
 
-            data["Width"] = module.Depth
-
-            data["Thickness"] = thickness
-
+            data["Thickness"] = (
+                panel_thickness
+            )
 
 
             data["LengthAxis"] = "Z"
@@ -83,11 +108,15 @@ class ModuleCalculator:
             data["ThicknessAxis"] = "X"
 
 
+            #
+            # Left side
+            #
 
             if code == "LS":
 
-
-                data["Label"] = "Lateral izquierdo"
+                data["Label"] = (
+                    "Lateral izquierdo"
+                )
 
 
                 position = FreeCAD.Vector(
@@ -100,17 +129,22 @@ class ModuleCalculator:
 
                 )
 
+
+            #
+            # Right side
+            #
 
             else:
 
-
-                data["Label"] = "Lateral derecho"
-
+                data["Label"] = (
+                    "Lateral derecho"
+                )
 
 
                 position = FreeCAD.Vector(
 
-                    module.Width - thickness,
+                    module.Width
+                    - panel_thickness,
 
                     0,
 
@@ -119,16 +153,15 @@ class ModuleCalculator:
                 )
 
 
+            data["Placement"] = (
+                FreeCAD.Placement(
 
-            data["Placement"] = FreeCAD.Placement(
+                    position,
 
-                position,
+                    FreeCAD.Rotation()
 
-                FreeCAD.Rotation()
-
+                )
             )
-
-
 
 
         #
@@ -137,18 +170,29 @@ class ModuleCalculator:
 
         elif role == "Top":
 
+            data["Length"] = (
+
+                module.Width
+
+                - (
+                    panel_thickness
+                    * 2
+                )
+
+            )
+
+            data["Width"] = (
+                module.Depth
+            )
+
+            data["Thickness"] = (
+                panel_thickness
+            )
 
 
-            data["Length"] = module.Width - (thickness * 2)
-
-            data["Width"] = module.Depth
-
-            data["Thickness"] = thickness
-
-
-
-            data["Label"] = "Tapa"
-
+            data["Label"] = (
+                "Tapa"
+            )
 
 
             data["LengthAxis"] = "X"
@@ -158,24 +202,24 @@ class ModuleCalculator:
             data["ThicknessAxis"] = "Z"
 
 
+            data["Placement"] = (
+                FreeCAD.Placement(
 
-            data["Placement"] = FreeCAD.Placement(
+                    FreeCAD.Vector(
 
-                FreeCAD.Vector(
+                        panel_thickness,
 
-                    thickness,
+                        0,
 
-                    0,
+                        module.Height
+                        - panel_thickness
 
-                    module.Height - thickness
+                    ),
 
-                ),
+                    FreeCAD.Rotation()
 
-                FreeCAD.Rotation()
-
+                )
             )
-
-
 
 
         #
@@ -184,18 +228,29 @@ class ModuleCalculator:
 
         elif role == "Bottom":
 
+            data["Length"] = (
+
+                module.Width
+
+                - (
+                    panel_thickness
+                    * 2
+                )
+
+            )
+
+            data["Width"] = (
+                module.Depth
+            )
+
+            data["Thickness"] = (
+                panel_thickness
+            )
 
 
-            data["Length"] = module.Width - (thickness * 2)
-
-            data["Width"] = module.Depth
-
-            data["Thickness"] = thickness
-
-
-
-            data["Label"] = "Base"
-
+            data["Label"] = (
+                "Base"
+            )
 
 
             data["LengthAxis"] = "X"
@@ -205,24 +260,23 @@ class ModuleCalculator:
             data["ThicknessAxis"] = "Z"
 
 
+            data["Placement"] = (
+                FreeCAD.Placement(
 
-            data["Placement"] = FreeCAD.Placement(
+                    FreeCAD.Vector(
 
-                FreeCAD.Vector(
+                        panel_thickness,
 
-                    thickness,
+                        0,
 
-                    0,
+                        0
 
-                    0
+                    ),
 
-                ),
+                    FreeCAD.Rotation()
 
-                FreeCAD.Rotation()
-
+                )
             )
-
-
 
 
         #
@@ -231,22 +285,22 @@ class ModuleCalculator:
 
         elif role == "Back":
 
+            data["Length"] = (
+                module.Height
+            )
+
+            data["Width"] = (
+                module.Width
+            )
+
+            data["Thickness"] = (
+                back_thickness
+            )
 
 
-            back_thickness = FreeCAD.Units.Quantity("3 mm")
-
-
-
-            data["Length"] = module.Height
-
-            data["Width"] = module.Width
-
-            data["Thickness"] = back_thickness
-
-
-
-            data["Label"] = "Trasera"
-
+            data["Label"] = (
+                "Trasera"
+            )
 
 
             #
@@ -260,23 +314,36 @@ class ModuleCalculator:
             data["ThicknessAxis"] = "Y"
 
 
+            #
+            # Back position
+            #
+            # The back is positioned from
+            # the rear of the module using
+            # BackInset.
+            #
 
-            data["Placement"] = FreeCAD.Placement(
+            position = FreeCAD.Vector(
 
-                FreeCAD.Vector(
+                0,
 
-                    0,
+                module.Depth
+                - back_inset
+                - back_thickness,
 
-                    module.Depth - back_thickness,
-
-                    0
-
-                ),
-
-                FreeCAD.Rotation()
+                0
 
             )
 
+
+            data["Placement"] = (
+                FreeCAD.Placement(
+
+                    position,
+
+                    FreeCAD.Rotation()
+
+                )
+            )
 
 
         return data

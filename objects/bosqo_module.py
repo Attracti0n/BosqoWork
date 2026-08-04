@@ -9,7 +9,6 @@ from core.builders.module_builder import ModuleBuilder
 
 class BosqoModule:
 
-
     def __init__(
         self,
         obj
@@ -35,10 +34,13 @@ class BosqoModule:
         obj
     ):
 
+        #
+        # Name
+        #
 
         if not obj.Label:
 
-            obj.Label = "Module"
+            obj.Label = "Módulo"
 
 
         #
@@ -53,8 +55,8 @@ class BosqoModule:
             obj.addProperty(
                 "App::PropertyEnumeration",
                 "Type",
-                "Bosqo",
-                "Module type"
+                "Module",
+                "Tipo de módulo"
             )
 
             obj.Type = [
@@ -77,19 +79,58 @@ class BosqoModule:
         self.addLength(
             obj,
             "Width",
-            600
+            600,
+            "Parameters"
         )
 
         self.addLength(
             obj,
             "Height",
-            720
+            720,
+            "Parameters"
         )
 
         self.addLength(
             obj,
             "Depth",
-            560
+            560,
+            "Parameters"
+        )
+
+
+        #
+        # Panel thickness
+        #
+
+        self.addLength(
+            obj,
+            "PanelThickness",
+            19,
+            "Parameters"
+        )
+
+
+        #
+        # Back thickness
+        #
+
+        self.addLength(
+            obj,
+            "BackThickness",
+            10,
+            "Parameters"
+        )
+
+
+        #
+        # Back inset
+        #
+
+        self.addLength(
+            obj,
+            "BackInset",
+            0,
+            "Parameters"
         )
 
 
@@ -101,7 +142,8 @@ class BosqoModule:
         self,
         obj,
         name,
-        value
+        value,
+        group
     ):
 
         if not hasattr(
@@ -112,13 +154,15 @@ class BosqoModule:
             obj.addProperty(
                 "App::PropertyLength",
                 name,
-                "Bosqo"
+                group
             )
 
             setattr(
                 obj,
                 name,
-                value
+                FreeCAD.Units.Quantity(
+                    f"{value} mm"
+                )
             )
 
 
@@ -133,15 +177,29 @@ class BosqoModule:
 
         return {
 
-            "Label": obj.Label,
+            "Label":
+                obj.Label,
 
-            "Type": obj.Type,
+            "Type":
+                obj.Type,
 
-            "Width": obj.Width,
+            "Width":
+                obj.Width,
 
-            "Height": obj.Height,
+            "Height":
+                obj.Height,
 
-            "Depth": obj.Depth
+            "Depth":
+                obj.Depth,
+
+            "PanelThickness":
+                obj.PanelThickness,
+
+            "BackThickness":
+                obj.BackThickness,
+
+            "BackInset":
+                obj.BackInset
 
         }
 
@@ -175,10 +233,6 @@ class BosqoModule:
         obj,
         part
     ):
-
-        #
-        # Add to FreeCAD group
-        #
 
         if part not in obj.Group:
 
@@ -249,6 +303,10 @@ class BosqoModule:
         pass
 
 
+    #
+    # Icon
+    #
+
     def getIcon(
         self
     ):
@@ -258,6 +316,10 @@ class BosqoModule:
             "module.svg"
         )
 
+
+    #
+    # Serialization
+    #
 
     def __getstate__(
         self
@@ -274,10 +336,7 @@ class BosqoModule:
         return None
 
 
-
-
 class ViewProviderBosqoModule:
-
 
     def __init__(
         self,

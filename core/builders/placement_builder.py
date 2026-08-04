@@ -5,17 +5,22 @@ class PlacementBuilder:
 
 
     @staticmethod
-    def update(part):
-
+    def update(
+        part
+    ):
 
         #
         # Imported geometry
         #
-        # ImportBuilder has already restored the original
-        # Placement from the imported object.
+        # ImportBuilder restores the original
+        # placement of imported objects.
         #
 
-        if part.Source == "Imported":
+        if getattr(
+            part,
+            "Source",
+            ""
+        ) == "Imported":
 
             return
 
@@ -23,19 +28,17 @@ class PlacementBuilder:
         #
         # Generated geometry
         #
-
-        placement = FreeCAD.Placement()
-
-        placement.Base = FreeCAD.Vector(
-            float(part.baseX),
-            float(part.baseY),
-            float(part.baseZ)
-        )
-
+        # The Placement is calculated by the
+        # generator/calculator and stored directly
+        # in the BosqoPart.
         #
-        # Default rotation
+        # Do NOT rebuild the placement from
+        # baseX/baseY/baseZ here.
         #
 
-        placement.Rotation = FreeCAD.Rotation()
+        if hasattr(
+            part,
+            "Placement"
+        ):
 
-        part.Placement = placement
+            return

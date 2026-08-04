@@ -44,8 +44,10 @@ class BosqoWorkbench(FreeCADGui.Workbench):
             [
                 "Bosqo_AddModule",
                 "Bosqo_AddPart",
+                "Bosqo_ParametricModule",
                 "Bosqo_ProjectProperties",
-                "Bosqo_Materials"
+                "Bosqo_PartsTable",
+                "Bosqo_Materials",
             ]
         )
         self.appendToolbar(
@@ -74,7 +76,9 @@ class BosqoWorkbench(FreeCADGui.Workbench):
             [
                 "Bosqo_AddModule",
                 "Bosqo_AddPart",
+                "Bosqo_ParametricModule",
                 "Bosqo_ProjectProperties",
+                "Bosqo_PartsTable",
                 "Bosqo_Materials"
             ]
         )

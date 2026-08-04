@@ -3,6 +3,8 @@ import os
 
 from app_paths import ICONS_DIR
 
+from library.material_library import MaterialLibrary
+
 from core.builders.geometry_builder import GeometryBuilder
 from core.builders.placement_builder import PlacementBuilder
 
@@ -11,11 +13,16 @@ from core.builders.placement_builder import PlacementBuilder
 class BosqoPart:
 
 
-    def __init__(self, obj):
+    def __init__(
+        self,
+        obj
+    ):
 
         obj.Proxy = self
 
-        self.initProperties(obj)
+        self.initProperties(
+            obj
+        )
 
         ViewProviderBosqoPart(
             obj.ViewObject
@@ -27,7 +34,10 @@ class BosqoPart:
     # Properties
     #
 
-    def initProperties(self, obj):
+    def initProperties(
+        self,
+        obj
+    ):
 
 
         if not obj.Label:
@@ -47,12 +57,14 @@ class BosqoPart:
             "Identification"
         )
 
+
         self.addString(
             obj,
             "PartType",
             "",
             "Identification"
         )
+
 
         self.addString(
             obj,
@@ -74,12 +86,14 @@ class BosqoPart:
             "Dimensions"
         )
 
+
         self.addLength(
             obj,
             "Width",
             0,
             "Dimensions"
         )
+
 
         self.addLength(
             obj,
@@ -101,12 +115,14 @@ class BosqoPart:
             "Geometry"
         )
 
+
         self.addLength(
             obj,
             "baseY",
             0,
             "Geometry"
         )
+
 
         self.addLength(
             obj,
@@ -128,12 +144,14 @@ class BosqoPart:
             "Geometry"
         )
 
+
         self.addString(
             obj,
             "WidthAxis",
             "X",
             "Geometry"
         )
+
 
         self.addString(
             obj,
@@ -155,6 +173,7 @@ class BosqoPart:
             "Geometry"
         )
 
+
         self.addString(
             obj,
             "GeometryData",
@@ -168,6 +187,26 @@ class BosqoPart:
         # Material
         #
 
+        if not hasattr(
+            obj,
+            "MaterialCode"
+        ):
+
+
+            obj.addProperty(
+                "App::PropertyEnumeration",
+                "MaterialCode",
+                "Material",
+                "Material selection"
+            )
+
+
+            obj.MaterialCode = [
+                ""
+            ] + MaterialLibrary.codes()
+
+
+
         self.addString(
             obj,
             "Material",
@@ -175,12 +214,30 @@ class BosqoPart:
             "Material"
         )
 
+
+        self.addLength(
+            obj,
+            "MaterialThickness",
+            0,
+            "Material"
+        )
+
+
         self.addString(
             obj,
-            "MaterialCode",
+            "MaterialSupplier",
             "",
             "Material"
         )
+
+
+        self.addFloat(
+            obj,
+            "MaterialPrice",
+            0,
+            "Material"
+        )
+
 
         self.addString(
             obj,
@@ -202,6 +259,7 @@ class BosqoPart:
             "Edgebanding"
         )
 
+
         self.addString(
             obj,
             "EdgeBottom",
@@ -209,12 +267,14 @@ class BosqoPart:
             "Edgebanding"
         )
 
+
         self.addString(
             obj,
             "EdgeLeft",
             "",
             "Edgebanding"
         )
+
 
         self.addString(
             obj,
@@ -224,11 +284,16 @@ class BosqoPart:
         )
 
 
+
         #
         # Original object
         #
 
-        if not hasattr(obj, "OriginalObject"):
+        if not hasattr(
+            obj,
+            "OriginalObject"
+        ):
+
 
             obj.addProperty(
                 "App::PropertyLink",
@@ -250,11 +315,9 @@ class BosqoPart:
             "Bosqo"
         )
 
-
-
-    #
-    # Helpers
-    #
+        #
+        # Helpers
+        #
 
     def addString(
         self,
@@ -264,13 +327,19 @@ class BosqoPart:
         group
     ):
 
-        if not hasattr(obj, name):
+
+        if not hasattr(
+            obj,
+            name
+        ):
+
 
             obj.addProperty(
                 "App::PropertyString",
                 name,
                 group
             )
+
 
             setattr(
                 obj,
@@ -288,13 +357,19 @@ class BosqoPart:
         group
     ):
 
-        if not hasattr(obj, name):
+
+        if not hasattr(
+            obj,
+            name
+        ):
+
 
             obj.addProperty(
                 "App::PropertyLength",
                 name,
                 group
             )
+
 
             setattr(
                 obj,
@@ -303,6 +378,158 @@ class BosqoPart:
                     f"{abs(value)} mm"
                 )
             )
+
+
+
+    def addFloat(
+        self,
+        obj,
+        name,
+        value,
+        group
+    ):
+
+
+        if not hasattr(
+            obj,
+            name
+        ):
+
+
+            obj.addProperty(
+                "App::PropertyFloat",
+                name,
+                group
+            )
+
+
+            setattr(
+                obj,
+                name,
+                value
+            )
+
+
+
+    #
+    # Material management
+    #
+
+    def refreshMaterialList(
+        self,
+        obj
+    ):
+
+
+        if not hasattr(
+            obj,
+            "MaterialCode"
+        ):
+
+            return
+
+
+
+        values = [
+
+            ""
+
+        ] + MaterialLibrary.codes()
+
+
+
+        obj.MaterialCode = values
+
+
+
+    def updateMaterial(
+        self,
+        obj
+    ):
+
+
+        if not obj.MaterialCode:
+
+            return
+
+
+
+        material = MaterialLibrary.get(
+            obj.MaterialCode
+        )
+
+
+
+        if material is None:
+
+            return
+
+
+
+        #
+        # Basic data
+        #
+
+        obj.Material = material.MaterialName
+
+
+
+        #
+        # Thickness
+        #
+
+        if hasattr(
+            material,
+            "Thickness"
+        ):
+
+
+            obj.MaterialThickness = material.Thickness
+
+
+            obj.Thickness = material.Thickness
+
+
+
+        #
+        # Supplier
+        #
+
+        if hasattr(
+            material,
+            "Supplier"
+        ):
+
+
+            obj.MaterialSupplier = material.Supplier
+
+
+
+        #
+        # Price
+        #
+
+        if hasattr(
+            material,
+            "Price"
+        ):
+
+
+            obj.MaterialPrice = material.Price
+
+
+
+        #
+        # Grain
+        #
+
+        if hasattr(
+            material,
+            "GrainDirection"
+        ):
+
+
+            obj.GrainDirection = material.GrainDirection
 
 
 
@@ -316,15 +543,22 @@ class BosqoPart:
         data
     ):
 
+
         for key, value in data.items():
 
-            if hasattr(obj, key):
+
+            if hasattr(
+                obj,
+                key
+            ):
 
 
                 if key in (
+
                     "Length",
                     "Width",
                     "Thickness"
+
                 ):
 
                     value = abs(value)
@@ -338,14 +572,15 @@ class BosqoPart:
 
 
 
-    #
-    # Part Data
-    #
+        #
+        # Part Data
+        #
 
     def getPartData(
         self,
         obj
     ):
+
 
         from core.data.part_data import PartData
 
@@ -363,7 +598,24 @@ class BosqoPart:
     # FreeCAD
     #
 
-    def execute(self, obj):
+    def onChanged(
+        self,
+        obj,
+        prop
+    ):
+
+
+        if prop == "MaterialCode":
+
+
+            self.updateMaterial(
+                obj
+            )
+
+    def execute(
+        self,
+        obj
+    ):
 
 
         shape = GeometryBuilder.createBox(
@@ -386,7 +638,7 @@ class BosqoPart:
 
 
         #
-        # Apply final position
+        # Apply placement
         #
 
         PlacementBuilder.update(
@@ -399,12 +651,18 @@ class BosqoPart:
     # Serialization
     #
 
-    def __getstate__(self):
+    def __getstate__(
+        self
+    ):
 
         return None
 
 
-    def __setstate__(self, state):
+
+    def __setstate__(
+        self,
+        state
+    ):
 
         return None
 
@@ -415,13 +673,18 @@ class BosqoPart:
 class ViewProviderBosqoPart:
 
 
-    def __init__(self, view_object):
+    def __init__(
+        self,
+        view_object
+    ):
 
         view_object.Proxy = self
 
 
 
-    def getIcon(self):
+    def getIcon(
+        self
+    ):
 
         return os.path.join(
             ICONS_DIR,
@@ -436,7 +699,10 @@ class ViewProviderBosqoPart:
 # Factory
 #
 
-def create_part(doc):
+def create_part(
+    doc
+):
+
 
     part = doc.addObject(
         "Part::FeaturePython",

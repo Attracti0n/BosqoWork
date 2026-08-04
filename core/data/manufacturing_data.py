@@ -1,3 +1,7 @@
+from library.material_library import MaterialLibrary
+
+
+
 class ManufacturingData:
 
 
@@ -10,11 +14,11 @@ class ManufacturingData:
 
         self.Code = ""
 
+        self.PartNumber = ""
+
         self.Name = ""
 
         self.Description = ""
-
-        self.PartNumber = ""
 
         self.Role = ""
 
@@ -36,9 +40,11 @@ class ManufacturingData:
         # Material
         #
 
+        self.MaterialCode = ""
+
         self.Material = ""
 
-        self.MaterialCode = ""
+        self.MaterialData = None
 
         self.Finish = ""
 
@@ -73,28 +79,22 @@ class ManufacturingData:
 
 
         #
-        # Machining operations
+        # Manufacturing
         #
 
         self.Operations = []
-
-
-
-        #
-        # Status
-        #
 
         self.Status = "Ready"
 
 
 
     #
-    # Create from PartData
+    # Load from PartData
     #
 
     def fromPartData(
         self,
-        part_data
+        part
     ):
 
 
@@ -102,13 +102,13 @@ class ManufacturingData:
         # Identification
         #
 
-        self.Code = part_data.Code
+        self.Code = part.Code
 
-        self.Name = part_data.Name
+        self.PartNumber = part.Code
 
-        self.Description = part_data.Name
+        self.Name = part.Name
 
-        self.Role = part_data.Role
+        self.Role = part.Role
 
 
 
@@ -116,26 +116,11 @@ class ManufacturingData:
         # Dimensions
         #
 
-        self.Length = part_data.Length
+        self.Length = part.Length
 
-        self.Width = part_data.Width
+        self.Width = part.Width
 
-        self.Thickness = part_data.Thickness
-
-
-
-        #
-        # Manufacturing number
-        #
-
-        self.PartNumber = (
-
-            f"{self.Code}-"
-            f"{int(self.Length)}-"
-            f"{int(self.Width)}-"
-            f"{int(self.Thickness)}"
-
-        )
+        self.Thickness = part.Thickness
 
 
 
@@ -143,13 +128,37 @@ class ManufacturingData:
         # Material
         #
 
-        self.Material = part_data.Material
+        self.MaterialCode = part.MaterialCode
 
-        self.MaterialCode = part_data.MaterialCode
 
-        self.Finish = part_data.Finish
+        material = part.getMaterial()
 
-        self.GrainDirection = part_data.GrainDirection
+
+        if material:
+
+
+            self.MaterialData = material
+
+
+            self.Material = material.Name
+
+
+            if not self.Thickness:
+
+                self.Thickness = material.Thickness
+
+
+            if not self.Finish:
+
+                self.Finish = material.Finish
+
+
+
+        #
+        # Other data
+        #
+
+        self.GrainDirection = part.GrainDirection
 
 
 
@@ -157,14 +166,31 @@ class ManufacturingData:
         # Edges
         #
 
-        self.Edges["Top"] = part_data.EdgeTop
+        self.Edges["Top"] = part.EdgeTop
 
-        self.Edges["Bottom"] = part_data.EdgeBottom
+        self.Edges["Bottom"] = part.EdgeBottom
 
-        self.Edges["Left"] = part_data.EdgeLeft
+        self.Edges["Left"] = part.EdgeLeft
 
-        self.Edges["Right"] = part_data.EdgeRight
+        self.Edges["Right"] = part.EdgeRight
 
+
+
+        #
+        # Quantity
+        #
+
+        self.Quantity = part.Quantity
+
+
+
+        #
+        # Operations
+        #
+
+        self.Operations = list(
+            part.Operations
+        )
 
 
         return self
@@ -172,75 +198,114 @@ class ManufacturingData:
 
 
     #
-    # Add operation
+    # Create from object
     #
 
-    def addOperation(
+    def fromObject(
         self,
-        operation
+        obj
     ):
 
-        self.Operations.append(
-            operation
+        from core.data.part_data import PartData
+
+
+        part = PartData()
+
+
+        part.fromObject(
+            obj
+        )
+
+
+        return self.fromPartData(
+            part
         )
 
 
 
     #
-    # Export dictionary
+    # Material price
     #
 
-    def toDict(self):
+    def getMaterialPrice(
+        self
+    ):
+
+
+        if self.MaterialData:
+
+            return self.MaterialData.Price
+
+
+        return 0.0
+
+
+
+    #
+    # Export
+    #
+
+    def toDict(
+        self
+    ):
+
 
         return {
 
 
-            "Code": self.Code,
-
-            "PartNumber": self.PartNumber,
-
-            "Name": self.Name,
-
-            "Description": self.Description,
-
-            "Role": self.Role,
+            "Code":
+                self.Code,
 
 
-            "Dimensions":
-            {
+            "PartNumber":
+                self.PartNumber,
 
-                "Length": self.Length,
 
-                "Width": self.Width,
+            "Name":
+                self.Name,
 
-                "Thickness": self.Thickness
 
-            },
+            "Role":
+                self.Role,
+
+
+            "Length":
+                self.Length,
+
+
+            "Width":
+                self.Width,
+
+
+            "Thickness":
+                self.Thickness,
+
+
+            "MaterialCode":
+                self.MaterialCode,
 
 
             "Material":
-            {
-
-                "Name": self.Material,
-
-                "Code": self.MaterialCode,
-
-                "Finish": self.Finish,
-
-                "Grain": self.GrainDirection
-
-            },
+                self.Material,
 
 
-            "Quantity": self.Quantity,
+            "Finish":
+                self.Finish,
 
 
-            "Edges": self.Edges,
+            "Quantity":
+                self.Quantity,
 
 
-            "Operations": self.Operations,
+            "Edges":
+                self.Edges,
 
 
-            "Status": self.Status
+            "Operations":
+                self.Operations,
+
+
+            "Status":
+                self.Status
 
         }

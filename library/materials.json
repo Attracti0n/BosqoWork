@@ -1,0 +1,30 @@
+[
+    {
+        "Code": "001210",
+        "MaterialName": "Pruba mel",
+        "MaterialType": "Tablero",
+        "Category": "MDF",
+        "Thickness": 19.0,
+        "SheetLength": 2800.0,
+        "SheetWidth": 2070.0,
+        "Supplier": "Gabarro",
+        "Finish": "Crudo",
+        "GrainDirection": "Sin veta",
+        "Price": 0.0,
+        "Currency": "EUR"
+    },
+    {
+        "Code": "02321",
+        "MaterialName": "Prueba",
+        "MaterialType": "Tablero",
+        "Category": "MDF",
+        "Thickness": 19.0,
+        "SheetLength": 2800.0,
+        "SheetWidth": 2070.0,
+        "Supplier": "Gabarro",
+        "Finish": "Crudo",
+        "GrainDirection": "Sin veta",
+        "Price": 0.0,
+        "Currency": "EUR"
+    }
+]

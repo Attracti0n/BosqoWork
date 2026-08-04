@@ -45,6 +45,7 @@ class BosqoWorkbench(FreeCADGui.Workbench):
                 "Bosqo_AddModule",
                 "Bosqo_AddPart",
                 "Bosqo_ProjectProperties",
+                "Bosqo_CreateMaterial"
             ]
         )
         self.appendToolbar(
@@ -59,6 +60,7 @@ class BosqoWorkbench(FreeCADGui.Workbench):
             [
                 "Bosqo_CutList",
                 "Bosqo_CutListReport",
+                "Bosqo_BOM"
             ]
         )
 
@@ -73,6 +75,7 @@ class BosqoWorkbench(FreeCADGui.Workbench):
                 "Bosqo_AddModule",
                 "Bosqo_AddPart",
                 "Bosqo_ProjectProperties",
+                "Bosqo_CreateMaterial"
             ]
         )
         self.appendMenu(
@@ -87,6 +90,7 @@ class BosqoWorkbench(FreeCADGui.Workbench):
             [
                 "Bosqo_CutList",
                 "Bosqo_CutListReport",
+                "Bosqo_BOM"
             ]
         )
 

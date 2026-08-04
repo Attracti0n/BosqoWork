@@ -1,11 +1,18 @@
 from PySide import QtWidgets
 
+from library.material_library import MaterialLibrary
+
 
 class PartDialog(QtWidgets.QDialog):
 
-    def __init__(self, parent=None):
+    def __init__(
+        self,
+        parent=None
+    ):
 
-        super().__init__(parent)
+        super().__init__(
+            parent
+        )
 
         self.setWindowTitle(
             "Nueva pieza"
@@ -19,7 +26,13 @@ class PartDialog(QtWidgets.QDialog):
         self.createUI()
 
 
-    def createUI(self):
+    #
+    # Create UI
+    #
+
+    def createUI(
+        self
+    ):
 
         layout = QtWidgets.QFormLayout()
 
@@ -33,7 +46,6 @@ class PartDialog(QtWidgets.QDialog):
         self.nameEdit.setText(
             "Nueva pieza"
         )
-
 
         layout.addRow(
             "Nombre:",
@@ -60,7 +72,6 @@ class PartDialog(QtWidgets.QDialog):
             ]
         )
 
-
         layout.addRow(
             "Tipo:",
             self.typeCombo
@@ -82,6 +93,9 @@ class PartDialog(QtWidgets.QDialog):
             600
         )
 
+        self.lengthSpin.setSuffix(
+            " mm"
+        )
 
         layout.addRow(
             "Longitud:",
@@ -100,6 +114,9 @@ class PartDialog(QtWidgets.QDialog):
             560
         )
 
+        self.widthSpin.setSuffix(
+            " mm"
+        )
 
         layout.addRow(
             "Anchura:",
@@ -118,6 +135,9 @@ class PartDialog(QtWidgets.QDialog):
             18
         )
 
+        self.thicknessSpin.setSuffix(
+            " mm"
+        )
 
         layout.addRow(
             "Espesor:",
@@ -129,16 +149,22 @@ class PartDialog(QtWidgets.QDialog):
         # Material
         #
 
-        self.materialEdit = QtWidgets.QLineEdit()
+        self.materialCombo = QtWidgets.QComboBox()
 
-        self.materialEdit.setText(
-            "MDF 18"
-        )
-
+        self.loadMaterials()
 
         layout.addRow(
             "Material:",
-            self.materialEdit
+            self.materialCombo
+        )
+
+
+        #
+        # Material change
+        #
+
+        self.materialCombo.currentIndexChanged.connect(
+            self.onMaterialChanged
         )
 
 
@@ -177,10 +203,194 @@ class PartDialog(QtWidgets.QDialog):
 
 
     #
+    # Load materials
+    #
+
+    def loadMaterials(
+        self
+    ):
+
+        self.materialCombo.clear()
+
+
+        #
+        # No material
+        #
+
+        self.materialCombo.addItem(
+            "— Sin material —",
+            ""
+        )
+
+
+        #
+        # Get materials from persistent library
+        #
+
+        materials = MaterialLibrary.all()
+
+
+        #
+        # Materials from JSON are dictionaries
+        #
+
+        for material in materials:
+
+            if not isinstance(
+                material,
+                dict
+            ):
+
+                continue
+
+
+            #
+            # Code
+            #
+
+            code = str(
+                material.get(
+                    "Code",
+                    ""
+                )
+            ).strip()
+
+
+            if not code:
+
+                continue
+
+
+            #
+            # Name
+            #
+
+            name = str(
+                material.get(
+                    "MaterialName",
+                    ""
+                )
+            ).strip()
+
+
+            #
+            # Display text
+            #
+
+            if name:
+
+                text = (
+                    code
+                    + " — "
+                    + name
+                )
+
+            else:
+
+                text = code
+
+
+            #
+            # Add material
+            #
+
+            self.materialCombo.addItem(
+                text,
+                code
+            )
+
+
+    #
+    # Material changed
+    #
+
+    def onMaterialChanged(
+        self,
+        index
+    ):
+
+        code = self.materialCombo.itemData(
+            index
+        )
+
+
+        if not code:
+
+            return
+
+
+        material = MaterialLibrary.get(
+            code
+        )
+
+
+        if material is None:
+
+            return
+
+
+        #
+        # Get thickness
+        #
+
+        if isinstance(
+            material,
+            dict
+        ):
+
+            thickness = material.get(
+                "Thickness",
+                None
+            )
+
+        else:
+
+            thickness = getattr(
+                material,
+                "Thickness",
+                None
+            )
+
+
+        #
+        # Update thickness
+        #
+
+        if thickness is None:
+
+            return
+
+
+        try:
+
+            self.thicknessSpin.setValue(
+                float(
+                    thickness.Value
+                )
+            )
+
+        except Exception:
+
+            try:
+
+                self.thicknessSpin.setValue(
+                    float(
+                        thickness
+                    )
+                )
+
+            except Exception:
+
+                pass
+
+
+    #
     # Return data
     #
 
-    def getData(self):
+    def getData(
+        self
+    ):
 
         return {
 
@@ -199,7 +409,7 @@ class PartDialog(QtWidgets.QDialog):
             "Thickness":
                 self.thicknessSpin.value(),
 
-            "Material":
-                self.materialEdit.text()
+            "MaterialCode":
+                self.materialCombo.currentData()
 
         }

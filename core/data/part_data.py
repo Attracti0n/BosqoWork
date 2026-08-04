@@ -1,3 +1,7 @@
+from library.material_library import MaterialLibrary
+
+
+
 class PartData:
 
 
@@ -11,8 +15,6 @@ class PartData:
         self.Code = ""
 
         self.Name = ""
-
-        self.PartType = ""
 
         self.Role = ""
 
@@ -59,52 +61,109 @@ class PartData:
 
 
         #
-        # Module relation
+        # Manufacturing
         #
 
-        self.Module = None
+        self.Quantity = 1
 
-
-
-        #
-        # Source
-        #
-
-        self.Source = ""
+        self.Operations = []
 
 
 
         #
-        # Geometry state
+        # Status
         #
 
-        self.GeometryStatus = "Not analyzed"
+        self.Status = "Ready"
 
 
 
     #
-    # Convert from FreeCAD object
+    # Material object
     #
 
-    def fromObject(self, obj):
+    def getMaterial(
+        self
+    ):
 
 
-        if hasattr(obj, "Code"):
+        if not self.MaterialCode:
+
+            return None
+
+
+        return MaterialLibrary.get(
+            self.MaterialCode
+        )
+
+
+
+    #
+    # Apply material data
+    #
+
+    def applyMaterial(
+        self
+    ):
+
+
+        material = self.getMaterial()
+
+
+        if material is None:
+
+            return
+
+
+
+        self.Material = material.Name
+
+
+
+        if not self.Thickness:
+
+            self.Thickness = material.Thickness
+
+
+
+        if not self.Finish:
+
+            self.Finish = material.Finish
+
+
+
+    #
+    # Load from FreeCAD object
+    #
+
+    def fromObject(
+        self,
+        obj
+    ):
+
+
+        if hasattr(
+            obj,
+            "Code"
+        ):
 
             self.Code = obj.Code
 
 
-        if hasattr(obj, "Label"):
+
+        if hasattr(
+            obj,
+            "Label"
+        ):
 
             self.Name = obj.Label
 
 
-        if hasattr(obj, "PartType"):
 
-            self.PartType = obj.PartType
-
-
-        if hasattr(obj, "Role"):
+        if hasattr(
+            obj,
+            "Role"
+        ):
 
             self.Role = obj.Role
 
@@ -114,17 +173,28 @@ class PartData:
         # Dimensions
         #
 
-        if hasattr(obj, "Length"):
+        if hasattr(
+            obj,
+            "Length"
+        ):
 
             self.Length = obj.Length
 
 
-        if hasattr(obj, "Width"):
+
+        if hasattr(
+            obj,
+            "Width"
+        ):
 
             self.Width = obj.Width
 
 
-        if hasattr(obj, "Thickness"):
+
+        if hasattr(
+            obj,
+            "Thickness"
+        ):
 
             self.Thickness = obj.Thickness
 
@@ -134,17 +204,37 @@ class PartData:
         # Material
         #
 
-        if hasattr(obj, "Material"):
+        if hasattr(
+            obj,
+            "Material"
+        ):
 
             self.Material = obj.Material
 
 
-        if hasattr(obj, "MaterialCode"):
+
+        if hasattr(
+            obj,
+            "MaterialCode"
+        ):
 
             self.MaterialCode = obj.MaterialCode
 
 
-        if hasattr(obj, "GrainDirection"):
+
+        if hasattr(
+            obj,
+            "Finish"
+        ):
+
+            self.Finish = obj.Finish
+
+
+
+        if hasattr(
+            obj,
+            "GrainDirection"
+        ):
 
             self.GrainDirection = obj.GrainDirection
 
@@ -154,35 +244,33 @@ class PartData:
         # Edges
         #
 
-        if hasattr(obj, "EdgeTop"):
+        for edge in [
 
-            self.EdgeTop = obj.EdgeTop
+            "EdgeTop",
+            "EdgeBottom",
+            "EdgeLeft",
+            "EdgeRight"
 
-
-        if hasattr(obj, "EdgeBottom"):
-
-            self.EdgeBottom = obj.EdgeBottom
-
-
-        if hasattr(obj, "EdgeLeft"):
-
-            self.EdgeLeft = obj.EdgeLeft
+        ]:
 
 
-        if hasattr(obj, "EdgeRight"):
+            if hasattr(
+                obj,
+                edge
+            ):
 
-            self.EdgeRight = obj.EdgeRight
+                setattr(
+                    self,
+                    edge,
+                    getattr(
+                        obj,
+                        edge
+                    )
+                )
 
 
 
-        #
-        # Source
-        #
-
-        if hasattr(obj, "Source"):
-
-            self.Source = obj.Source
-
+        self.applyMaterial()
 
 
         return self
@@ -190,51 +278,129 @@ class PartData:
 
 
     #
-    # Export dictionary
+    # Export
     #
 
-    def toDict(self):
+    def toDict(
+        self
+    ):
+
 
         return {
 
 
-            "Code": self.Code,
-
-            "Name": self.Name,
-
-            "PartType": self.PartType,
-
-            "Role": self.Role,
+            "Code":
+                self.Code,
 
 
-            "Length": self.Length,
-
-            "Width": self.Width,
-
-            "Thickness": self.Thickness,
+            "Name":
+                self.Name,
 
 
-            "Material": self.Material,
-
-            "MaterialCode": self.MaterialCode,
-
-            "Finish": self.Finish,
-
-            "GrainDirection": self.GrainDirection,
+            "Role":
+                self.Role,
 
 
-            "EdgeTop": self.EdgeTop,
-
-            "EdgeBottom": self.EdgeBottom,
-
-            "EdgeLeft": self.EdgeLeft,
-
-            "EdgeRight": self.EdgeRight,
+            "Length":
+                self.Length,
 
 
-            "Source": self.Source,
+            "Width":
+                self.Width,
 
 
-            "GeometryStatus": self.GeometryStatus
+            "Thickness":
+                self.Thickness,
+
+
+            "Material":
+                self.Material,
+
+
+            "MaterialCode":
+                self.MaterialCode,
+
+
+            "Finish":
+                self.Finish,
+
+
+            "GrainDirection":
+                self.GrainDirection,
+
+
+            "EdgeTop":
+                self.EdgeTop,
+
+
+            "EdgeBottom":
+                self.EdgeBottom,
+
+
+            "EdgeLeft":
+                self.EdgeLeft,
+
+
+            "EdgeRight":
+                self.EdgeRight,
+
+
+            "Quantity":
+                self.Quantity,
+
+
+            "Operations":
+                self.Operations,
+
+
+            "Status":
+                self.Status
 
         }
+
+
+
+    #
+    # Import
+    #
+
+    def fromDict(
+        self,
+        data
+    ):
+
+
+        for key, value in data.items():
+
+
+            if hasattr(
+                self,
+                key
+            ):
+
+                setattr(
+                    self,
+                    key,
+                    value
+                )
+
+
+        return self
+
+
+
+    def __repr__(
+        self
+    ):
+
+
+        return (
+
+            f"PartData("
+            f"{self.Code}, "
+            f"{self.Length}x"
+            f"{self.Width}x"
+            f"{self.Thickness}, "
+            f"{self.Material})"
+
+        )

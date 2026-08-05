@@ -11,7 +11,7 @@ class ProjectPropertiesCommand:
 
     def GetResources(self):
         return {
-            "Pixmap": os.path.join(ICONS_DIR, "properties.svg"),
+            "Pixmap": os.path.join(ICONS_DIR, "project.svg"),
             "MenuText": "Datos del proyecto",
             "ToolTip": "Redactar los datos del proyecto"
         }

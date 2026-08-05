@@ -1,5 +1,8 @@
 import FreeCAD
 import FreeCADGui
+import os
+
+from app_paths import ICONS_DIR
 
 from PySide import QtWidgets
 
@@ -14,7 +17,10 @@ class PartsTableCommand:
 
         return {
             "Pixmap":
-                "parts",
+                os.path.join(
+                ICONS_DIR,
+                "explode.svg"
+            ),
 
             "MenuText":
                 "Tabla de piezas",
@@ -49,9 +55,9 @@ class PartsTableCommand:
             return
 
 
-        #
-        # Selected object
-        #
+        # =====================================================
+        # OBJETO SELECCIONADO
+        # =====================================================
 
         selection = (
             FreeCADGui.Selection.getSelection()
@@ -61,9 +67,9 @@ class PartsTableCommand:
         module = None
 
 
-        #
-        # Find BosqoModule
-        #
+        # =====================================================
+        # BUSCAR BOSQOMODULE
+        # =====================================================
 
         for obj in selection:
 
@@ -92,9 +98,9 @@ class PartsTableCommand:
                 break
 
 
-        #
-        # No module selected
-        #
+        # =====================================================
+        # NO HAY MÓDULO SELECCIONADO
+        # =====================================================
 
         if module is None:
 
@@ -105,22 +111,40 @@ class PartsTableCommand:
             return
 
 
-        #
-        # Get real BosqoPart objects
-        #
+        # =====================================================
+        # OBTENER PIEZAS REALES
+        # =====================================================
 
-        parts = (
-            module.Proxy.getParts(
-                module
+        try:
+
+            parts = (
+                module.Proxy.getParts(
+                    module
+                )
             )
-        )
+
+        except Exception as error:
+
+            FreeCAD.Console.PrintError(
+                "Error obteniendo las piezas del módulo: "
+                + str(error)
+                + "\n"
+            )
+
+            return
 
 
-        #
-        # Open table
-        #
+        if parts is None:
+
+            parts = []
+
+
+        # =====================================================
+        # ABRIR EDITOR DEL MÓDULO
+        # =====================================================
 
         dialog = PartTableDialog(
+            module=module,
             parts=parts
         )
 
@@ -133,13 +157,16 @@ class PartsTableCommand:
             return
 
 
-        #
-        # Save changes
-        #
+        # =====================================================
+        # GUARDAR CAMBIOS
+        # =====================================================
 
         try:
 
-            dialog.applyChanges()
+            self.saveParts(
+                parts,
+                dialog.getData()
+            )
 
         except Exception as error:
 
@@ -152,21 +179,206 @@ class PartsTableCommand:
             return
 
 
-        #
-        # Recompute
-        #
+        # =====================================================
+        # RECOMPUTE
+        # =====================================================
 
         document.recompute()
 
 
-        #
-        # Update view
-        #
+        # =====================================================
+        # ACTUALIZAR VISTA
+        # =====================================================
 
-        Gui = FreeCADGui
+        FreeCADGui.updateGui()
 
-        Gui.updateGui()
 
+    # =========================================================
+    # GUARDAR DATOS DE LAS PIEZAS
+    # =========================================================
+
+    def saveParts(
+        self,
+        parts,
+        tableData
+    ):
+
+        if parts is None:
+
+            return
+
+
+        if tableData is None:
+
+            return
+
+
+        # -----------------------------------------------------
+        # Actualizar las piezas existentes
+        # -----------------------------------------------------
+
+        count = min(
+            len(parts),
+            len(tableData)
+        )
+
+
+        for index in range(
+            count
+        ):
+
+            part = parts[
+                index
+            ]
+
+            data = tableData[
+                index
+            ]
+
+
+            if not hasattr(
+                part,
+                "Proxy"
+            ):
+
+                continue
+
+
+            proxy = part.Proxy
+
+
+            if proxy is None:
+
+                continue
+
+
+            if type(proxy).__name__ != (
+                "BosqoPart"
+            ):
+
+                continue
+
+
+            # -------------------------------------------------
+            # Nombre
+            # -------------------------------------------------
+
+            if hasattr(
+                part,
+                "Label"
+            ):
+
+                label = data.get(
+                    "Label",
+                    ""
+                )
+
+
+                if label:
+
+                    part.Label = label
+
+
+            # -------------------------------------------------
+            # Tipo
+            # -------------------------------------------------
+
+            if hasattr(
+                part,
+                "PartType"
+            ):
+
+                part.PartType = data.get(
+                    "PartType",
+                    ""
+                )
+
+
+            # -------------------------------------------------
+            # Largo
+            # -------------------------------------------------
+
+            if hasattr(
+                part,
+                "Length"
+            ):
+
+                part.Length = data.get(
+                    "Length",
+                    0
+                )
+
+
+            # -------------------------------------------------
+            # Ancho
+            # -------------------------------------------------
+
+            if hasattr(
+                part,
+                "Width"
+            ):
+
+                part.Width = data.get(
+                    "Width",
+                    0
+                )
+
+
+            # -------------------------------------------------
+            # Espesor
+            # -------------------------------------------------
+
+            if hasattr(
+                part,
+                "Thickness"
+            ):
+
+                part.Thickness = data.get(
+                    "Thickness",
+                    0
+                )
+
+
+            # -------------------------------------------------
+            # Cantidad
+            # -------------------------------------------------
+
+            if hasattr(
+                part,
+                "Quantity"
+            ):
+
+                part.Quantity = data.get(
+                    "Quantity",
+                    1
+                )
+
+
+            # -------------------------------------------------
+            # Material
+            # -------------------------------------------------
+
+            if hasattr(
+                part,
+                "MaterialCode"
+            ):
+
+                part.MaterialCode = data.get(
+                    "MaterialCode",
+                    ""
+                )
+
+
+            # -------------------------------------------------
+            # Actualizar objeto
+            # -------------------------------------------------
+
+            part.touch()
+
+
+# =============================================================
+# REGISTRAR COMANDO
+# =============================================================
 
 FreeCADGui.addCommand(
     "Bosqo_PartsTable",

@@ -1,5 +1,8 @@
 import FreeCAD
 import FreeCADGui
+import os
+
+from app_paths import ICONS_DIR
 
 from core.data.module_data import ModuleData
 from core.data.module_manufacturing_data import ModuleManufacturingData
@@ -16,7 +19,11 @@ class BOMCommand:
 
         return {
 
-            "Pixmap": "",
+            "Pixmap":                 
+                os.path.join(
+                ICONS_DIR,
+                "bom.svg"
+            ),
 
             "MenuText": "Bill of Materials",
 

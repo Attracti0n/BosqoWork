@@ -5,7 +5,6 @@ from dialogs.part_table_dialog import PartTableDialog
 
 class ParametricModuleDialog(QtWidgets.QDialog):
 
-
     def __init__(
         self,
         parameters=None,
@@ -17,7 +16,7 @@ class ParametricModuleDialog(QtWidgets.QDialog):
         )
 
         self.setWindowTitle(
-            "Módulo paramétrico"
+            "Módulo"
         )
 
         self.resize(
@@ -27,16 +26,20 @@ class ParametricModuleDialog(QtWidgets.QDialog):
 
         self.parameters = parameters
 
+        # Guarda los objetos BosqoPart originales
+        # cuando estamos editando un módulo importado.
+        self.existingParts = []
+
         self.createUI()
 
         self.loadParameters()
 
-        self.recalculate()
+        self.loadModuleParts()
 
 
-    #
-    # Create UI
-    #
+    # =========================================================
+    # UI
+    # =========================================================
 
     def createUI(
         self
@@ -45,20 +48,16 @@ class ParametricModuleDialog(QtWidgets.QDialog):
         mainLayout = QtWidgets.QVBoxLayout()
 
 
-        #
-        # Title
-        #
+        # =====================================================
+        # TÍTULO
+        # =====================================================
 
         title = QtWidgets.QLabel(
-            "Módulo paramétrico"
+            "Módulo"
         )
 
         font = title.font()
-
-        font.setBold(
-            True
-        )
-
+        font.setBold(True)
         font.setPointSize(
             font.pointSize() + 2
         )
@@ -72,9 +71,9 @@ class ParametricModuleDialog(QtWidgets.QDialog):
         )
 
 
-        #
-        # Identification
-        #
+        # =====================================================
+        # IDENTIFICACIÓN
+        # =====================================================
 
         identificationGroup = QtWidgets.QGroupBox(
             "Identificación"
@@ -82,10 +81,6 @@ class ParametricModuleDialog(QtWidgets.QDialog):
 
         identificationLayout = QtWidgets.QGridLayout()
 
-
-        #
-        # Module name
-        #
 
         identificationLayout.addWidget(
             QtWidgets.QLabel(
@@ -97,11 +92,6 @@ class ParametricModuleDialog(QtWidgets.QDialog):
 
 
         self.nameEdit = QtWidgets.QLineEdit()
-
-
-        self.nameEdit.setPlaceholderText(
-            "Nombre del módulo"
-        )
 
 
         identificationLayout.addWidget(
@@ -117,216 +107,176 @@ class ParametricModuleDialog(QtWidgets.QDialog):
             identificationLayout
         )
 
+
         mainLayout.addWidget(
             identificationGroup
         )
 
 
-        #
-        # Module parameters
-        #
+        # =====================================================
+        # DIMENSIONES
+        # =====================================================
 
-        parametersGroup = QtWidgets.QGroupBox(
-            "Parámetros del módulo"
+        dimensionsGroup = QtWidgets.QGroupBox(
+            "Dimensiones del módulo"
         )
 
-        parametersLayout = QtWidgets.QGridLayout()
+        dimensionsLayout = QtWidgets.QGridLayout()
 
 
-        #
-        # Module type
-        #
-
-        parametersLayout.addWidget(
-            QtWidgets.QLabel(
-                "Tipo de módulo:"
-            ),
-            0,
-            0
-        )
-
-
-        self.typeCombo = QtWidgets.QComboBox()
-
-
-        self.typeCombo.addItems(
-            [
-
-                "Módulo bajo",
-                "Módulo alto",
-                "Columna",
-                "Armario",
-                "Personalizado"
-
-            ]
-        )
-
-
-        parametersLayout.addWidget(
-            self.typeCombo,
-            0,
-            1
-        )
-
-
-        #
-        # Width
-        #
+        # -----------------------------------------------------
+        # Ancho
+        # -----------------------------------------------------
 
         self.widthSpin = self.createSpinBox()
 
-
-        parametersLayout.addWidget(
+        dimensionsLayout.addWidget(
             QtWidgets.QLabel(
-                "Anchura:"
+                "Ancho:"
             ),
-            1,
+            0,
             0
         )
 
-
-        parametersLayout.addWidget(
+        dimensionsLayout.addWidget(
             self.widthSpin,
-            1,
+            0,
             1
         )
 
 
-        #
-        # Height
-        #
+        # -----------------------------------------------------
+        # Alto
+        # -----------------------------------------------------
 
         self.heightSpin = self.createSpinBox()
 
-
-        parametersLayout.addWidget(
+        dimensionsLayout.addWidget(
             QtWidgets.QLabel(
-                "Altura:"
+                "Alto:"
             ),
-            1,
+            0,
             2
         )
 
-
-        parametersLayout.addWidget(
+        dimensionsLayout.addWidget(
             self.heightSpin,
-            1,
+            0,
             3
         )
 
 
-        #
-        # Depth
-        #
+        # -----------------------------------------------------
+        # Profundidad
+        # -----------------------------------------------------
 
         self.depthSpin = self.createSpinBox()
 
-
-        parametersLayout.addWidget(
+        dimensionsLayout.addWidget(
             QtWidgets.QLabel(
                 "Profundidad:"
             ),
-            2,
+            1,
             0
         )
 
-
-        parametersLayout.addWidget(
+        dimensionsLayout.addWidget(
             self.depthSpin,
-            2,
+            1,
             1
         )
 
 
-        #
-        # Panel thickness
-        #
+        # -----------------------------------------------------
+        # Espesor panel
+        # -----------------------------------------------------
 
         self.thicknessSpin = self.createSpinBox()
 
-
-        parametersLayout.addWidget(
+        dimensionsLayout.addWidget(
             QtWidgets.QLabel(
                 "Espesor panel:"
             ),
-            2,
+            1,
             2
         )
 
-
-        parametersLayout.addWidget(
+        dimensionsLayout.addWidget(
             self.thicknessSpin,
-            2,
+            1,
             3
         )
 
 
-        #
-        # Back thickness
-        #
+        # -----------------------------------------------------
+        # Espesor fondo
+        # -----------------------------------------------------
 
         self.backThicknessSpin = self.createSpinBox()
 
-
-        parametersLayout.addWidget(
+        dimensionsLayout.addWidget(
             QtWidgets.QLabel(
                 "Espesor fondo:"
             ),
-            3,
+            2,
             0
         )
 
-
-        parametersLayout.addWidget(
+        dimensionsLayout.addWidget(
             self.backThicknessSpin,
-            3,
+            2,
             1
         )
 
 
-        #
-        # Back inset
-        #
+        # -----------------------------------------------------
+        # Retranqueo
+        # -----------------------------------------------------
 
         self.backInsetSpin = self.createSpinBox()
 
-
-        parametersLayout.addWidget(
+        dimensionsLayout.addWidget(
             QtWidgets.QLabel(
                 "Retranqueo trasero:"
             ),
-            3,
+            2,
             2
         )
 
-
-        parametersLayout.addWidget(
+        dimensionsLayout.addWidget(
             self.backInsetSpin,
-            3,
+            2,
             3
         )
 
 
-        parametersGroup.setLayout(
-            parametersLayout
+        dimensionsGroup.setLayout(
+            dimensionsLayout
         )
+
 
         mainLayout.addWidget(
-            parametersGroup
+            dimensionsGroup
         )
 
 
-        #
-        # Pieces
-        #
+        # =====================================================
+        # PIEZAS
+        # =====================================================
 
         piecesGroup = QtWidgets.QGroupBox(
-            "Piezas del módulo"
+            "Piezas"
         )
-
 
         piecesLayout = QtWidgets.QVBoxLayout()
 
+
+        # -----------------------------------------------------
+        # Tabla
+        #
+        # No usamos el QDialog visualmente.
+        # Solo reutilizamos su tabla y sus métodos.
+        # -----------------------------------------------------
 
         self.partsTable = PartTableDialog(
             parts=[],
@@ -336,6 +286,46 @@ class ParametricModuleDialog(QtWidgets.QDialog):
 
         piecesLayout.addWidget(
             self.partsTable.table
+        )
+
+
+        # -----------------------------------------------------
+        # Botones de piezas
+        # -----------------------------------------------------
+
+        partsButtonsLayout = QtWidgets.QHBoxLayout()
+
+
+        self.addPartButton = QtWidgets.QPushButton(
+            "Añadir pieza"
+        )
+
+        self.deletePartButton = QtWidgets.QPushButton(
+            "Eliminar"
+        )
+
+        self.duplicatePartButton = QtWidgets.QPushButton(
+            "Duplicar"
+        )
+
+
+        partsButtonsLayout.addWidget(
+            self.addPartButton
+        )
+
+        partsButtonsLayout.addWidget(
+            self.deletePartButton
+        )
+
+        partsButtonsLayout.addWidget(
+            self.duplicatePartButton
+        )
+
+        partsButtonsLayout.addStretch()
+
+
+        piecesLayout.addLayout(
+            partsButtonsLayout
         )
 
 
@@ -349,24 +339,15 @@ class ParametricModuleDialog(QtWidgets.QDialog):
         )
 
 
-        #
-        # Buttons
-        #
+        # =====================================================
+        # BOTONES PRINCIPALES
+        # =====================================================
 
         buttonLayout = QtWidgets.QHBoxLayout()
 
 
-        #
-        # Recalculate
-        #
-
         self.recalculateButton = QtWidgets.QPushButton(
             "Recalcular"
-        )
-
-
-        self.recalculateButton.clicked.connect(
-            self.recalculate
         )
 
 
@@ -378,38 +359,19 @@ class ParametricModuleDialog(QtWidgets.QDialog):
         buttonLayout.addStretch()
 
 
-        #
-        # Apply
-        #
-
-        self.applyButton = QtWidgets.QPushButton(
-            "Aplicar"
+        self.saveButton = QtWidgets.QPushButton(
+            "Guardar cambios"
         )
 
-
-        self.applyButton.clicked.connect(
-            self.apply
-        )
-
-
-        buttonLayout.addWidget(
-            self.applyButton
-        )
-
-
-        #
-        # Cancel
-        #
 
         self.cancelButton = QtWidgets.QPushButton(
             "Cancelar"
         )
 
 
-        self.cancelButton.clicked.connect(
-            self.reject
+        buttonLayout.addWidget(
+            self.saveButton
         )
-
 
         buttonLayout.addWidget(
             self.cancelButton
@@ -421,14 +383,44 @@ class ParametricModuleDialog(QtWidgets.QDialog):
         )
 
 
+        # =====================================================
+        # CONEXIONES
+        # =====================================================
+
+        self.recalculateButton.clicked.connect(
+            self.recalculate
+        )
+
+        self.saveButton.clicked.connect(
+            self.apply
+        )
+
+        self.cancelButton.clicked.connect(
+            self.reject
+        )
+
+
+        self.addPartButton.clicked.connect(
+            self.partsTable.addPart
+        )
+
+        self.deletePartButton.clicked.connect(
+            self.partsTable.deletePart
+        )
+
+        self.duplicatePartButton.clicked.connect(
+            self.partsTable.duplicatePart
+        )
+
+
         self.setLayout(
             mainLayout
         )
 
 
-    #
-    # SpinBox
-    #
+    # =========================================================
+    # SPINBOX
+    # =========================================================
 
     def createSpinBox(
         self
@@ -436,29 +428,25 @@ class ParametricModuleDialog(QtWidgets.QDialog):
 
         spin = QtWidgets.QDoubleSpinBox()
 
-
         spin.setRange(
             0,
             10000
         )
 
-
         spin.setDecimals(
             2
         )
-
 
         spin.setSuffix(
             " mm"
         )
 
-
         return spin
 
 
-    #
-    # Load parameters
-    #
+    # =========================================================
+    # CARGAR PARÁMETROS
+    # =========================================================
 
     def loadParameters(
         self
@@ -468,13 +456,12 @@ class ParametricModuleDialog(QtWidgets.QDialog):
 
 
         if obj is None:
-
             return
 
 
-        #
-        # Name
-        #
+        # -----------------------------------------------------
+        # Nombre
+        # -----------------------------------------------------
 
         if hasattr(
             obj,
@@ -488,32 +475,9 @@ class ParametricModuleDialog(QtWidgets.QDialog):
             )
 
 
-        #
-        # Type
-        #
-
-        if hasattr(
-            obj,
-            "ModuleType"
-        ):
-
-            index = self.typeCombo.findText(
-                str(
-                    obj.ModuleType
-                )
-            )
-
-
-            if index >= 0:
-
-                self.typeCombo.setCurrentIndex(
-                    index
-                )
-
-
-        #
-        # Width
-        #
+        # -----------------------------------------------------
+        # Ancho
+        # -----------------------------------------------------
 
         if hasattr(
             obj,
@@ -521,15 +485,15 @@ class ParametricModuleDialog(QtWidgets.QDialog):
         ):
 
             self.widthSpin.setValue(
-                float(
-                    obj.ModuleWidth.Value
+                self.quantityValue(
+                    obj.ModuleWidth
                 )
             )
 
 
-        #
-        # Height
-        #
+        # -----------------------------------------------------
+        # Alto
+        # -----------------------------------------------------
 
         if hasattr(
             obj,
@@ -537,15 +501,15 @@ class ParametricModuleDialog(QtWidgets.QDialog):
         ):
 
             self.heightSpin.setValue(
-                float(
-                    obj.ModuleHeight.Value
+                self.quantityValue(
+                    obj.ModuleHeight
                 )
             )
 
 
-        #
-        # Depth
-        #
+        # -----------------------------------------------------
+        # Profundidad
+        # -----------------------------------------------------
 
         if hasattr(
             obj,
@@ -553,15 +517,15 @@ class ParametricModuleDialog(QtWidgets.QDialog):
         ):
 
             self.depthSpin.setValue(
-                float(
-                    obj.ModuleDepth.Value
+                self.quantityValue(
+                    obj.ModuleDepth
                 )
             )
 
 
-        #
-        # Panel thickness
-        #
+        # -----------------------------------------------------
+        # Espesor panel
+        # -----------------------------------------------------
 
         if hasattr(
             obj,
@@ -569,15 +533,15 @@ class ParametricModuleDialog(QtWidgets.QDialog):
         ):
 
             self.thicknessSpin.setValue(
-                float(
-                    obj.PanelThickness.Value
+                self.quantityValue(
+                    obj.PanelThickness
                 )
             )
 
 
-        #
-        # Back thickness
-        #
+        # -----------------------------------------------------
+        # Espesor fondo
+        # -----------------------------------------------------
 
         if hasattr(
             obj,
@@ -585,15 +549,15 @@ class ParametricModuleDialog(QtWidgets.QDialog):
         ):
 
             self.backThicknessSpin.setValue(
-                float(
-                    obj.BackThickness.Value
+                self.quantityValue(
+                    obj.BackThickness
                 )
             )
 
 
-        #
-        # Back inset
-        #
+        # -----------------------------------------------------
+        # Retranqueo
+        # -----------------------------------------------------
 
         if hasattr(
             obj,
@@ -601,15 +565,202 @@ class ParametricModuleDialog(QtWidgets.QDialog):
         ):
 
             self.backInsetSpin.setValue(
-                float(
-                    obj.BackInset.Value
+                self.quantityValue(
+                    obj.BackInset
                 )
             )
 
 
-    #
-    # Update parameters
-    #
+    # =========================================================
+    # QUANTITY
+    # =========================================================
+
+    def quantityValue(
+        self,
+        value
+    ):
+
+        try:
+
+            if hasattr(
+                value,
+                "Value"
+            ):
+
+                return float(
+                    value.Value
+                )
+
+
+            return float(
+                value
+            )
+
+        except Exception:
+
+            return 0
+
+
+    # =========================================================
+    # BUSCAR PIEZAS DEL MÓDULO
+    # =========================================================
+
+    def findModuleParts(
+        self
+    ):
+
+        module = self.parameters
+
+
+        if module is None:
+            return []
+
+
+        document = getattr(
+            module,
+            "Document",
+            None
+        )
+
+
+        if document is None:
+            return []
+
+
+        result = []
+
+
+        for part in document.Objects:
+
+            if not hasattr(
+                part,
+                "Proxy"
+            ):
+
+                continue
+
+
+            proxy = part.Proxy
+
+
+            if proxy is None:
+                continue
+
+
+            if type(proxy).__name__ != "BosqoPart":
+                continue
+
+
+            if self.belongsToModule(
+                part,
+                module
+            ):
+
+                result.append(
+                    part
+                )
+
+
+        return result
+
+
+    # =========================================================
+    # COMPROBAR PERTENENCIA
+    # =========================================================
+
+    def belongsToModule(
+        self,
+        part,
+        module
+    ):
+
+        # -----------------------------------------------------
+        # Parent
+        # -----------------------------------------------------
+
+        if hasattr(
+            part,
+            "Parent"
+        ):
+
+            try:
+
+                if part.Parent == module:
+
+                    return True
+
+            except Exception:
+
+                pass
+
+
+        # -----------------------------------------------------
+        # Group
+        # -----------------------------------------------------
+
+        if hasattr(
+            module,
+            "Group"
+        ):
+
+            try:
+
+                for child in module.Group:
+
+                    if child == part:
+
+                        return True
+
+            except Exception:
+
+                pass
+
+
+        return False
+
+
+    # =========================================================
+    # CARGAR PIEZAS
+    # =========================================================
+
+    def loadModuleParts(
+        self
+    ):
+
+        existingParts = self.findModuleParts()
+
+
+        self.existingParts = (
+            existingParts
+        )
+
+
+        # -----------------------------------------------------
+        # Hay piezas existentes
+        # -----------------------------------------------------
+
+        if existingParts:
+
+            self.partsTable.parts = (
+                existingParts
+            )
+
+            self.partsTable.loadParts()
+
+            return
+
+
+        # -----------------------------------------------------
+        # No hay piezas:
+        # módulo paramétrico
+        # -----------------------------------------------------
+
+        self.calculateParts()
+
+
+    # =========================================================
+    # ACTUALIZAR PARÁMETROS
+    # =========================================================
 
     def updateParameters(
         self
@@ -619,18 +770,14 @@ class ParametricModuleDialog(QtWidgets.QDialog):
 
 
         if obj is None:
-
             return
 
 
-        #
-        # Name
-        #
+        # -----------------------------------------------------
+        # Nombre
+        # -----------------------------------------------------
 
-        name = (
-            self.nameEdit.text()
-            .strip()
-        )
+        name = self.nameEdit.text().strip()
 
 
         if not name:
@@ -638,103 +785,134 @@ class ParametricModuleDialog(QtWidgets.QDialog):
             name = "Nuevo módulo"
 
 
-        obj.ModuleName = name
+        if hasattr(
+            obj,
+            "ModuleName"
+        ):
+
+            obj.ModuleName = name
+
 
         obj.Label = name
 
 
-        #
-        # Type
-        #
+        # -----------------------------------------------------
+        # Dimensiones
+        # -----------------------------------------------------
 
         if hasattr(
             obj,
-            "ModuleType"
+            "ModuleWidth"
         ):
 
-            obj.ModuleType = (
-                self.typeCombo.currentText()
+            obj.ModuleWidth = (
+                self.widthSpin.value()
             )
 
 
-        #
-        # Dimensions
-        #
+        if hasattr(
+            obj,
+            "ModuleHeight"
+        ):
 
-        obj.ModuleWidth = (
-            self.widthSpin.value()
-        )
-
-
-        obj.ModuleHeight = (
-            self.heightSpin.value()
-        )
+            obj.ModuleHeight = (
+                self.heightSpin.value()
+            )
 
 
-        obj.ModuleDepth = (
-            self.depthSpin.value()
-        )
+        if hasattr(
+            obj,
+            "ModuleDepth"
+        ):
+
+            obj.ModuleDepth = (
+                self.depthSpin.value()
+            )
 
 
-        #
-        # Thickness
-        #
+        # -----------------------------------------------------
+        # Espesores
+        # -----------------------------------------------------
 
-        obj.PanelThickness = (
-            self.thicknessSpin.value()
-        )
+        if hasattr(
+            obj,
+            "PanelThickness"
+        ):
 
-
-        obj.BackThickness = (
-            self.backThicknessSpin.value()
-        )
-
-
-        #
-        # Back inset
-        #
-
-        obj.BackInset = (
-            self.backInsetSpin.value()
-        )
+            obj.PanelThickness = (
+                self.thicknessSpin.value()
+            )
 
 
-    #
-    # Recalculate
-    #
+        if hasattr(
+            obj,
+            "BackThickness"
+        ):
 
-    def recalculate(
+            obj.BackThickness = (
+                self.backThicknessSpin.value()
+            )
+
+
+        if hasattr(
+            obj,
+            "BackInset"
+        ):
+
+            obj.BackInset = (
+                self.backInsetSpin.value()
+            )
+
+
+    # =========================================================
+    # CALCULAR PIEZAS
+    # =========================================================
+
+    def calculateParts(
         self
     ):
 
         self.updateParameters()
 
 
-        if self.parameters is None:
+        obj = self.parameters
 
+
+        if obj is None:
             return
 
 
-        proxy = self.parameters.Proxy
-
-
-        if proxy is None:
-
-            return
-
-
-        #
-        # Calculate parts
-        #
-
-        parts = proxy.calculateParts(
-            self.parameters
+        proxy = getattr(
+            obj,
+            "Proxy",
+            None
         )
 
 
-        #
-        # Update table
-        #
+        if proxy is None:
+            return
+
+
+        if not hasattr(
+            proxy,
+            "calculateParts"
+        ):
+
+            return
+
+
+        parts = proxy.calculateParts(
+            obj
+        )
+
+
+        if not isinstance(
+            parts,
+            list
+        ):
+
+            parts = []
+
 
         self.partsTable.parts = parts
 
@@ -742,45 +920,227 @@ class ParametricModuleDialog(QtWidgets.QDialog):
         self.partsTable.loadParts()
 
 
-    #
-    # Apply
-    #
+    # =========================================================
+    # RECALCULAR
+    # =========================================================
+
+    def recalculate(
+        self
+    ):
+
+        self.calculateParts()
+
+
+    # =========================================================
+    # GUARDAR PIEZAS IMPORTADAS
+    # =========================================================
+
+    def saveExistingParts(
+        self
+    ):
+
+        if not self.existingParts:
+
+            return
+
+
+        tableData = (
+            self.partsTable.getData()
+        )
+
+
+        # -----------------------------------------------------
+        # Actualizar las piezas existentes
+        # -----------------------------------------------------
+
+        count = min(
+            len(
+                self.existingParts
+            ),
+            len(
+                tableData
+            )
+        )
+
+
+        for index in range(
+            count
+        ):
+
+            part = self.existingParts[
+                index
+            ]
+
+            data = tableData[
+                index
+            ]
+
+
+            # -------------------------------------------------
+            # Nombre
+            # -------------------------------------------------
+
+            if hasattr(
+                part,
+                "Label"
+            ):
+
+                part.Label = data.get(
+                    "Label",
+                    part.Label
+                )
+
+
+            # -------------------------------------------------
+            # Tipo
+            # -------------------------------------------------
+
+            if hasattr(
+                part,
+                "PartType"
+            ):
+
+                part.PartType = data.get(
+                    "PartType",
+                    ""
+                )
+
+
+            # -------------------------------------------------
+            # Largo
+            # -------------------------------------------------
+
+            if hasattr(
+                part,
+                "Length"
+            ):
+
+                part.Length = data.get(
+                    "Length",
+                    0
+                )
+
+
+            # -------------------------------------------------
+            # Ancho
+            # -------------------------------------------------
+
+            if hasattr(
+                part,
+                "Width"
+            ):
+
+                part.Width = data.get(
+                    "Width",
+                    0
+                )
+
+
+            # -------------------------------------------------
+            # Espesor
+            # -------------------------------------------------
+
+            if hasattr(
+                part,
+                "Thickness"
+            ):
+
+                part.Thickness = data.get(
+                    "Thickness",
+                    0
+                )
+
+
+            # -------------------------------------------------
+            # Cantidad
+            # -------------------------------------------------
+
+            if hasattr(
+                part,
+                "Quantity"
+            ):
+
+                part.Quantity = data.get(
+                    "Quantity",
+                    1
+                )
+
+
+            # -------------------------------------------------
+            # Material
+            # -------------------------------------------------
+
+            if hasattr(
+                part,
+                "MaterialCode"
+            ):
+
+                part.MaterialCode = data.get(
+                    "MaterialCode",
+                    ""
+                )
+
+
+            part.touch()
+
+
+    # =========================================================
+    # APLICAR / GUARDAR
+    # =========================================================
 
     def apply(
         self
     ):
 
+        # -----------------------------------------------------
+        # Guardar datos del módulo
+        # -----------------------------------------------------
+
         self.updateParameters()
 
 
-        #
-        # Recalculate
-        #
+        # -----------------------------------------------------
+        # Si existen piezas reales/importadas,
+        # guardar sus cambios.
+        # -----------------------------------------------------
 
-        self.recalculate()
+        if self.existingParts:
 
-
-        #
-        # Recompute document
-        #
-
-        if self.parameters is not None:
-
-            if self.parameters.Document:
-
-                self.parameters.Document.recompute()
+            self.saveExistingParts()
 
 
-        #
-        # Accept dialog
-        #
+        # -----------------------------------------------------
+        # Si NO existen piezas reales,
+        # son piezas paramétricas.
+        # -----------------------------------------------------
+
+        else:
+
+            self.calculateParts()
+
+
+        # -----------------------------------------------------
+        # Recompute
+        # -----------------------------------------------------
+
+        document = getattr(
+            self.parameters,
+            "Document",
+            None
+        )
+
+
+        if document is not None:
+
+            document.recompute()
+
 
         self.accept()
 
 
-    #
-    # Get parameters
-    #
+    # =========================================================
+    # OBTENER PARÁMETROS
+    # =========================================================
 
     def getParameters(
         self
@@ -790,9 +1150,6 @@ class ParametricModuleDialog(QtWidgets.QDialog):
 
             "ModuleName":
                 self.nameEdit.text().strip(),
-
-            "ModuleType":
-                self.typeCombo.currentText(),
 
             "ModuleWidth":
                 self.widthSpin.value(),
@@ -815,9 +1172,9 @@ class ParametricModuleDialog(QtWidgets.QDialog):
         }
 
 
-    #
-    # Get parts
-    #
+    # =========================================================
+    # OBTENER PIEZAS
+    # =========================================================
 
     def getParts(
         self

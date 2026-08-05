@@ -2,7 +2,6 @@ import os
 
 import FreeCADGui
 
-import commands.add_module
 import commands.add_part
 import commands.project_properties
 import commands.import_parts
@@ -42,7 +41,6 @@ class BosqoWorkbench(FreeCADGui.Workbench):
         self.appendToolbar(
             "Crear",
             [
-                "Bosqo_AddModule",
                 "Bosqo_AddPart",
                 "Bosqo_ParametricModule",
                 "Bosqo_ProjectProperties",
@@ -74,7 +72,6 @@ class BosqoWorkbench(FreeCADGui.Workbench):
         self.appendMenu(
             "Crear",
             [
-                "Bosqo_AddModule",
                 "Bosqo_AddPart",
                 "Bosqo_ParametricModule",
                 "Bosqo_ProjectProperties",

@@ -1,5 +1,8 @@
 import FreeCAD
 import FreeCADGui
+import os
+
+from app_paths import ICONS_DIR
 
 from PySide import QtWidgets
 
@@ -23,7 +26,10 @@ class ParametricModuleCommand:
         return {
 
             "Pixmap":
-                "module",
+                os.path.join(
+                ICONS_DIR,
+                "module.svg"
+            ),
 
             "MenuText":
                 "Módulo paramétrico",

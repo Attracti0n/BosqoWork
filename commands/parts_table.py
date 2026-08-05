@@ -8,6 +8,8 @@ from PySide import QtWidgets
 
 from dialogs.part_table_dialog import PartTableDialog
 
+from core.builders.module_builder import ModuleBuilder
+
 
 class PartsTableCommand:
 
@@ -18,9 +20,9 @@ class PartsTableCommand:
         return {
             "Pixmap":
                 os.path.join(
-                ICONS_DIR,
-                "explode.svg"
-            ),
+                    ICONS_DIR,
+                    "explode.svg"
+                ),
 
             "MenuText":
                 "Tabla de piezas",
@@ -43,12 +45,15 @@ class PartsTableCommand:
         )
 
 
+    # =========================================================
+    # ACTIVATED
+    # =========================================================
+
     def Activated(
         self
     ):
 
         document = FreeCAD.ActiveDocument
-
 
         if document is None:
 
@@ -56,13 +61,12 @@ class PartsTableCommand:
 
 
         # =====================================================
-        # OBJETO SELECCIONADO
+        # SELECCIÓN
         # =====================================================
 
         selection = (
             FreeCADGui.Selection.getSelection()
         )
-
 
         module = None
 
@@ -83,7 +87,6 @@ class PartsTableCommand:
 
             proxy = obj.Proxy
 
-
             if proxy is None:
 
                 continue
@@ -99,20 +102,22 @@ class PartsTableCommand:
 
 
         # =====================================================
-        # NO HAY MÓDULO SELECCIONADO
+        # NO HAY MÓDULO
         # =====================================================
 
         if module is None:
 
-            FreeCAD.Console.PrintMessage(
-                "Selecciona primero un módulo.\n"
+            QtWidgets.QMessageBox.information(
+                None,
+                "Tabla de piezas",
+                "Selecciona primero un módulo."
             )
 
             return
 
 
         # =====================================================
-        # OBTENER PIEZAS REALES
+        # OBTENER PIEZAS
         # =====================================================
 
         try:
@@ -127,8 +132,10 @@ class PartsTableCommand:
 
             FreeCAD.Console.PrintError(
                 "Error obteniendo las piezas del módulo: "
-                + str(error)
-                + "\n"
+                +
+                str(error)
+                +
+                "\n"
             )
 
             return
@@ -140,7 +147,7 @@ class PartsTableCommand:
 
 
         # =====================================================
-        # ABRIR EDITOR DEL MÓDULO
+        # ABRIR EDITOR
         # =====================================================
 
         dialog = PartTableDialog(
@@ -152,58 +159,30 @@ class PartsTableCommand:
         result = dialog.exec_()
 
 
-        if result != QtWidgets.QDialog.Accepted:
+        if result != (
+            QtWidgets.QDialog.Accepted
+        ):
 
             return
 
 
         # =====================================================
-        # GUARDAR CAMBIOS
+        # OBTENER DATOS
         # =====================================================
 
         try:
 
-            self.saveParts(
-                parts,
-                dialog.getData()
-            )
+            tableData = dialog.getData()
 
         except Exception as error:
 
             FreeCAD.Console.PrintError(
-                "Error guardando piezas: "
-                + str(error)
-                + "\n"
+                "Error obteniendo datos de la tabla: "
+                +
+                str(error)
+                +
+                "\n"
             )
-
-            return
-
-
-        # =====================================================
-        # RECOMPUTE
-        # =====================================================
-
-        document.recompute()
-
-
-        # =====================================================
-        # ACTUALIZAR VISTA
-        # =====================================================
-
-        FreeCADGui.updateGui()
-
-
-    # =========================================================
-    # GUARDAR DATOS DE LAS PIEZAS
-    # =========================================================
-
-    def saveParts(
-        self,
-        parts,
-        tableData
-    ):
-
-        if parts is None:
 
             return
 
@@ -213,167 +192,170 @@ class PartsTableCommand:
             return
 
 
-        # -----------------------------------------------------
-        # Actualizar las piezas existentes
-        # -----------------------------------------------------
+        # =====================================================
+        # GUARDAR / RECALCULAR
+        # =====================================================
 
-        count = min(
-            len(parts),
-            len(tableData)
+        try:
+
+            self.rebuildModule(
+                module,
+                tableData
+            )
+
+        except Exception as error:
+
+            FreeCAD.Console.PrintError(
+                "Error reconstruyendo módulo: "
+                +
+                str(error)
+                +
+                "\n"
+            )
+
+            QtWidgets.QMessageBox.critical(
+                None,
+                "Error",
+                "No se ha podido recalcular el módulo.\n\n"
+                +
+                str(error)
+            )
+
+            return
+
+
+        # =====================================================
+        # RECOMPUTE
+        # =====================================================
+
+        try:
+
+            document.recompute()
+
+        except Exception as error:
+
+            FreeCAD.Console.PrintError(
+                "Error en recompute: "
+                +
+                str(error)
+                +
+                "\n"
+            )
+
+
+        # =====================================================
+        # ACTUALIZAR VISTA
+        # =====================================================
+
+        try:
+
+            FreeCADGui.updateGui()
+
+        except Exception:
+
+            pass
+
+
+    # =========================================================
+    # REBUILD MODULE
+    # =========================================================
+
+    def rebuildModule(
+        self,
+        module,
+        tableData
+    ):
+
+        #
+        # tableData puede venir en dos formatos:
+        #
+        # 1. lista de piezas
+        #
+        # 2. diccionario con "Parts"
+        #
+        #
+
+        userParts = tableData
+
+
+        if isinstance(
+            tableData,
+            dict
+        ):
+
+            userParts = tableData.get(
+                "Parts",
+                []
+            )
+
+
+        if userParts is None:
+
+            userParts = []
+
+
+        if not isinstance(
+            userParts,
+            list
+        ):
+
+            userParts = list(
+                userParts
+            )
+
+
+        # =====================================================
+        # LIMPIAR DATOS
+        # =====================================================
+
+        cleanParts = []
+
+
+        for definition in userParts:
+
+            if not isinstance(
+                definition,
+                dict
+            ):
+
+                continue
+
+
+            cleanParts.append(
+                dict(
+                    definition
+                )
+            )
+
+
+        # =====================================================
+        # CONSTRUIR DE NUEVO
+        # =====================================================
+
+        ModuleBuilder.build(
+            module,
+            user_parts=cleanParts
         )
 
 
-        for index in range(
-            count
-        ):
+        # =====================================================
+        # RECOMPUTE
+        # =====================================================
 
-            part = parts[
-                index
-            ]
-
-            data = tableData[
-                index
-            ]
+        module.Document.recompute()
 
 
-            if not hasattr(
-                part,
-                "Proxy"
-            ):
+        # =====================================================
+        # ACTUALIZAR VISTA
+        # =====================================================
 
-                continue
+        try:
 
+            FreeCADGui.updateGui()
 
-            proxy = part.Proxy
+        except Exception:
 
-
-            if proxy is None:
-
-                continue
-
-
-            if type(proxy).__name__ != (
-                "BosqoPart"
-            ):
-
-                continue
-
-
-            # -------------------------------------------------
-            # Nombre
-            # -------------------------------------------------
-
-            if hasattr(
-                part,
-                "Label"
-            ):
-
-                label = data.get(
-                    "Label",
-                    ""
-                )
-
-
-                if label:
-
-                    part.Label = label
-
-
-            # -------------------------------------------------
-            # Tipo
-            # -------------------------------------------------
-
-            if hasattr(
-                part,
-                "PartType"
-            ):
-
-                part.PartType = data.get(
-                    "PartType",
-                    ""
-                )
-
-
-            # -------------------------------------------------
-            # Largo
-            # -------------------------------------------------
-
-            if hasattr(
-                part,
-                "Length"
-            ):
-
-                part.Length = data.get(
-                    "Length",
-                    0
-                )
-
-
-            # -------------------------------------------------
-            # Ancho
-            # -------------------------------------------------
-
-            if hasattr(
-                part,
-                "Width"
-            ):
-
-                part.Width = data.get(
-                    "Width",
-                    0
-                )
-
-
-            # -------------------------------------------------
-            # Espesor
-            # -------------------------------------------------
-
-            if hasattr(
-                part,
-                "Thickness"
-            ):
-
-                part.Thickness = data.get(
-                    "Thickness",
-                    0
-                )
-
-
-            # -------------------------------------------------
-            # Cantidad
-            # -------------------------------------------------
-
-            if hasattr(
-                part,
-                "Quantity"
-            ):
-
-                part.Quantity = data.get(
-                    "Quantity",
-                    1
-                )
-
-
-            # -------------------------------------------------
-            # Material
-            # -------------------------------------------------
-
-            if hasattr(
-                part,
-                "MaterialCode"
-            ):
-
-                part.MaterialCode = data.get(
-                    "MaterialCode",
-                    ""
-                )
-
-
-            # -------------------------------------------------
-            # Actualizar objeto
-            # -------------------------------------------------
-
-            part.touch()
+            pass
 
 
 # =============================================================

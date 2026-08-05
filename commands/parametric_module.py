@@ -2,22 +2,29 @@ import FreeCAD
 import FreeCADGui
 import os
 
-from app_paths import ICONS_DIR
-
 from PySide import QtWidgets
 
+from app_paths import ICONS_DIR
+
 from objects.bosqo_module import BosqoModule
-from objects.bosqo_module_parameters import BosqoModuleParameters
+from objects.bosqo_module_parameters import (
+    BosqoModuleParameters
+)
 
 from dialogs.parametric_module_dialog import (
     ParametricModuleDialog
 )
 
-from core.builders.module_builder import ModuleBuilder
+from core.builders.module_builder import (
+    ModuleBuilder
+)
 
 
 class ParametricModuleCommand:
 
+    # =========================================================
+    # RESOURCES
+    # =========================================================
 
     def GetResources(
         self
@@ -27,9 +34,9 @@ class ParametricModuleCommand:
 
             "Pixmap":
                 os.path.join(
-                ICONS_DIR,
-                "module.svg"
-            ),
+                    ICONS_DIR,
+                    "module.svg"
+                ),
 
             "MenuText":
                 "Módulo paramétrico",
@@ -39,9 +46,12 @@ class ParametricModuleCommand:
 
             "Accel":
                 ""
-
         }
 
+
+    # =========================================================
+    # ACTIVE
+    # =========================================================
 
     def IsActive(
         self
@@ -53,14 +63,15 @@ class ParametricModuleCommand:
         )
 
 
+    # =========================================================
+    # ACTIVATED
+    # =========================================================
+
     def Activated(
         self
     ):
 
-        document = (
-            FreeCAD.ActiveDocument
-        )
-
+        document = FreeCAD.ActiveDocument
 
         if document is None:
 
@@ -68,7 +79,7 @@ class ParametricModuleCommand:
 
 
         #
-        # Create real module container
+        # Create module container
         #
 
         module = document.addObject(
@@ -76,15 +87,14 @@ class ParametricModuleCommand:
             "BosqoModule"
         )
 
-
         BosqoModule(
             module
         )
 
 
         #
-        # Make sure module has the
-        # parametric properties.
+        # Make sure required module
+        # properties exist.
         #
 
         self.ensureModuleProperties(
@@ -93,7 +103,10 @@ class ParametricModuleCommand:
 
 
         #
-        # Create parameter object
+        # Create parameter object.
+        #
+        # This object stores the values used
+        # by the dialog.
         #
 
         parameters = document.addObject(
@@ -101,14 +114,14 @@ class ParametricModuleCommand:
             "BosqoModuleParameters"
         )
 
-
         BosqoModuleParameters(
             parameters
         )
 
 
         #
-        # Add parameters object to module
+        # Put parameter object inside
+        # the module.
         #
 
         module.addObject(
@@ -124,7 +137,6 @@ class ParametricModuleCommand:
             "Módulo paramétrico"
         )
 
-
         parameters.Label = (
             "Parámetros"
         )
@@ -133,9 +145,9 @@ class ParametricModuleCommand:
         document.recompute()
 
 
-        #
-        # Open dialog
-        #
+        # =====================================================
+        # OPEN DIALOG
+        # =====================================================
 
         dialog = ParametricModuleDialog(
             parameters
@@ -145,84 +157,186 @@ class ParametricModuleCommand:
         result = dialog.exec_()
 
 
-        #
-        # Cancel
-        #
+        # =====================================================
+        # CANCEL
+        # =====================================================
 
-        if result != QtWidgets.QDialog.Accepted:
+        if (
+            result
+            !=
+            QtWidgets.QDialog.Accepted
+        ):
 
-            document.removeObject(
-                module.Name
-            )
+            try:
+
+                document.removeObject(
+                    module.Name
+                )
+
+            except Exception:
+
+                pass
+
 
             document.recompute()
 
             return
 
 
-        #
-        # Copy parameters
-        # to the real module.
-        #
-
-        self.copyParameters(
-            parameters,
-            module
-        )
-
-
-        #
-        # Remove parameter object
-        # from the module tree.
-        #
-        # We keep the parameters object
-        # because it can be useful for
-        # editing later.
-        #
-
-        parameters.Label = (
-            "Parámetros"
-        )
-
-
-        #
-        # Recompute module properties
-        #
-
-        document.recompute()
-
-
-        #
-        # Build module parts
-        #
+        # =====================================================
+        # GET DATA FROM DIALOG
+        # =====================================================
 
         try:
 
-            ModuleBuilder.build(
-                module
+            dialogData = dialog.getData()
+
+        except Exception as error:
+
+            FreeCAD.Console.PrintError(
+                "Error obteniendo datos del módulo: "
+                +
+                str(error)
+                +
+                "\n"
             )
+
+            QtWidgets.QMessageBox.critical(
+                None,
+                "Error",
+                "No se pudieron obtener los datos "
+                "del módulo:\n\n"
+                +
+                str(error)
+            )
+
+            try:
+
+                document.removeObject(
+                    module.Name
+                )
+
+            except Exception:
+
+                pass
+
+            document.recompute()
+
+            return
+
+
+        # =====================================================
+        # COPY MODULE PARAMETERS
+        # =====================================================
+
+        self.copyParameters(
+            parameters,
+            module,
+            dialogData
+        )
+
+
+        # =====================================================
+        # USER PARTS
+        # =====================================================
+
+        userParts = dialogData.get(
+            "Parts",
+            []
+        )
+
+
+        #
+        # Make an independent copy.
+        #
+        # This is important because the dialog
+        # will be destroyed after this command.
+        #
+
+        parts = []
+
+        for definition in userParts:
+
+            if not isinstance(
+                definition,
+                dict
+            ):
+
+                continue
+
+
+            parts.append(
+                dict(
+                    definition
+                )
+            )
+
+
+        # =====================================================
+        # BUILD MODULE
+        # =====================================================
+
+        try:
+
+            #
+            # IMPORTANT:
+            #
+            # ModuleBuilder must receive the
+            # definitions coming from the dialog.
+            #
+
+            ModuleBuilder.build(
+                module,
+                parts
+            )
+
 
         except Exception as error:
 
             FreeCAD.Console.PrintError(
                 "Error building parametric module: "
-                + str(error)
-                + "\n"
+                +
+                str(error)
+                +
+                "\n"
             )
 
-            raise
+
+            QtWidgets.QMessageBox.critical(
+                None,
+                "Error",
+                "Error creando el módulo:\n\n"
+                +
+                str(error)
+            )
 
 
-        #
-        # Final recompute
-        #
+            try:
+
+                document.removeObject(
+                    module.Name
+                )
+
+            except Exception:
+
+                pass
+
+
+            document.recompute()
+
+            return
+
+
+        # =====================================================
+        # FINAL RECOMPUTE
+        # =====================================================
 
         document.recompute()
 
 
-        #
-        # Fit view
-        #
+        # =====================================================
+        # FIT VIEW
+        # =====================================================
 
         try:
 
@@ -233,9 +347,9 @@ class ParametricModuleCommand:
             pass
 
 
-    #
-    # Ensure module properties
-    #
+    # =========================================================
+    # ENSURE MODULE PROPERTIES
+    # =========================================================
 
     def ensureModuleProperties(
         self,
@@ -255,7 +369,7 @@ class ParametricModuleCommand:
                 "App::PropertyLength",
                 "PanelThickness",
                 "Parameters",
-                "Thickness of structural panels"
+                "Espesor de los paneles"
             )
 
             module.PanelThickness = (
@@ -278,7 +392,7 @@ class ParametricModuleCommand:
                 "App::PropertyLength",
                 "BackThickness",
                 "Parameters",
-                "Thickness of back panel"
+                "Espesor de la trasera"
             )
 
             module.BackThickness = (
@@ -301,7 +415,7 @@ class ParametricModuleCommand:
                 "App::PropertyLength",
                 "BackInset",
                 "Parameters",
-                "Rear panel inset"
+                "Retranqueo de la trasera"
             )
 
             module.BackInset = (
@@ -311,15 +425,161 @@ class ParametricModuleCommand:
             )
 
 
-    #
-    # Copy parameters
-    #
+    # =========================================================
+    # COPY PARAMETERS
+    # =========================================================
 
     def copyParameters(
         self,
         parameters,
-        module
+        module,
+        data
     ):
+
+        #
+        # Name
+        #
+
+        name = data.get(
+            "Label",
+            "Módulo"
+        )
+
+
+        if not name:
+
+            name = "Módulo"
+
+
+        module.Label = (
+            str(
+                name
+            )
+        )
+
+
+        #
+        # Width
+        #
+
+        width = data.get(
+            "Width",
+            600
+        )
+
+
+        if hasattr(
+            module,
+            "Width"
+        ):
+
+            module.Width = width
+
+
+        #
+        # Height
+        #
+
+        height = data.get(
+            "Height",
+            720
+        )
+
+
+        if hasattr(
+            module,
+            "Height"
+        ):
+
+            module.Height = height
+
+
+        #
+        # Depth
+        #
+
+        depth = data.get(
+            "Depth",
+            560
+        )
+
+
+        if hasattr(
+            module,
+            "Depth"
+        ):
+
+            module.Depth = depth
+
+
+        #
+        # Panel thickness
+        #
+
+        panelThickness = data.get(
+            "PanelThickness",
+            19
+        )
+
+
+        if hasattr(
+            module,
+            "PanelThickness"
+        ):
+
+            module.PanelThickness = (
+                panelThickness
+            )
+
+
+        #
+        # Back thickness
+        #
+
+        backThickness = data.get(
+            "BackThickness",
+            3
+        )
+
+
+        if hasattr(
+            module,
+            "BackThickness"
+        ):
+
+            module.BackThickness = (
+                backThickness
+            )
+
+
+        #
+        # Back inset
+        #
+
+        backInset = data.get(
+            "BackInset",
+            0
+        )
+
+
+        if hasattr(
+            module,
+            "BackInset"
+        ):
+
+            module.BackInset = (
+                backInset
+            )
+
+
+        # =====================================================
+        # UPDATE PARAMETER OBJECT
+        # =====================================================
+
+        if parameters is None:
+
+            return
+
 
         #
         # Name
@@ -330,33 +590,11 @@ class ParametricModuleCommand:
             "ModuleName"
         ):
 
-            name = str(
-                parameters.ModuleName
-            ).strip()
-
-
-            if name:
-
-                module.Label = name
-
-
-        #
-        # Type
-        #
-
-        if hasattr(
-            parameters,
-            "ModuleType"
-        ):
-
-            if hasattr(
-                module,
-                "Type"
-            ):
-
-                module.Type = (
-                    parameters.ModuleType
+            parameters.ModuleName = (
+                str(
+                    name
                 )
+            )
 
 
         #
@@ -368,14 +606,9 @@ class ParametricModuleCommand:
             "ModuleWidth"
         ):
 
-            if hasattr(
-                module,
-                "Width"
-            ):
-
-                module.Width = (
-                    parameters.ModuleWidth
-                )
+            parameters.ModuleWidth = (
+                width
+            )
 
 
         #
@@ -387,14 +620,9 @@ class ParametricModuleCommand:
             "ModuleHeight"
         ):
 
-            if hasattr(
-                module,
-                "Height"
-            ):
-
-                module.Height = (
-                    parameters.ModuleHeight
-                )
+            parameters.ModuleHeight = (
+                height
+            )
 
 
         #
@@ -406,14 +634,9 @@ class ParametricModuleCommand:
             "ModuleDepth"
         ):
 
-            if hasattr(
-                module,
-                "Depth"
-            ):
-
-                module.Depth = (
-                    parameters.ModuleDepth
-                )
+            parameters.ModuleDepth = (
+                depth
+            )
 
 
         #
@@ -425,14 +648,9 @@ class ParametricModuleCommand:
             "PanelThickness"
         ):
 
-            if hasattr(
-                module,
-                "PanelThickness"
-            ):
-
-                module.PanelThickness = (
-                    parameters.PanelThickness
-                )
+            parameters.PanelThickness = (
+                panelThickness
+            )
 
 
         #
@@ -444,14 +662,9 @@ class ParametricModuleCommand:
             "BackThickness"
         ):
 
-            if hasattr(
-                module,
-                "BackThickness"
-            ):
-
-                module.BackThickness = (
-                    parameters.BackThickness
-                )
+            parameters.BackThickness = (
+                backThickness
+            )
 
 
         #
@@ -463,19 +676,60 @@ class ParametricModuleCommand:
             "BackInset"
         ):
 
+            parameters.BackInset = (
+                backInset
+            )
+
+
+        #
+        # Type
+        #
+
+        if (
+            "ModuleType"
+            in data
+        ):
+
             if hasattr(
-                module,
-                "BackInset"
+                parameters,
+                "ModuleType"
             ):
 
-                module.BackInset = (
-                    parameters.BackInset
+                parameters.ModuleType = (
+                    data[
+                        "ModuleType"
+                    ]
                 )
 
 
-#
-# Register command
-#
+            if hasattr(
+                module,
+                "Type"
+            ):
+
+                module.Type = (
+                    data[
+                        "ModuleType"
+                    ]
+                )
+
+
+        #
+        # Recompute
+        #
+
+        try:
+
+            module.Document.recompute()
+
+        except Exception:
+
+            pass
+
+
+# =============================================================
+# REGISTER COMMAND
+# =============================================================
 
 FreeCADGui.addCommand(
     "Bosqo_ParametricModule",

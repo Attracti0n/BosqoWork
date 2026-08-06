@@ -2,13 +2,13 @@ import FreeCAD
 import FreeCADGui
 import os
 
-from app_paths import ICONS_DIR
-
 from PySide import QtWidgets
 
-from dialogs.part_table_dialog import PartTableDialog
+from app_paths import ICONS_DIR
 
-from core.builders.module_builder import ModuleBuilder
+from dialogs.part_table_dialog import (
+    PartTableDialog
+)
 
 
 class PartsTableCommand:
@@ -18,6 +18,7 @@ class PartsTableCommand:
     ):
 
         return {
+
             "Pixmap":
                 os.path.join(
                     ICONS_DIR,
@@ -45,35 +46,33 @@ class PartsTableCommand:
         )
 
 
-    # =========================================================
-    # ACTIVATED
-    # =========================================================
-
     def Activated(
         self
     ):
 
-        document = FreeCAD.ActiveDocument
+        document = (
+            FreeCAD.ActiveDocument
+        )
+
 
         if document is None:
 
             return
 
 
+        #
         # =====================================================
-        # SELECCIÓN
+        # SELECTION
         # =====================================================
+        #
 
         selection = (
             FreeCADGui.Selection.getSelection()
         )
 
+
         module = None
 
-
-        # =====================================================
-        # BUSCAR BOSQOMODULE
-        # =====================================================
 
         for obj in selection:
 
@@ -87,23 +86,26 @@ class PartsTableCommand:
 
             proxy = obj.Proxy
 
+
             if proxy is None:
 
                 continue
 
 
-            if type(proxy).__name__ == (
-                "BosqoModule"
-            ):
+            if type(
+                proxy
+            ).__name__ == "BosqoModule":
 
                 module = obj
 
                 break
 
 
+        #
         # =====================================================
-        # NO HAY MÓDULO
+        # NO MODULE
         # =====================================================
+        #
 
         if module is None:
 
@@ -116,9 +118,11 @@ class PartsTableCommand:
             return
 
 
+        #
         # =====================================================
-        # OBTENER PIEZAS
+        # GET REAL PARTS
         # =====================================================
+        #
 
         try:
 
@@ -131,9 +135,12 @@ class PartsTableCommand:
         except Exception as error:
 
             FreeCAD.Console.PrintError(
-                "Error obteniendo las piezas del módulo: "
+                "Error obteniendo las piezas "
+                "del módulo: "
                 +
-                str(error)
+                str(
+                    error
+                )
                 +
                 "\n"
             )
@@ -146,13 +153,18 @@ class PartsTableCommand:
             parts = []
 
 
+        #
         # =====================================================
-        # ABRIR EDITOR
+        # OPEN EDITOR
         # =====================================================
+        #
 
         dialog = PartTableDialog(
+
             module=module,
+
             parts=parts
+
         )
 
 
@@ -166,67 +178,15 @@ class PartsTableCommand:
             return
 
 
-        # =====================================================
-        # OBTENER DATOS
-        # =====================================================
+        #
+        # IMPORTANT:
+        #
+        # The dialog itself has already saved
+        # the real FreeCAD objects.
+        #
+        # We DO NOT call ModuleBuilder here.
+        #
 
-        try:
-
-            tableData = dialog.getData()
-
-        except Exception as error:
-
-            FreeCAD.Console.PrintError(
-                "Error obteniendo datos de la tabla: "
-                +
-                str(error)
-                +
-                "\n"
-            )
-
-            return
-
-
-        if tableData is None:
-
-            return
-
-
-        # =====================================================
-        # GUARDAR / RECALCULAR
-        # =====================================================
-
-        try:
-
-            self.rebuildModule(
-                module,
-                tableData
-            )
-
-        except Exception as error:
-
-            FreeCAD.Console.PrintError(
-                "Error reconstruyendo módulo: "
-                +
-                str(error)
-                +
-                "\n"
-            )
-
-            QtWidgets.QMessageBox.critical(
-                None,
-                "Error",
-                "No se ha podido recalcular el módulo.\n\n"
-                +
-                str(error)
-            )
-
-            return
-
-
-        # =====================================================
-        # RECOMPUTE
-        # =====================================================
 
         try:
 
@@ -237,16 +197,14 @@ class PartsTableCommand:
             FreeCAD.Console.PrintError(
                 "Error en recompute: "
                 +
-                str(error)
+                str(
+                    error
+                )
                 +
                 "\n"
             )
 
 
-        # =====================================================
-        # ACTUALIZAR VISTA
-        # =====================================================
-
         try:
 
             FreeCADGui.updateGui()
@@ -256,111 +214,11 @@ class PartsTableCommand:
             pass
 
 
-    # =========================================================
-    # REBUILD MODULE
-    # =========================================================
-
-    def rebuildModule(
-        self,
-        module,
-        tableData
-    ):
-
-        #
-        # tableData puede venir en dos formatos:
-        #
-        # 1. lista de piezas
-        #
-        # 2. diccionario con "Parts"
-        #
-        #
-
-        userParts = tableData
-
-
-        if isinstance(
-            tableData,
-            dict
-        ):
-
-            userParts = tableData.get(
-                "Parts",
-                []
-            )
-
-
-        if userParts is None:
-
-            userParts = []
-
-
-        if not isinstance(
-            userParts,
-            list
-        ):
-
-            userParts = list(
-                userParts
-            )
-
-
-        # =====================================================
-        # LIMPIAR DATOS
-        # =====================================================
-
-        cleanParts = []
-
-
-        for definition in userParts:
-
-            if not isinstance(
-                definition,
-                dict
-            ):
-
-                continue
-
-
-            cleanParts.append(
-                dict(
-                    definition
-                )
-            )
-
-
-        # =====================================================
-        # CONSTRUIR DE NUEVO
-        # =====================================================
-
-        ModuleBuilder.build(
-            module,
-            user_parts=cleanParts
-        )
-
-
-        # =====================================================
-        # RECOMPUTE
-        # =====================================================
-
-        module.Document.recompute()
-
-
-        # =====================================================
-        # ACTUALIZAR VISTA
-        # =====================================================
-
-        try:
-
-            FreeCADGui.updateGui()
-
-        except Exception:
-
-            pass
-
-
+#
 # =============================================================
-# REGISTRAR COMANDO
+# REGISTER COMMAND
 # =============================================================
+#
 
 FreeCADGui.addCommand(
     "Bosqo_PartsTable",

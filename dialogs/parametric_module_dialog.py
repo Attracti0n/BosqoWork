@@ -2049,11 +2049,6 @@ class ParametricModuleDialog(QtWidgets.QDialog):
                 index
             )
 
-            if row < 5:
-
-                typeCombo.setEnabled(
-                    False
-                )
 
             self.table.setCellWidget(
                 row,

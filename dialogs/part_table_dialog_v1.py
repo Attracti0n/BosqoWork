@@ -1235,13 +1235,8 @@ class PartTableDialog(QtWidgets.QDialog):
             index
         )
 
-        #
-        # Structural is selectable too.
-        # A generated structural piece can be converted
-        # into a shelf, divider or custom piece.
-        #
-
-        combo.setEnabled(True)
+        if combo.currentData() == "Structural":
+            combo.setEnabled(False)
 
 
         combo.currentIndexChanged.connect(
@@ -1272,10 +1267,16 @@ class PartTableDialog(QtWidgets.QDialog):
         )
 
 
+        #
+        # Recalculate dimensions for
+        # shelf / divider when selected.
+        #
+
         combo = self.table.cellWidget(
             row,
             1
         )
+
 
         if combo is None:
 
@@ -1284,62 +1285,6 @@ class PartTableDialog(QtWidgets.QDialog):
 
         role = combo.currentData()
 
-        item = self.table.item(
-            row,
-            0
-        )
-
-        if item is None:
-
-            return
-
-
-        code = item.data(
-            QtCore.Qt.ItemDataRole.UserRole + 1
-        )
-
-
-        #
-        # If a generated structural piece is changed
-        # to a user type, it must stop being one of
-        # LS / RS / BT / TP / BK.
-        #
-
-        structuralCodes = {
-            "LS",
-            "RS",
-            "BT",
-            "TP",
-            "BK"
-        }
-
-
-        if (
-            role != "Structural"
-            and
-            code in structuralCodes
-        ):
-
-            newCode = self.generateCode(
-                role
-            )
-
-            item.setData(
-                QtCore.Qt.ItemDataRole.UserRole + 1,
-                newCode
-            )
-
-            item.setText(
-                item.text()
-            )
-
-
-        #
-        # If a user piece is returned to Structural,
-        # keep its own dimensions. It becomes a
-        # user structural piece, not one of the five
-        # generated module panels.
-        #
 
         if role == "Shelf":
 
@@ -1399,39 +1344,9 @@ class PartTableDialog(QtWidgets.QDialog):
             )
 
 
-        #
-        # Update automatic positions.
-        #
-
         self.recalculatePositions(
             refresh=True
         )
-
-
-        #
-        # Immediately update the real object.
-        #
-
-        if self.module is not None:
-
-            data = self.getRowData(
-                row
-            )
-
-            if data is not None:
-
-                part = data.get(
-                    "Object"
-                )
-
-                if part is not None:
-
-                    self.applyPartData(
-                        part,
-                        data
-                    )
-
-                    self.module.Document.recompute()
 
 
     # =========================================================
@@ -3584,13 +3499,14 @@ class PartTableDialog(QtWidgets.QDialog):
             # Structural pieces
             #
 
-            elif role == "Structural":
+            elif role in (
+                "Side",
+                "Top",
+                "Bottom",
+                "Back"
+            ):
 
                 self.recalculateStructuralRow(
-                    row
-                )
-
-                self.applyStructuralPart(
                     row
                 )
 
@@ -3616,38 +3532,17 @@ class PartTableDialog(QtWidgets.QDialog):
             # módulo. Esto es importante para módulos importados.
             for row in range(self.table.rowCount()):
 
-                role = self.getRole(
-                    row
-                )
-
-                if role == "Structural":
-
-                    #
-                    # Already applied by
-                    # applyStructuralPart().
-                    #
-
-                    continue
-
-
-                data = self.getRowData(
-                    row
-                )
+                data = self.getRowData(row)
 
                 if data is None:
                     continue
 
-                part = data.get(
-                    "Object"
-                )
+                part = data.get("Object")
 
                 if part is None:
                     continue
 
-                self.applyPartData(
-                    part,
-                    data
-                )
+                self.applyPartData(part, data)
 
             self.module.Document.recompute()
 
@@ -3791,390 +3686,6 @@ class PartTableDialog(QtWidgets.QDialog):
 
 
     # =========================================================
-    # APPLY STRUCTURAL RECALCULATION
-    # =========================================================
-
-    def applyStructuralPart(
-        self,
-        row
-    ):
-
-        item = self.table.item(
-            row,
-            0
-        )
-
-        if item is None:
-            return
-
-
-        part = item.data(
-            QtCore.Qt.ItemDataRole.UserRole
-        )
-
-        if part is None:
-            return
-
-
-        code = item.data(
-            QtCore.Qt.ItemDataRole.UserRole + 1
-        )
-
-        if code not in (
-            "LS",
-            "RS",
-            "BT",
-            "TP",
-            "BK"
-        ):
-            return
-
-
-        #
-        # Read current module values.
-        #
-
-        width = self.widthSpin.value()
-        height = self.heightSpin.value()
-        depth = self.depthSpin.value()
-        thickness = self.thicknessSpin.value()
-        backThickness = self.backThicknessSpin.value()
-        backInset = self.backInsetSpin.value()
-
-
-        #
-        # Build the SAME data structure used by
-        # ModuleCalculator.
-        #
-        # This is intentional: we do not invent a
-        # second placement system for PartTableDialog.
-        #
-
-        data = {
-
-            "Code":
-                code,
-
-            "PartType":
-                "Estructural",
-
-            "Source":
-                "Module",
-
-            "Quantity":
-                1,
-
-            "PositionMode":
-                "Automatic",
-
-            "PositionType":
-                "Automatic",
-
-            "Position":
-                0,
-
-            "Placement":
-                FreeCAD.Placement(
-                    FreeCAD.Vector(
-                        0,
-                        0,
-                        0
-                    ),
-                    FreeCAD.Rotation()
-                )
-        }
-
-
-        #
-        # =====================================================
-        # LEFT / RIGHT SIDE
-        # =====================================================
-
-        if code in (
-            "LS",
-            "RS"
-        ):
-
-            data["Role"] = "Side"
-
-            data["Length"] = height
-            data["Width"] = depth
-            data["Thickness"] = thickness
-
-            data["LengthAxis"] = "Z"
-            data["WidthAxis"] = "Y"
-            data["ThicknessAxis"] = "X"
-
-            if code == "LS":
-
-                data["Label"] = (
-                    "Lateral izquierdo"
-                )
-
-                x = 0
-
-            else:
-
-                data["Label"] = (
-                    "Lateral derecho"
-                )
-
-                x = (
-                    width
-                    -
-                    thickness
-                )
-
-
-            data["Placement"] = (
-                FreeCAD.Placement(
-                    FreeCAD.Vector(
-                        x,
-                        0,
-                        0
-                    ),
-                    FreeCAD.Rotation()
-                )
-            )
-
-
-        #
-        # =====================================================
-        # BOTTOM
-        # =====================================================
-
-        elif code == "BT":
-
-            data["Role"] = "Bottom"
-
-            data["Label"] = "Base"
-
-            data["Length"] = (
-                width
-                -
-                thickness * 2
-            )
-
-            data["Width"] = depth
-
-            data["Thickness"] = thickness
-
-            data["LengthAxis"] = "X"
-            data["WidthAxis"] = "Y"
-            data["ThicknessAxis"] = "Z"
-
-            data["Placement"] = (
-                FreeCAD.Placement(
-                    FreeCAD.Vector(
-                        thickness,
-                        0,
-                        0
-                    ),
-                    FreeCAD.Rotation()
-                )
-            )
-
-
-        #
-        # =====================================================
-        # TOP
-        # =====================================================
-
-        elif code == "TP":
-
-            data["Role"] = "Top"
-
-            data["Label"] = "Tapa"
-
-            data["Length"] = (
-                width
-                -
-                thickness * 2
-            )
-
-            data["Width"] = depth
-
-            data["Thickness"] = thickness
-
-            data["LengthAxis"] = "X"
-            data["WidthAxis"] = "Y"
-            data["ThicknessAxis"] = "Z"
-
-            data["Placement"] = (
-                FreeCAD.Placement(
-                    FreeCAD.Vector(
-                        thickness,
-                        0,
-                        height
-                        -
-                        thickness
-                    ),
-                    FreeCAD.Rotation()
-                )
-            )
-
-
-        #
-        # =====================================================
-        # BACK
-        # =====================================================
-
-        else:
-
-            data["Role"] = "Back"
-
-            data["Label"] = "Trasera"
-
-            data["Length"] = height
-
-            data["Width"] = width
-
-            data["Thickness"] = backThickness
-
-            data["LengthAxis"] = "Z"
-            data["WidthAxis"] = "X"
-            data["ThicknessAxis"] = "Y"
-
-            y = (
-                depth
-                -
-                backInset
-                -
-                backThickness
-            )
-
-            data["Placement"] = (
-                FreeCAD.Placement(
-                    FreeCAD.Vector(
-                        0,
-                        y,
-                        0
-                    ),
-                    FreeCAD.Rotation()
-                )
-            )
-
-
-        #
-        # =====================================================
-        # UPDATE TABLE
-        # =====================================================
-
-        self.setText(
-            row,
-            2,
-            self.number(
-                data["Length"]
-            )
-        )
-
-        self.setText(
-            row,
-            3,
-            self.number(
-                data["Width"]
-            )
-        )
-
-        self.setText(
-            row,
-            4,
-            self.number(
-                data["Thickness"]
-            )
-        )
-
-
-        #
-        # =====================================================
-        # APPLY TO BOSQOPART
-        # =====================================================
-
-        try:
-
-            proxy = getattr(
-                part,
-                "Proxy",
-                None
-            )
-
-
-            #
-            # IMPORTANT:
-            #
-            # Use BosqoPart.setData(), exactly as
-            # ModuleBuilder does.
-            #
-            # This updates LengthAxis, WidthAxis,
-            # ThicknessAxis AND Placement through
-            # the normal BosqoPart data path.
-            #
-
-            if proxy is not None:
-
-                setData = getattr(
-                    proxy,
-                    "setData",
-                    None
-                )
-
-                if callable(setData):
-
-                    setData(
-                        part,
-                        data
-                    )
-
-                else:
-
-                    for key, value in data.items():
-
-                        if hasattr(
-                            part,
-                            key
-                        ):
-
-                            setattr(
-                                part,
-                                key,
-                                value
-                            )
-
-
-            #
-            # Ensure the placement is definitely the
-            # calculated one. This is especially important
-            # for imported parts.
-            #
-
-            if hasattr(
-                part,
-                "Placement"
-            ):
-
-                part.Placement = (
-                    data["Placement"]
-                )
-
-
-            #
-            # Mark geometry dirty.
-            #
-
-            part.touch()
-
-
-        except Exception as error:
-
-            FreeCAD.Console.PrintError(
-                "Error aplicando datos estructurales "
-                + str(code)
-                + ": "
-                + str(error)
-                + "\n"
-            )
-
-    # =========================================================
     # AUTOMATIC POSITIONS
     # =========================================================
 
@@ -4184,6 +3695,7 @@ class PartTableDialog(QtWidgets.QDialog):
     ):
 
         shelves = []
+
         dividers = []
 
 
@@ -4199,6 +3711,7 @@ class PartTableDialog(QtWidgets.QDialog):
                 row
             )
 
+
             if role not in (
                 "Shelf",
                 "Divider"
@@ -4212,6 +3725,7 @@ class PartTableDialog(QtWidgets.QDialog):
                 8
             )
 
+
             positionCombo = self.table.cellWidget(
                 row,
                 7
@@ -4219,23 +3733,30 @@ class PartTableDialog(QtWidgets.QDialog):
 
 
             if modeCombo is None:
+
                 continue
+
 
             if (
                 modeCombo.currentData()
                 !=
                 "Automatic"
             ):
+
                 continue
 
+
             if positionCombo is None:
+
                 continue
+
 
             if (
                 positionCombo.currentData()
                 !=
                 "Automatic"
             ):
+
                 continue
 
 
@@ -4253,53 +3774,25 @@ class PartTableDialog(QtWidgets.QDialog):
 
 
         #
-        # =====================================================
-        # AUTOMATIC SHELVES
-        # =====================================================
-        #
-        # This follows ModuleCalculator exactly:
-        #
-        # usable height
-        # - thickness of all shelves
-        # = free height
-        #
-        # The shelf is placed in the centre of the
-        # available spaces, not on the base.
+        # SHELVES
         #
 
         if shelves:
 
-            panelThickness = (
-                self.thicknessSpin.value()
-            )
-
-            moduleHeight = (
-                self.heightSpin.value()
-            )
-
             usableHeight = (
-                moduleHeight
+                self.heightSpin.value()
                 -
-                panelThickness * 2
+                self.thicknessSpin.value() * 2
             )
 
-            totalShelfThickness = (
-                panelThickness
-                *
-                len(shelves)
-            )
-
-            freeHeight = (
-                usableHeight
-                -
-                totalShelfThickness
-            )
 
             spacing = (
-                freeHeight
+                usableHeight
                 /
                 (
-                    len(shelves)
+                    len(
+                        shelves
+                    )
                     +
                     1
                 )
@@ -4307,135 +3800,56 @@ class PartTableDialog(QtWidgets.QDialog):
 
 
             for index, row in enumerate(
-                shelves
+                shelves,
+                start=1
             ):
 
-                z = (
-                    panelThickness
+                position = (
+                    self.thicknessSpin.value()
                     +
-                    spacing
-                    *
-                    (
-                        index
-                        +
-                        1
-                    )
-                    +
-                    panelThickness
-                    *
-                    index
+                    spacing * index
                 )
 
-
-                #
-                # Table position.
-                #
 
                 self.setText(
                     row,
                     7,
                     self.number(
-                        z
+                        position
                     )
                 )
 
-
-                #
-                # Store complete placement data.
-                #
-
                 self.setPlacementData(
                     row,
-                    positionX=panelThickness,
+                    positionX=self.thicknessSpin.value(),
                     positionY=0,
-                    positionZ=z,
+                    positionZ=position,
                     rotationX=0,
                     rotationY=0,
                     rotationZ=0
                 )
-
-
-                #
-                # IMPORTANT:
-                #
-                # Apply the placement immediately to the
-                # real BosqoPart if it already exists.
-                #
-                # Do not wait for saveChanges().
-                #
-
-                item = self.table.item(
-                    row,
-                    0
-                )
-
-                if item is not None:
-
-                    part = item.data(
-                        QtCore.Qt.ItemDataRole.UserRole
-                    )
-
-                    if (
-                        part is not None
-                        and
-                        hasattr(
-                            part,
-                            "Placement"
-                        )
-                    ):
-
-                        part.Placement = (
-                            FreeCAD.Placement(
-                                FreeCAD.Vector(
-                                    panelThickness,
-                                    0,
-                                    z
-                                ),
-                                FreeCAD.Rotation()
-                            )
-                        )
-
-                        part.touch()
 
 
         #
-        # =====================================================
-        # AUTOMATIC DIVIDERS
-        # =====================================================
+        # DIVIDERS
+        #
 
         if dividers:
 
-            panelThickness = (
-                self.thicknessSpin.value()
-            )
-
-            moduleWidth = (
-                self.widthSpin.value()
-            )
-
             usableWidth = (
-                moduleWidth
+                self.widthSpin.value()
                 -
-                panelThickness * 2
+                self.thicknessSpin.value() * 2
             )
 
-            totalDividerThickness = (
-                panelThickness
-                *
-                len(dividers)
-            )
-
-            freeWidth = (
-                usableWidth
-                -
-                totalDividerThickness
-            )
 
             spacing = (
-                freeWidth
+                usableWidth
                 /
                 (
-                    len(dividers)
+                    len(
+                        dividers
+                    )
                     +
                     1
                 )
@@ -4443,23 +3857,14 @@ class PartTableDialog(QtWidgets.QDialog):
 
 
             for index, row in enumerate(
-                dividers
+                dividers,
+                start=1
             ):
 
-                x = (
-                    panelThickness
+                position = (
+                    self.thicknessSpin.value()
                     +
-                    spacing
-                    *
-                    (
-                        index
-                        +
-                        1
-                    )
-                    +
-                    panelThickness
-                    *
-                    index
+                    spacing * index
                 )
 
 
@@ -4467,63 +3872,25 @@ class PartTableDialog(QtWidgets.QDialog):
                     row,
                     7,
                     self.number(
-                        x
+                        position
                     )
                 )
 
-
                 self.setPlacementData(
                     row,
-                    positionX=x,
+                    positionX=position,
                     positionY=0,
-                    positionZ=panelThickness,
+                    positionZ=self.thicknessSpin.value(),
                     rotationX=0,
                     rotationY=0,
                     rotationZ=0
                 )
-
-
-                #
-                # Apply immediately to existing object.
-                #
-
-                item = self.table.item(
-                    row,
-                    0
-                )
-
-                if item is not None:
-
-                    part = item.data(
-                        QtCore.Qt.ItemDataRole.UserRole
-                    )
-
-                    if (
-                        part is not None
-                        and
-                        hasattr(
-                            part,
-                            "Placement"
-                        )
-                    ):
-
-                        part.Placement = (
-                            FreeCAD.Placement(
-                                FreeCAD.Vector(
-                                    x,
-                                    0,
-                                    panelThickness
-                                ),
-                                FreeCAD.Rotation()
-                            )
-                        )
-
-                        part.touch()
 
 
         if refresh:
 
             self.table.viewport().update()
+
 
     # =========================================================
     # PLACEMENT DATA

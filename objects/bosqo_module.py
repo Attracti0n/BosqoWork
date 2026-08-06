@@ -26,7 +26,9 @@ class BosqoModule:
 
 
     #
-    # Properties
+    # =========================================================
+    # PROPERTIES
+    # =========================================================
     #
 
     def initProperties(
@@ -35,7 +37,7 @@ class BosqoModule:
     ):
 
         #
-        # Name
+        # NAME
         #
 
         if not obj.Label:
@@ -44,7 +46,7 @@ class BosqoModule:
 
 
         #
-        # Type
+        # TYPE
         #
 
         if not hasattr(
@@ -73,7 +75,63 @@ class BosqoModule:
 
 
         #
-        # Dimensions
+        # TOP TYPE
+        #
+
+        if not hasattr(
+            obj,
+            "TopType"
+        ):
+
+            obj.addProperty(
+                "App::PropertyEnumeration",
+                "TopType",
+                "Module",
+                "Sistema superior del módulo"
+            )
+
+            obj.TopType = [
+
+                "Tapa completa",
+                "2 travesaños",
+                "3 travesaños"
+
+            ]
+
+            obj.TopType = "Tapa completa"
+
+
+        #
+        # BACK TYPE
+        #
+
+        if not hasattr(
+            obj,
+            "BackType"
+        ):
+
+            obj.addProperty(
+                "App::PropertyEnumeration",
+                "BackType",
+                "Module",
+                "Sistema trasero del módulo"
+            )
+
+            obj.BackType = [
+
+                "Trasera sobrepuesta",
+                "Trasera oculta",
+                "2 travesaños",
+                "3 travesaños",
+                "Sin trasera"
+
+            ]
+
+            obj.BackType = "Trasera sobrepuesta"
+
+
+        #
+        # DIMENSIONS
         #
 
         self.addLength(
@@ -99,7 +157,7 @@ class BosqoModule:
 
 
         #
-        # Panel thickness
+        # PANEL THICKNESS
         #
 
         self.addLength(
@@ -111,7 +169,7 @@ class BosqoModule:
 
 
         #
-        # Back thickness
+        # BACK THICKNESS
         #
 
         self.addLength(
@@ -123,7 +181,7 @@ class BosqoModule:
 
 
         #
-        # Back inset
+        # BACK INSET
         #
 
         self.addLength(
@@ -135,7 +193,9 @@ class BosqoModule:
 
 
     #
-    # Helpers
+    # =========================================================
+    # HELPERS
+    # =========================================================
     #
 
     def addLength(
@@ -167,7 +227,9 @@ class BosqoModule:
 
 
     #
-    # Data
+    # =========================================================
+    # DATA
+    # =========================================================
     #
 
     def getData(
@@ -182,6 +244,12 @@ class BosqoModule:
 
             "Type":
                 obj.Type,
+
+            "TopType":
+                obj.TopType,
+
+            "BackType":
+                obj.BackType,
 
             "Width":
                 obj.Width,
@@ -225,7 +293,9 @@ class BosqoModule:
 
 
     #
-    # Parts
+    # =========================================================
+    # PARTS
+    # =========================================================
     #
 
     def addPart(
@@ -265,7 +335,9 @@ class BosqoModule:
 
 
     #
-    # Module Data
+    # =========================================================
+    # MODULE DATA
+    # =========================================================
     #
 
     def getModuleData(
@@ -283,7 +355,9 @@ class BosqoModule:
 
 
     #
-    # FreeCAD
+    # =========================================================
+    # FREECAD
+    # =========================================================
     #
 
     def execute(
@@ -300,11 +374,72 @@ class BosqoModule:
         prop
     ):
 
-        pass
+        rebuild_properties = {
+
+            "Type",
+            "TopType",
+            "BackType",
+
+            "Width",
+            "Height",
+            "Depth",
+
+            "PanelThickness",
+            "BackThickness",
+            "BackInset"
+
+        }
+
+        if prop not in rebuild_properties:
+
+            return
+
+        required_properties = [
+
+            "Type",
+            "TopType",
+            "BackType",
+
+            "Width",
+            "Height",
+            "Depth",
+
+            "PanelThickness",
+            "BackThickness",
+            "BackInset"
+
+        ]
+
+        for property_name in required_properties:
+
+            if not hasattr(
+                obj,
+                property_name
+            ):
+
+                return
+
+        try:
+
+            ModuleBuilder.build(
+                obj
+            )
+
+        except Exception as error:
+
+            FreeCAD.Console.PrintError(
+                "BosqoModule rebuild error: "
+                +
+                str(error)
+                +
+                "\n"
+            )
 
 
     #
-    # Icon
+    # =========================================================
+    # ICON
+    # =========================================================
     #
 
     def getIcon(
@@ -318,7 +453,9 @@ class BosqoModule:
 
 
     #
-    # Serialization
+    # =========================================================
+    # SERIALIZATION
+    # =========================================================
     #
 
     def __getstate__(
@@ -412,7 +549,9 @@ class ViewProviderBosqoModule:
 
 
 #
-# Factory
+# =========================================================
+# FACTORY
+# =========================================================
 #
 
 def create_module(

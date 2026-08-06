@@ -6,6 +6,34 @@ from core.calculators.module_calculator import ModuleCalculator
 
 class ModuleBuilder:
 
+    # =========================================================
+    # STRUCTURAL CODES
+    # =========================================================
+
+    STRUCTURAL_CODES = {
+
+        "LS",
+        "RS",
+
+        "BT",
+        "TP",
+
+        "BK",
+
+        "TR1",
+        "TR2",
+        "TR3",
+
+        "BK1",
+        "BK2",
+        "BK3"
+
+    }
+
+    # =========================================================
+    # BUILD
+    # =========================================================
+
     @staticmethod
     def build(
         module,
@@ -15,6 +43,29 @@ class ModuleBuilder:
         if user_parts is None:
 
             user_parts = []
+
+        # =====================================================
+        # EXISTING USER PARTS
+        # =====================================================
+        #
+        # IMPORTANT:
+        #
+        # We do NOT use Source to determine whether a part is
+        # structural.
+        #
+        # ModuleCalculator currently assigns Source = "Module"
+        # to calculated parts, including shelves added from the
+        # table.
+        #
+        # Therefore the reliable distinction is the structural
+        # code list.
+        #
+
+        existing_user_parts = (
+            ModuleBuilder.getExistingUserParts(
+                module
+            )
+        )
 
         # =====================================================
         # GENERATOR
@@ -29,22 +80,22 @@ class ModuleBuilder:
         )
 
         # =====================================================
-        # STRUCTURAL CODES
-        # =====================================================
-
-        structural_codes = {
-            "LS",
-            "RS",
-            "BT",
-            "TP",
-            "BK"
-        }
-
-        # =====================================================
         # USER PARTS
         # =====================================================
 
-        for definition in user_parts:
+        all_user_parts = []
+
+        all_user_parts.extend(
+            existing_user_parts
+        )
+
+        all_user_parts.extend(
+            user_parts
+        )
+
+        added_user_codes = set()
+
+        for definition in all_user_parts:
 
             if not isinstance(
                 definition,
@@ -67,13 +118,23 @@ class ModuleBuilder:
                 )
             )
 
-            #
-            # Never duplicate structural parts.
-            #
-
-            if code in structural_codes:
+            if not code:
 
                 continue
+
+            #
+            # Structural parts belong exclusively to the
+            # generator.
+            #
+
+            if code in ModuleBuilder.STRUCTURAL_CODES:
+
+                continue
+
+            #
+            # Structural roles also remain controlled by the
+            # generator.
+            #
 
             if role in (
                 "Side",
@@ -83,6 +144,18 @@ class ModuleBuilder:
             ):
 
                 continue
+
+            #
+            # Avoid duplicates.
+            #
+
+            if code in added_user_codes:
+
+                continue
+
+            added_user_codes.add(
+                code
+            )
 
             definitions.append(
                 dict(
@@ -177,10 +250,6 @@ class ModuleBuilder:
                 -
                 panel_thickness * 2
             )
-
-            #
-            # Use the actual thickness of the shelves.
-            #
 
             shelf_thicknesses = [
 
@@ -326,7 +395,7 @@ class ModuleBuilder:
                     divider_index += 1
 
             # =================================================
-            # STRUCTURAL / CUSTOM
+            # EVERYTHING ELSE
             # =================================================
 
             else:
@@ -391,6 +460,12 @@ class ModuleBuilder:
         # =====================================================
         # REMOVE OBSOLETE
         # =====================================================
+        #
+        # ONLY STRUCTURAL PARTS MAY BE REMOVED AUTOMATICALLY.
+        #
+        # User-created parts such as shelves and custom parts
+        # are preserved.
+        #
 
         for part in list(
             module.Group
@@ -403,7 +478,25 @@ class ModuleBuilder:
 
                 continue
 
-            if part.Code not in valid_codes:
+            code = str(
+                part.Code
+            )
+
+            #
+            # User-created part:
+            # preserve it.
+            #
+
+            if code not in ModuleBuilder.STRUCTURAL_CODES:
+
+                continue
+
+            #
+            # Structural part:
+            # remove if no longer generated.
+            #
+
+            if code not in valid_codes:
 
                 try:
 
@@ -430,6 +523,208 @@ class ModuleBuilder:
         # =====================================================
 
         module.Document.recompute()
+
+    # =========================================================
+    # GET EXISTING USER PARTS
+    # =========================================================
+
+    @staticmethod
+    def getExistingUserParts(
+        module
+    ):
+
+        definitions = []
+
+        for part in list(
+            module.Group
+        ):
+
+            if not hasattr(
+                part,
+                "Code"
+            ):
+
+                continue
+
+            code = str(
+                getattr(
+                    part,
+                    "Code",
+                    ""
+                )
+            )
+
+            if not code:
+
+                continue
+
+            #
+            # Structural parts are controlled by the generator.
+            #
+
+            if code in ModuleBuilder.STRUCTURAL_CODES:
+
+                continue
+
+            #
+            # Everything else already present in the module is
+            # considered a user part.
+            #
+
+            definition = {
+
+                "Code":
+                    code,
+
+                "Role":
+                    getattr(
+                        part,
+                        "Role",
+                        "Custom"
+                    ),
+
+                "PartType":
+                    getattr(
+                        part,
+                        "PartType",
+                        ""
+                    ),
+
+                "Label":
+                    getattr(
+                        part,
+                        "Label",
+                        "Pieza"
+                    ),
+
+                "Material":
+                    getattr(
+                        part,
+                        "Material",
+                        ""
+                    ),
+
+                "MaterialCode":
+                    getattr(
+                        part,
+                        "MaterialCode",
+                        ""
+                    ),
+
+                "Quantity":
+                    getattr(
+                        part,
+                        "Quantity",
+                        1
+                    ),
+
+                "PositionMode":
+                    getattr(
+                        part,
+                        "PositionMode",
+                        "Automatic"
+                    )
+
+            }
+
+            # =================================================
+            # DIMENSIONS
+            # =================================================
+
+            if hasattr(
+                part,
+                "Length"
+            ):
+
+                definition["Length"] = (
+                    part.Length
+                )
+
+            if hasattr(
+                part,
+                "Width"
+            ):
+
+                definition["Width"] = (
+                    part.Width
+                )
+
+            if hasattr(
+                part,
+                "Thickness"
+            ):
+
+                definition["Thickness"] = (
+                    part.Thickness
+                )
+
+            # =================================================
+            # POSITION
+            # =================================================
+
+            if hasattr(
+                part,
+                "PositionX"
+            ):
+
+                definition["PositionX"] = (
+                    part.PositionX
+                )
+
+            if hasattr(
+                part,
+                "PositionY"
+            ):
+
+                definition["PositionY"] = (
+                    part.PositionY
+                )
+
+            if hasattr(
+                part,
+                "PositionZ"
+            ):
+
+                definition["PositionZ"] = (
+                    part.PositionZ
+                )
+
+            # =================================================
+            # ROTATION
+            # =================================================
+
+            if hasattr(
+                part,
+                "RotationX"
+            ):
+
+                definition["RotationX"] = (
+                    part.RotationX
+                )
+
+            if hasattr(
+                part,
+                "RotationY"
+            ):
+
+                definition["RotationY"] = (
+                    part.RotationY
+                )
+
+            if hasattr(
+                part,
+                "RotationZ"
+            ):
+
+                definition["RotationZ"] = (
+                    part.RotationZ
+                )
+
+            definitions.append(
+                definition
+            )
+
+        return definitions
 
     # =========================================================
     # FIND

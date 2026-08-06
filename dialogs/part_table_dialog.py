@@ -2084,9 +2084,7 @@ class PartTableDialog(QtWidgets.QDialog):
         )
 
 
-        self.recalculatePositions(
-            refresh=True
-        )
+        self.recalculate()
 
 
         self.table.selectRow(
@@ -2165,9 +2163,7 @@ class PartTableDialog(QtWidgets.QDialog):
         )
 
 
-        self.recalculatePositions(
-            refresh=True
-        )
+        self.recalculate()
 
 
         self.table.selectRow(
@@ -2509,6 +2505,49 @@ class PartTableDialog(QtWidgets.QDialog):
 
 
     # =========================================================
+    # LIVE PART
+    # =========================================================
+
+    def getLivePart(
+        self,
+        part=None,
+        code=None
+    ):
+
+        if self.module is not None and code is not None:
+
+            try:
+                code = str(code)
+
+                for candidate in list(self.module.Group):
+                    try:
+                        candidateCode = str(
+                            getattr(candidate, "Code", "")
+                        )
+                        if candidateCode == code:
+                            return candidate
+                    except Exception:
+                        continue
+            except Exception:
+                pass
+
+        if part is None:
+            return None
+
+        try:
+            name = part.Name
+            document = part.Document
+            if document is None:
+                return None
+            current = document.getObject(name)
+            if current is None:
+                return None
+            current.Label
+            return current
+        except Exception:
+            return None
+
+
     # GET ROW DATA
     # =========================================================
 
@@ -2616,14 +2655,68 @@ class PartTableDialog(QtWidgets.QDialog):
                 )
 
 
+        # Keep the object attached to the row. Never replace an existing
+        # live object by looking it up again by Code.
         objectValue = item.data(
             QtCore.Qt.ItemDataRole.UserRole
         )
 
-
         code = item.data(
             QtCore.Qt.ItemDataRole.UserRole + 1
         )
+
+        if objectValue is not None:
+            try:
+                name = objectValue.Name
+                document = objectValue.Document
+                if document is None or document.getObject(name) is None:
+                    objectValue = None
+            except Exception:
+                objectValue = None
+
+        # Only search by Code when the row has no object.
+        if objectValue is None and code:
+            objectValue = self.getLivePart(
+                None,
+                code
+            )
+
+        if objectValue is not None:
+            item.setData(
+                QtCore.Qt.ItemDataRole.UserRole,
+                objectValue
+            )
+
+
+        # Existing automatic shelves/dividers keep their real
+        # dimensions if the table cell is temporarily empty or zero.
+        # The table remains authoritative when it contains valid values.
+        length = self.getFloat(row, 2)
+        width = self.getFloat(row, 3)
+        thickness = self.getFloat(row, 4)
+
+        if (
+            objectValue is not None
+            and
+            role in ("Shelf", "Divider")
+            and
+            positionMode == "Automatic"
+            and
+            (length <= 0 or width <= 0 or thickness <= 0)
+        ):
+            try:
+                objectLength = self.value(getattr(objectValue, "Length", 0))
+                objectWidth = self.value(getattr(objectValue, "Width", 0))
+                objectThickness = self.value(getattr(objectValue, "Thickness", 0))
+
+                if objectLength > 0:
+                    length = objectLength
+                if objectWidth > 0:
+                    width = objectWidth
+                if objectThickness > 0:
+                    thickness = objectThickness
+            except Exception:
+                pass
 
 
         return {
@@ -2648,22 +2741,13 @@ class PartTableDialog(QtWidgets.QDialog):
                 partType,
 
             "Length":
-                self.getFloat(
-                    row,
-                    2
-                ),
+                length,
 
             "Width":
-                self.getFloat(
-                    row,
-                    3
-                ),
+                width,
 
             "Thickness":
-                self.getFloat(
-                    row,
-                    4
-                ),
+                thickness,
 
             "Quantity":
                 self.getFloat(
@@ -2834,7 +2918,6 @@ class PartTableDialog(QtWidgets.QDialog):
 
             #
             # New piece
-            #
 
             if part is None:
 
@@ -2843,29 +2926,27 @@ class PartTableDialog(QtWidgets.QDialog):
                 )
 
                 if part is None:
-
                     continue
 
-
-                #
-                # Store reference in table
-                #
+                # This exact object belongs to this exact table row.
+                data["Object"] = part
 
                 item = self.table.item(
                     rowIndex,
                     0
                 )
 
-
                 if item is not None:
-
                     item.setData(
                         QtCore.Qt.ItemDataRole.UserRole,
                         part
                     )
+                    item.setData(
+                        QtCore.Qt.ItemDataRole.UserRole + 1,
+                        data.get("Code", "")
+                    )
 
 
-            #
             # Apply data
             #
 
@@ -3145,327 +3226,308 @@ class PartTableDialog(QtWidgets.QDialog):
         data
     ):
 
-        #
-        # Label
-        #
+        if part is None:
+            return
 
-        if hasattr(
+        # Always resolve the live FreeCAD object.
+        part = self.getLivePart(
             part,
-            "Label"
-        ):
+            data.get("Code", "")
+        )
 
-            part.Label = data["Label"]
+        if part is None:
+            return
 
-
-        #
-        # Code
-        #
-
-        if hasattr(
-            part,
-            "Code"
-        ):
-
-            code = data.get(
-                "Code",
-                ""
-            )
-
-            if not code:
-
-                code = self.generateCode(
-                    data.get(
-                        "Role",
-                        "Custom"
-                    )
-                )
-
-            part.Code = code
-
-
-        #
-        # Dimensions
-        #
-
-        if hasattr(part, "Length"):
-            part.Length = data["Length"]
-
-        if hasattr(part, "Width"):
-            part.Width = data["Width"]
-
-        if hasattr(part, "Thickness"):
-            part.Thickness = data["Thickness"]
-
-
-        #
-        # Quantity
-        #
-
-        if hasattr(part, "Quantity"):
-            part.Quantity = data["Quantity"]
-
-
-        #
-        # Material
-        #
-
-        if hasattr(part, "MaterialCode"):
-            part.MaterialCode = data["MaterialCode"]
-
-
-        #
-        # Role
-        #
+        # -----------------------------------------------------
+        # Prepare data exactly in the form used by ModuleBuilder.
+        # -----------------------------------------------------
 
         role = data.get(
             "Role",
             "Custom"
         )
 
-        if hasattr(part, "Role"):
-            part.Role = role
+        code = str(
+            data.get(
+                "Code",
+                ""
+            )
+        )
 
+        if not code:
 
-        #
-        # Position properties.
-        # Structural parts keep their existing
-        # positioning logic.
-        #
-
-        if hasattr(part, "Position"):
-            part.Position = data["Position"]
-
-        if hasattr(part, "PositionType"):
-            part.PositionType = data.get(
-                "PositionType",
-                "Automatic"
+            code = self.generateCode(
+                role
             )
 
-        mode = data.get(
+        positionMode = data.get(
             "PositionMode",
             "Automatic"
         )
 
-        if hasattr(part, "PositionMode"):
-            part.PositionMode = mode
+        # Work on a copy. This is important because the dictionary
+        # belongs to the table row and may be reused later.
+        partData = dict(
+            data
+        )
 
+        partData["Code"] = code
+        partData["Role"] = role
+        partData["Source"] = partData.get(
+            "Source",
+            "Module"
+        )
+        partData["Label"] = partData.get(
+            "Label",
+            "Pieza"
+        )
+        partData["PartType"] = partData.get(
+            "PartType",
+            "Personalizado"
+        )
+        partData["Material"] = partData.get(
+            "Material",
+            ""
+        )
+        partData["MaterialCode"] = partData.get(
+            "MaterialCode",
+            ""
+        )
+        partData["Quantity"] = partData.get(
+            "Quantity",
+            1
+        )
+        partData["PositionMode"] = positionMode
 
-        #
-        # AXIS MAPPING
-        #
-        # IMPORTANT:
-        # Structural parts are deliberately untouched.
-        #
+        # -----------------------------------------------------
+        # Axis definition
+        # -----------------------------------------------------
 
         if role == "Shelf":
 
-            if hasattr(part, "LengthAxis"):
-                part.LengthAxis = "X"
-
-            if hasattr(part, "WidthAxis"):
-                part.WidthAxis = "Y"
-
-            if hasattr(part, "ThicknessAxis"):
-                part.ThicknessAxis = "Z"
-
+            partData["LengthAxis"] = "X"
+            partData["WidthAxis"] = "Y"
+            partData["ThicknessAxis"] = "Z"
 
         elif role == "Divider":
 
-            if hasattr(part, "LengthAxis"):
-                part.LengthAxis = "Z"
+            partData["LengthAxis"] = "Z"
+            partData["WidthAxis"] = "Y"
+            partData["ThicknessAxis"] = "X"
 
-            if hasattr(part, "WidthAxis"):
-                part.WidthAxis = "Y"
+        else:
 
-            if hasattr(part, "ThicknessAxis"):
-                part.ThicknessAxis = "X"
+            # Custom pieces use the standard local XYZ axes.
+            # Structural parts are not forcibly remapped here.
+            if role == "Custom":
+                partData["LengthAxis"] = "X"
+                partData["WidthAxis"] = "Y"
+                partData["ThicknessAxis"] = "Z"
 
-
-        elif role == "Custom":
-
-            if hasattr(part, "LengthAxis"):
-                part.LengthAxis = "X"
-
-            if hasattr(part, "WidthAxis"):
-                part.WidthAxis = "Y"
-
-            if hasattr(part, "ThicknessAxis"):
-                part.ThicknessAxis = "Z"
-
-
+        # -----------------------------------------------------
+        # Placement
+        # -----------------------------------------------------
+        # BosqoPart is a FeaturePython and does not expose a
+        # Placement property. Placement must therefore travel
+        # through Proxy.setData(), exactly as it does in
+        # ModuleBuilder.
         #
-        # PLACEMENT
-        #
-        # Structural pieces are NOT touched here.
-        #
+        # Structural parts deliberately keep their calculated
+        # module placement. The table only supplies placement
+        # for shelves, dividers and custom/manual pieces.
+        # -----------------------------------------------------
+
+        if role in (
+            "Shelf",
+            "Divider",
+            "Custom"
+        ):
+
+            if role == "Shelf":
+
+                if positionMode == "Automatic":
+                    x = self.thicknessSpin.value()
+                    y = 0
+                    z = float(
+                        partData.get(
+                            "PositionZ",
+                            partData.get("Position", 0)
+                        )
+                    )
+
+                else:
+                    x = float(
+                        partData.get(
+                            "PositionX",
+                            self.thicknessSpin.value()
+                        )
+                    )
+                    y = float(
+                        partData.get(
+                            "PositionY",
+                            0
+                        )
+                    )
+                    z = float(
+                        partData.get(
+                            "PositionZ",
+                            partData.get("Position", 0)
+                        )
+                    )
+
+            elif role == "Divider":
+
+                if positionMode == "Automatic":
+                    x = float(
+                        partData.get(
+                            "PositionX",
+                            partData.get("Position", 0)
+                        )
+                    )
+                    y = 0
+                    z = self.thicknessSpin.value()
+
+                else:
+                    x = float(
+                        partData.get(
+                            "PositionX",
+                            partData.get("Position", 0)
+                        )
+                    )
+                    y = float(
+                        partData.get(
+                            "PositionY",
+                            0
+                        )
+                    )
+                    z = float(
+                        partData.get(
+                            "PositionZ",
+                            self.thicknessSpin.value()
+                        )
+                    )
+
+            else:
+
+                x = float(
+                    partData.get(
+                        "PositionX",
+                        0
+                    )
+                )
+                y = float(
+                    partData.get(
+                        "PositionY",
+                        0
+                    )
+                )
+                z = float(
+                    partData.get(
+                        "PositionZ",
+                        partData.get("Position", 0)
+                    )
+                )
+
+            rx = float(
+                partData.get(
+                    "RotationX",
+                    0
+                )
+            )
+            ry = float(
+                partData.get(
+                    "RotationY",
+                    0
+                )
+            )
+            rz = float(
+                partData.get(
+                    "RotationZ",
+                    0
+                )
+            )
+
+            rotation = (
+                FreeCAD.Rotation(
+                    FreeCAD.Vector(1, 0, 0),
+                    rx
+                )
+                *
+                FreeCAD.Rotation(
+                    FreeCAD.Vector(0, 1, 0),
+                    ry
+                )
+                *
+                FreeCAD.Rotation(
+                    FreeCAD.Vector(0, 0, 1),
+                    rz
+                )
+            )
+
+            partData["Placement"] = FreeCAD.Placement(
+                FreeCAD.Vector(
+                    x,
+                    y,
+                    z
+                ),
+                rotation
+            )
+
+        # -----------------------------------------------------
+        # IMPORTANT: one single update path.
+        # -----------------------------------------------------
+
+        proxy = getattr(
+            part,
+            "Proxy",
+            None
+        )
+
+        setData = getattr(
+            proxy,
+            "setData",
+            None
+        ) if proxy is not None else None
 
         try:
 
-            if hasattr(part, "Placement"):
+            if callable(setData):
 
-                if role == "Shelf":
+                setData(
+                    part,
+                    partData
+                )
 
-                    if mode == "Manual":
+            else:
 
-                        x = float(data.get(
-                            "PositionX",
-                            self.thicknessSpin.value()
-                        ))
+                # Fallback only for old/invalid BosqoPart objects.
+                # Do not ever assign Placement directly.
+                for key, value in partData.items():
 
-                        y = float(data.get(
-                            "PositionY",
-                            0
-                        ))
+                    if key == "Placement":
+                        continue
 
-                        z = float(data.get(
-                            "PositionZ",
-                            data.get("Position", 0)
-                        ))
-
-                        rx = float(data.get("RotationX", 0))
-                        ry = float(data.get("RotationY", 0))
-                        rz = float(data.get("RotationZ", 0))
-
-                        rotation = (
-                            FreeCAD.Rotation(
-                                FreeCAD.Vector(1, 0, 0),
-                                rx
-                            )
-                            *
-                            FreeCAD.Rotation(
-                                FreeCAD.Vector(0, 1, 0),
-                                ry
-                            )
-                            *
-                            FreeCAD.Rotation(
-                                FreeCAD.Vector(0, 0, 1),
-                                rz
-                            )
+                    if hasattr(
+                        part,
+                        key
+                    ):
+                        setattr(
+                            part,
+                            key,
+                            value
                         )
 
-                    else:
-
-                        x = self.thicknessSpin.value()
-                        y = 0
-                        z = float(data.get(
-                            "PositionZ",
-                            data.get("Position", 0)
-                        ))
-
-                        rotation = FreeCAD.Rotation()
-
-
-                    part.Placement = FreeCAD.Placement(
-                        FreeCAD.Vector(x, y, z),
-                        rotation
-                    )
-
-
-                elif role == "Divider":
-
-                    if mode == "Manual":
-
-                        x = float(data.get(
-                            "PositionX",
-                            data.get("Position", 0)
-                        ))
-
-                        y = float(data.get(
-                            "PositionY",
-                            0
-                        ))
-
-                        z = float(data.get(
-                            "PositionZ",
-                            self.thicknessSpin.value()
-                        ))
-
-                        rx = float(data.get("RotationX", 0))
-                        ry = float(data.get("RotationY", 0))
-                        rz = float(data.get("RotationZ", 0))
-
-                        rotation = (
-                            FreeCAD.Rotation(
-                                FreeCAD.Vector(1, 0, 0),
-                                rx
-                            )
-                            *
-                            FreeCAD.Rotation(
-                                FreeCAD.Vector(0, 1, 0),
-                                ry
-                            )
-                            *
-                            FreeCAD.Rotation(
-                                FreeCAD.Vector(0, 0, 1),
-                                rz
-                            )
-                        )
-
-                    else:
-
-                        x = float(data.get(
-                            "PositionX",
-                            data.get("Position", 0)
-                        ))
-
-                        y = 0
-                        z = self.thicknessSpin.value()
-
-                        rotation = FreeCAD.Rotation()
-
-
-                    part.Placement = FreeCAD.Placement(
-                        FreeCAD.Vector(x, y, z),
-                        rotation
-                    )
-
-
-                elif role == "Custom":
-
-                    x = float(data.get("PositionX", 0))
-                    y = float(data.get("PositionY", 0))
-                    z = float(data.get(
-                        "PositionZ",
-                        data.get("Position", 0)
-                    ))
-
-                    rx = float(data.get("RotationX", 0))
-                    ry = float(data.get("RotationY", 0))
-                    rz = float(data.get("RotationZ", 0))
-
-                    rotation = (
-                        FreeCAD.Rotation(
-                            FreeCAD.Vector(1, 0, 0),
-                            rx
-                        )
-                        *
-                        FreeCAD.Rotation(
-                            FreeCAD.Vector(0, 1, 0),
-                            ry
-                        )
-                        *
-                        FreeCAD.Rotation(
-                            FreeCAD.Vector(0, 0, 1),
-                            rz
-                        )
-                    )
-
-                    part.Placement = FreeCAD.Placement(
-                        FreeCAD.Vector(x, y, z),
-                        rotation
-                    )
-
+            part.touch()
 
         except Exception as error:
 
             FreeCAD.Console.PrintError(
-                "Error aplicando Placement: "
+                "Error aplicando datos a pieza "
+                + str(code)
+                + ": "
                 + str(error)
                 + "\n"
             )
-
-
-        part.touch()
 
 
     # =========================================================
@@ -3791,6 +3853,37 @@ class PartTableDialog(QtWidgets.QDialog):
 
 
     # =========================================================
+        elif code in (
+            "TR1",
+            "TR2",
+            "TR3"
+        ):
+            self.setText(row, 2, self.number(
+                self.widthSpin.value() - self.thicknessSpin.value() * 2
+            ))
+            self.setText(row, 3, self.number(
+                min(100, self.depthSpin.value())
+            ))
+            self.setText(row, 4, self.number(
+                self.thicknessSpin.value()
+            ))
+
+        elif code in (
+            "BK1",
+            "BK2",
+            "BK3"
+        ):
+            self.setText(row, 2, self.number(
+                min(100, self.heightSpin.value())
+            ))
+            self.setText(row, 3, self.number(
+                self.widthSpin.value() - self.thicknessSpin.value() * 2
+            ))
+            self.setText(row, 4, self.number(
+                self.backThicknessSpin.value()
+            ))
+
+
     # APPLY STRUCTURAL RECALCULATION
     # =========================================================
 
@@ -3812,20 +3905,36 @@ class PartTableDialog(QtWidgets.QDialog):
             QtCore.Qt.ItemDataRole.UserRole
         )
 
-        if part is None:
-            return
-
-
         code = item.data(
             QtCore.Qt.ItemDataRole.UserRole + 1
         )
+
+        part = self.getLivePart(
+            part,
+            code
+        )
+
+        if part is None:
+            return
+
+        item.setData(
+            QtCore.Qt.ItemDataRole.UserRole,
+            part
+        )
+
 
         if code not in (
             "LS",
             "RS",
             "BT",
             "TP",
-            "BK"
+            "BK",
+            "TR1",
+            "TR2",
+            "TR3",
+            "BK1",
+            "BK2",
+            "BK3"
         ):
             return
 
@@ -4016,6 +4125,83 @@ class PartTableDialog(QtWidgets.QDialog):
 
         #
         # =====================================================
+        elif code in (
+            "TR1",
+            "TR2",
+            "TR3"
+        ):
+
+            data["Role"] = "Top"
+            data["Label"] = "Travesaño superior " + code[-1]
+
+            railCodes = []
+            for tableRow in range(self.table.rowCount()):
+                tableItem = self.table.item(tableRow, 0)
+                if tableItem is None:
+                    continue
+                tableCode = str(tableItem.data(
+                    QtCore.Qt.ItemDataRole.UserRole + 1
+                ) or "")
+                if tableCode in ("TR1", "TR2", "TR3"):
+                    railCodes.append(tableCode)
+
+            railCount = 3 if len(railCodes) >= 3 else 2
+            railIndex = int(code[-1]) - 1
+            railDepth = min(100.0, depth)
+            availableDepth = depth - railDepth
+            y = 0 if railCount <= 1 else availableDepth / (railCount - 1) * railIndex
+
+            data["Length"] = width - thickness * 2
+            data["Width"] = railDepth
+            data["Thickness"] = thickness
+            data["LengthAxis"] = "X"
+            data["WidthAxis"] = "Y"
+            data["ThicknessAxis"] = "Z"
+            data["Placement"] = FreeCAD.Placement(
+                FreeCAD.Vector(thickness, y, height - thickness),
+                FreeCAD.Rotation()
+            )
+
+        elif code in (
+            "BK1",
+            "BK2",
+            "BK3"
+        ):
+
+            data["Role"] = "Back"
+            data["Label"] = "Travesaño trasero " + code[-1]
+
+            railCodes = []
+            for tableRow in range(self.table.rowCount()):
+                tableItem = self.table.item(tableRow, 0)
+                if tableItem is None:
+                    continue
+                tableCode = str(tableItem.data(
+                    QtCore.Qt.ItemDataRole.UserRole + 1
+                ) or "")
+                if tableCode in ("BK1", "BK2", "BK3"):
+                    railCodes.append(tableCode)
+
+            railCount = 3 if len(railCodes) >= 3 else 2
+            railIndex = int(code[-1]) - 1
+            railHeight = min(100.0, height)
+            availableHeight = height - railHeight
+            z = 0 if railCount <= 1 else availableHeight / (railCount - 1) * railIndex
+
+            data["Length"] = railHeight
+            data["Width"] = width - thickness * 2
+            data["Thickness"] = backThickness
+            data["LengthAxis"] = "Z"
+            data["WidthAxis"] = "X"
+            data["ThicknessAxis"] = "Y"
+
+            y = depth - backInset - backThickness
+
+            data["Placement"] = FreeCAD.Placement(
+                FreeCAD.Vector(thickness, y, z),
+                FreeCAD.Rotation()
+            )
+
         # BACK
         # =====================================================
 
@@ -4142,20 +4328,10 @@ class PartTableDialog(QtWidgets.QDialog):
 
 
             #
-            # Ensure the placement is definitely the
-            # calculated one. This is especially important
-            # for imported parts.
+            # Placement is intentionally NOT assigned directly.
+            # BosqoPart is a FeaturePython and its placement is
+            # handled by its Proxy.setData() implementation.
             #
-
-            if hasattr(
-                part,
-                "Placement"
-            ):
-
-                part.Placement = (
-                    data["Placement"]
-                )
-
 
             #
             # Mark geometry dirty.
@@ -4355,47 +4531,8 @@ class PartTableDialog(QtWidgets.QDialog):
                 )
 
 
-                #
-                # IMPORTANT:
-                #
-                # Apply the placement immediately to the
-                # real BosqoPart if it already exists.
-                #
-                # Do not wait for saveChanges().
-                #
+                # Placement is stored in the row data.
 
-                item = self.table.item(
-                    row,
-                    0
-                )
-
-                if item is not None:
-
-                    part = item.data(
-                        QtCore.Qt.ItemDataRole.UserRole
-                    )
-
-                    if (
-                        part is not None
-                        and
-                        hasattr(
-                            part,
-                            "Placement"
-                        )
-                    ):
-
-                        part.Placement = (
-                            FreeCAD.Placement(
-                                FreeCAD.Vector(
-                                    panelThickness,
-                                    0,
-                                    z
-                                ),
-                                FreeCAD.Rotation()
-                            )
-                        )
-
-                        part.touch()
 
 
         #
@@ -4483,42 +4620,8 @@ class PartTableDialog(QtWidgets.QDialog):
                 )
 
 
-                #
-                # Apply immediately to existing object.
-                #
+                # Placement is stored in the row data.
 
-                item = self.table.item(
-                    row,
-                    0
-                )
-
-                if item is not None:
-
-                    part = item.data(
-                        QtCore.Qt.ItemDataRole.UserRole
-                    )
-
-                    if (
-                        part is not None
-                        and
-                        hasattr(
-                            part,
-                            "Placement"
-                        )
-                    ):
-
-                        part.Placement = (
-                            FreeCAD.Placement(
-                                FreeCAD.Vector(
-                                    x,
-                                    0,
-                                    panelThickness
-                                ),
-                                FreeCAD.Rotation()
-                            )
-                        )
-
-                        part.touch()
 
 
         if refresh:

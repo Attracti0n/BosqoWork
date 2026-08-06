@@ -12,6 +12,12 @@ class ModuleCalculator:
         automatic_space=None
     ):
 
+        #
+        # =====================================================
+        # BASIC DEFINITION
+        # =====================================================
+        #
+
         code = definition.get(
             "Code",
             ""
@@ -21,6 +27,26 @@ class ModuleCalculator:
             "Role",
             "Custom"
         )
+
+        #
+        # =====================================================
+        # STRUCTURAL ROLES
+        # =====================================================
+        #
+
+        fixed_roles = {
+
+            "LS": "Side",
+            "RS": "Side",
+            "BT": "Bottom",
+            "TP": "Top",
+            "BK": "Back"
+
+        }
+
+        if code in fixed_roles:
+
+            role = fixed_roles[code]
 
         #
         # =====================================================
@@ -40,7 +66,7 @@ class ModuleCalculator:
             getattr(
                 module,
                 "BackThickness",
-                3
+                10
             )
         )
 
@@ -74,6 +100,35 @@ class ModuleCalculator:
                 "Depth",
                 560
             )
+        )
+
+        #
+        # =====================================================
+        # USEFUL DEPTH
+        # =====================================================
+        #
+
+        useful_depth = (
+            module_depth
+            -
+            back_inset
+            -
+            back_thickness
+        )
+
+        if useful_depth < 0:
+
+            useful_depth = 0
+
+        #
+        # =====================================================
+        # POSITION MODE
+        # =====================================================
+        #
+
+        position_mode = definition.get(
+            "PositionMode",
+            "Automatic"
         )
 
         #
@@ -125,6 +180,9 @@ class ModuleCalculator:
                     )
                 ),
 
+            "PositionMode":
+                position_mode,
+
             "LengthAxis":
                 "X",
 
@@ -143,6 +201,7 @@ class ModuleCalculator:
                     ),
                     FreeCAD.Rotation()
                 )
+
         }
 
         #
@@ -153,35 +212,15 @@ class ModuleCalculator:
 
         if role == "Side":
 
-            data["Length"] = (
-                module_height
-            )
+            data["Length"] = module_height
 
-            data["Width"] = (
-                module_depth
-            )
+            data["Width"] = module_depth
 
-            data["Thickness"] = (
-                panel_thickness
-            )
-
-            #
-            # Local dimensions:
-            #
-            # Length -> Z
-            # Width  -> Y
-            # Thickness -> X
-            #
+            data["Thickness"] = panel_thickness
 
             data["LengthAxis"] = "Z"
-
             data["WidthAxis"] = "Y"
-
             data["ThicknessAxis"] = "X"
-
-            #
-            # LEFT / RIGHT
-            #
 
             if code == "LS":
 
@@ -222,42 +261,177 @@ class ModuleCalculator:
 
         elif role == "Top":
 
-            data["Length"] = (
-                module_width
-                -
-                panel_thickness * 2
+            top_system = definition.get(
+                "TopSystem",
+                "Panel"
             )
 
-            data["Width"] = (
-                module_depth
-            )
+            #
+            # -------------------------------------------------
+            # COMPLETE TOP
+            # -------------------------------------------------
+            #
 
-            data["Thickness"] = (
-                panel_thickness
-            )
+            if top_system == "Panel":
 
-            data["Label"] = (
-                "Tapa"
-            )
-
-            data["LengthAxis"] = "X"
-
-            data["WidthAxis"] = "Y"
-
-            data["ThicknessAxis"] = "Z"
-
-            data["Placement"] = (
-                FreeCAD.Placement(
-                    FreeCAD.Vector(
-                        panel_thickness,
-                        0,
-                        module_height
-                        -
-                        panel_thickness
-                    ),
-                    FreeCAD.Rotation()
+                data["Length"] = (
+                    module_width
+                    -
+                    panel_thickness * 2
                 )
-            )
+
+                data["Width"] = module_depth
+
+                data["Thickness"] = panel_thickness
+
+                data["Label"] = "Tapa"
+
+                data["LengthAxis"] = "X"
+                data["WidthAxis"] = "Y"
+                data["ThicknessAxis"] = "Z"
+
+                data["Placement"] = (
+                    FreeCAD.Placement(
+                        FreeCAD.Vector(
+                            panel_thickness,
+                            0,
+                            module_height
+                            -
+                            panel_thickness
+                        ),
+                        FreeCAD.Rotation()
+                    )
+                )
+
+            #
+            # -------------------------------------------------
+            # TOP RAIL
+            # -------------------------------------------------
+            #
+
+            elif top_system == "Rail":
+
+                rail_count = int(
+                    definition.get(
+                        "RailCount",
+                        2
+                    )
+                )
+
+                rail_index = int(
+                    definition.get(
+                        "RailIndex",
+                        0
+                    )
+                )
+
+                #
+                # Width of the rail.
+                #
+                # It fits between the two side panels.
+                #
+
+                rail_length = (
+                    module_width
+                    -
+                    panel_thickness * 2
+                )
+
+                #
+                # Depth of each rail.
+                #
+                # 100 mm is a practical initial value.
+                # This can later become a module parameter.
+                #
+
+                rail_depth = 100.0
+
+                if rail_depth > module_depth:
+
+                    rail_depth = module_depth
+
+                #
+                # Thickness.
+                #
+
+                rail_thickness = panel_thickness
+
+                #
+                # Position along depth.
+                #
+                # The rails are distributed evenly between
+                # the front and rear of the module.
+                #
+
+                available_depth = (
+                    module_depth
+                    -
+                    rail_depth
+                )
+
+                if rail_count <= 1:
+
+                    y = 0
+
+                else:
+
+                    spacing = (
+                        available_depth
+                        /
+                        (
+                            rail_count - 1
+                        )
+                    )
+
+                    y = (
+                        spacing
+                        *
+                        rail_index
+                    )
+
+                #
+                # Dimensions.
+                #
+
+                data["Length"] = rail_length
+
+                data["Width"] = rail_depth
+
+                data["Thickness"] = rail_thickness
+
+                data["Label"] = (
+                    definition.get(
+                        "Label",
+                        "Travesaño superior"
+                    )
+                )
+
+                data["LengthAxis"] = "X"
+                data["WidthAxis"] = "Y"
+                data["ThicknessAxis"] = "Z"
+
+                #
+                # Top position.
+                #
+
+                z = (
+                    module_height
+                    -
+                    rail_thickness
+                )
+
+                x = panel_thickness
+
+                data["Placement"] = (
+                    FreeCAD.Placement(
+                        FreeCAD.Vector(
+                            x,
+                            y,
+                            z
+                        ),
+                        FreeCAD.Rotation()
+                    )
+                )
 
         #
         # =====================================================
@@ -273,22 +447,14 @@ class ModuleCalculator:
                 panel_thickness * 2
             )
 
-            data["Width"] = (
-                module_depth
-            )
+            data["Width"] = module_depth
 
-            data["Thickness"] = (
-                panel_thickness
-            )
+            data["Thickness"] = panel_thickness
 
-            data["Label"] = (
-                "Base"
-            )
+            data["Label"] = "Base"
 
             data["LengthAxis"] = "X"
-
             data["WidthAxis"] = "Y"
-
             data["ThicknessAxis"] = "Z"
 
             data["Placement"] = (
@@ -310,79 +476,178 @@ class ModuleCalculator:
 
         elif role == "Back":
 
-            #
-            # Physical dimensions:
-            #
-            # Width  -> module width
-            # Height -> module height
-            # Thickness -> back thickness
-            #
-
-            data["Length"] = (
-                module_height
-            )
-
-            data["Width"] = (
-                module_width
-            )
-
-            data["Thickness"] = (
-                back_thickness
-            )
-
-            data["Label"] = (
-                "Trasera"
+            back_system = definition.get(
+                "BackSystem",
+                "Panel"
             )
 
             #
-            # Local axes:
-            #
-            # Length    -> Z
-            # Width     -> X
-            # Thickness -> Y
+            # -------------------------------------------------
+            # COMPLETE BACK
+            # -------------------------------------------------
             #
 
-            data["LengthAxis"] = "Z"
+            if back_system == "Panel":
 
-            data["WidthAxis"] = "X"
+                data["Length"] = module_height
 
-            data["ThicknessAxis"] = "Y"
+                data["Width"] = module_width
 
-            #
-            # IMPORTANT
-            #
-            # The back must remain vertical.
-            #
-            # We rotate the local panel:
-            #
-            # local X -> global X
-            # local Y -> global Y
-            # local Z -> global Z
-            #
-            # No rotation of the panel itself is required.
-            #
-            # Instead, BosqoPart uses the axis information
-            # to construct the geometry.
-            #
+                data["Thickness"] = back_thickness
 
-            y = (
-                module_depth
-                -
-                back_inset
-                -
-                back_thickness
-            )
-
-            data["Placement"] = (
-                FreeCAD.Placement(
-                    FreeCAD.Vector(
-                        0,
-                        y,
-                        0
-                    ),
-                    FreeCAD.Rotation()
+                data["Label"] = (
+                    definition.get(
+                        "Label",
+                        "Trasera"
+                    )
                 )
-            )
+
+                data["LengthAxis"] = "Z"
+                data["WidthAxis"] = "X"
+                data["ThicknessAxis"] = "Y"
+
+                y = (
+                    module_depth
+                    -
+                    back_inset
+                    -
+                    back_thickness
+                )
+
+                data["Placement"] = (
+                    FreeCAD.Placement(
+                        FreeCAD.Vector(
+                            0,
+                            y,
+                            0
+                        ),
+                        FreeCAD.Rotation()
+                    )
+                )
+
+            #
+            # -------------------------------------------------
+            # BACK RAIL
+            # -------------------------------------------------
+            #
+
+            elif back_system == "Rail":
+
+                rail_count = int(
+                    definition.get(
+                        "RailCount",
+                        2
+                    )
+                )
+
+                rail_index = int(
+                    definition.get(
+                        "RailIndex",
+                        0
+                    )
+                )
+
+                #
+                # Rail width across the module.
+                #
+
+                rail_width = (
+                    module_width
+                    -
+                    panel_thickness * 2
+                )
+
+                #
+                # Height of the rear rail.
+                #
+
+                rail_height = 100.0
+
+                if rail_height > module_height:
+
+                    rail_height = module_height
+
+                #
+                # Thickness.
+                #
+
+                rail_thickness = back_thickness
+
+                #
+                # Available vertical space.
+                #
+
+                available_height = (
+                    module_height
+                    -
+                    rail_height
+                )
+
+                if rail_count <= 1:
+
+                    z = 0
+
+                else:
+
+                    spacing = (
+                        available_height
+                        /
+                        (
+                            rail_count - 1
+                        )
+                    )
+
+                    z = (
+                        spacing
+                        *
+                        rail_index
+                    )
+
+                #
+                # Dimensions.
+                #
+
+                data["Length"] = rail_height
+
+                data["Width"] = rail_width
+
+                data["Thickness"] = rail_thickness
+
+                data["Label"] = (
+                    definition.get(
+                        "Label",
+                        "Travesaño trasero"
+                    )
+                )
+
+                data["LengthAxis"] = "Z"
+                data["WidthAxis"] = "X"
+                data["ThicknessAxis"] = "Y"
+
+                #
+                # Rear position.
+                #
+
+                y = (
+                    module_depth
+                    -
+                    back_inset
+                    -
+                    rail_thickness
+                )
+
+                x = panel_thickness
+
+                data["Placement"] = (
+                    FreeCAD.Placement(
+                        FreeCAD.Vector(
+                            x,
+                            y,
+                            z
+                        ),
+                        FreeCAD.Rotation()
+                    )
+                )
 
         #
         # =====================================================
@@ -392,25 +657,6 @@ class ModuleCalculator:
 
         elif role == "Shelf":
 
-            position_mode = definition.get(
-                "PositionMode",
-                "Automatic"
-            )
-
-            #
-            # =================================================
-            # AUTOMATIC SHELF
-            # =================================================
-            #
-            # IMPORTANT:
-            #
-            # When the shelf is automatic, its dimensions must
-            # ALWAYS be calculated from the current module.
-            #
-            # We must NOT use old Length / Width values stored
-            # in the dialog.
-            #
-
             if position_mode == "Automatic":
 
                 data["Length"] = (
@@ -419,65 +665,51 @@ class ModuleCalculator:
                     panel_thickness * 2
                 )
 
-                data["Width"] = (
-                    module_depth
-                )
+                data["Width"] = useful_depth
 
-                data["Thickness"] = (
-                    panel_thickness
-                )
-
-            #
-            # =================================================
-            # MANUAL SHELF
-            # =================================================
-            #
+                data["Thickness"] = panel_thickness
 
             else:
 
-                data["Length"] = ModuleCalculator.toFloat(
-                    definition.get(
-                        "Length",
-                        module_width
-                        -
-                        panel_thickness * 2
+                data["Length"] = (
+                    ModuleCalculator.toFloat(
+                        definition.get(
+                            "Length",
+                            module_width
+                            -
+                            panel_thickness * 2
+                        )
                     )
                 )
 
-                data["Width"] = ModuleCalculator.toFloat(
-                    definition.get(
-                        "Width",
-                        module_depth
+                data["Width"] = (
+                    ModuleCalculator.toFloat(
+                        definition.get(
+                            "Width",
+                            module_depth
+                        )
                     )
                 )
 
-                data["Thickness"] = ModuleCalculator.toFloat(
-                    definition.get(
-                        "Thickness",
-                        panel_thickness
+                data["Thickness"] = (
+                    ModuleCalculator.toFloat(
+                        definition.get(
+                            "Thickness",
+                            panel_thickness
+                        )
                     )
                 )
 
-            data["Label"] = definition.get(
-                "Label",
-                "Balda"
+            data["Label"] = (
+                definition.get(
+                    "Label",
+                    "Balda"
+                )
             )
 
-            #
-            # Shelf orientation.
-            #
-
             data["LengthAxis"] = "X"
-
             data["WidthAxis"] = "Y"
-
             data["ThicknessAxis"] = "Z"
-
-            #
-            # =================================================
-            # MANUAL POSITION
-            # =================================================
-            #
 
             if position_mode == "Manual":
 
@@ -505,18 +737,7 @@ class ModuleCalculator:
                     )
                 )
 
-            #
-            # =================================================
-            # AUTOMATIC POSITION
-            # =================================================
-            #
-
             else:
-
-                #
-                # automatic_space represents the free vertical
-                # distance between shelves.
-                #
 
                 if automatic_space is not None:
 
@@ -528,9 +749,7 @@ class ModuleCalculator:
                         )
                         *
                         (
-                            position_index
-                            +
-                            1
+                            position_index + 1
                         )
                         +
                         panel_thickness
@@ -562,9 +781,7 @@ class ModuleCalculator:
                         free_height
                         /
                         (
-                            automatic_count
-                            +
-                            1
+                            automatic_count + 1
                         )
                     )
 
@@ -574,9 +791,7 @@ class ModuleCalculator:
                         spacing
                         *
                         (
-                            position_index
-                            +
-                            1
+                            position_index + 1
                         )
                         +
                         panel_thickness
@@ -584,17 +799,7 @@ class ModuleCalculator:
                         position_index
                     )
 
-                #
-                # X:
-                # start at the inside face of left side.
-                #
-
                 x = panel_thickness
-
-                #
-                # Y:
-                # front of the module.
-                #
 
                 y = 0
 
@@ -617,17 +822,6 @@ class ModuleCalculator:
 
         elif role == "Divider":
 
-            position_mode = definition.get(
-                "PositionMode",
-                "Automatic"
-            )
-
-            #
-            # =================================================
-            # AUTOMATIC DIVIDER
-            # =================================================
-            #
-
             if position_mode == "Automatic":
 
                 data["Length"] = (
@@ -636,65 +830,51 @@ class ModuleCalculator:
                     panel_thickness * 2
                 )
 
-                data["Width"] = (
-                    module_depth
-                )
+                data["Width"] = useful_depth
 
-                data["Thickness"] = (
-                    panel_thickness
-                )
-
-            #
-            # =================================================
-            # MANUAL DIVIDER
-            # =================================================
-            #
+                data["Thickness"] = panel_thickness
 
             else:
 
-                data["Length"] = ModuleCalculator.toFloat(
-                    definition.get(
-                        "Length",
-                        module_height
-                        -
-                        panel_thickness * 2
+                data["Length"] = (
+                    ModuleCalculator.toFloat(
+                        definition.get(
+                            "Length",
+                            module_height
+                            -
+                            panel_thickness * 2
+                        )
                     )
                 )
 
-                data["Width"] = ModuleCalculator.toFloat(
-                    definition.get(
-                        "Width",
-                        module_depth
+                data["Width"] = (
+                    ModuleCalculator.toFloat(
+                        definition.get(
+                            "Width",
+                            module_depth
+                        )
                     )
                 )
 
-                data["Thickness"] = ModuleCalculator.toFloat(
-                    definition.get(
-                        "Thickness",
-                        panel_thickness
+                data["Thickness"] = (
+                    ModuleCalculator.toFloat(
+                        definition.get(
+                            "Thickness",
+                            panel_thickness
+                        )
                     )
                 )
 
-            data["Label"] = definition.get(
-                "Label",
-                "Separador"
+            data["Label"] = (
+                definition.get(
+                    "Label",
+                    "Separador"
+                )
             )
 
-            #
-            # Divider orientation.
-            #
-
             data["LengthAxis"] = "Z"
-
             data["WidthAxis"] = "Y"
-
             data["ThicknessAxis"] = "X"
-
-            #
-            # =================================================
-            # MANUAL POSITION
-            # =================================================
-            #
 
             if position_mode == "Manual":
 
@@ -722,12 +902,6 @@ class ModuleCalculator:
                     )
                 )
 
-            #
-            # =================================================
-            # AUTOMATIC POSITION
-            # =================================================
-            #
-
             else:
 
                 if automatic_space is not None:
@@ -740,9 +914,7 @@ class ModuleCalculator:
                         )
                         *
                         (
-                            position_index
-                            +
-                            1
+                            position_index + 1
                         )
                         +
                         panel_thickness
@@ -774,9 +946,7 @@ class ModuleCalculator:
                         free_width
                         /
                         (
-                            automatic_count
-                            +
-                            1
+                            automatic_count + 1
                         )
                     )
 
@@ -786,9 +956,7 @@ class ModuleCalculator:
                         spacing
                         *
                         (
-                            position_index
-                            +
-                            1
+                            position_index + 1
                         )
                         +
                         panel_thickness
@@ -819,34 +987,38 @@ class ModuleCalculator:
 
         elif role == "Custom":
 
-            #
-            # Custom dimensions always come from the table.
-            #
-
-            data["Length"] = ModuleCalculator.toFloat(
-                definition.get(
-                    "Length",
-                    100
+            data["Length"] = (
+                ModuleCalculator.toFloat(
+                    definition.get(
+                        "Length",
+                        100
+                    )
                 )
             )
 
-            data["Width"] = ModuleCalculator.toFloat(
-                definition.get(
-                    "Width",
-                    100
+            data["Width"] = (
+                ModuleCalculator.toFloat(
+                    definition.get(
+                        "Width",
+                        100
+                    )
                 )
             )
 
-            data["Thickness"] = ModuleCalculator.toFloat(
-                definition.get(
-                    "Thickness",
-                    panel_thickness
+            data["Thickness"] = (
+                ModuleCalculator.toFloat(
+                    definition.get(
+                        "Thickness",
+                        panel_thickness
+                    )
                 )
             )
 
-            data["Label"] = definition.get(
-                "Label",
-                "Pieza personalizada"
+            data["Label"] = (
+                definition.get(
+                    "Label",
+                    "Pieza personalizada"
+                )
             )
 
             data["PartType"] = (
@@ -854,16 +1026,8 @@ class ModuleCalculator:
             )
 
             data["LengthAxis"] = "X"
-
             data["WidthAxis"] = "Y"
-
             data["ThicknessAxis"] = "Z"
-
-            #
-            # =================================================
-            # POSITION
-            # =================================================
-            #
 
             x = ModuleCalculator.toFloat(
                 definition.get(
@@ -885,12 +1049,6 @@ class ModuleCalculator:
                     0
                 )
             )
-
-            #
-            # =================================================
-            # ROTATION
-            # =================================================
-            #
 
             rotation_x = ModuleCalculator.toFloat(
                 definition.get(
@@ -961,43 +1119,55 @@ class ModuleCalculator:
 
         else:
 
-            data["Length"] = ModuleCalculator.toFloat(
-                definition.get(
-                    "Length",
-                    100
+            data["Length"] = (
+                ModuleCalculator.toFloat(
+                    definition.get(
+                        "Length",
+                        100
+                    )
                 )
             )
 
-            data["Width"] = ModuleCalculator.toFloat(
-                definition.get(
-                    "Width",
-                    100
+            data["Width"] = (
+                ModuleCalculator.toFloat(
+                    definition.get(
+                        "Width",
+                        100
+                    )
                 )
             )
 
-            data["Thickness"] = ModuleCalculator.toFloat(
-                definition.get(
-                    "Thickness",
-                    panel_thickness
+            data["Thickness"] = (
+                ModuleCalculator.toFloat(
+                    definition.get(
+                        "Thickness",
+                        panel_thickness
+                    )
                 )
             )
 
-            data["Label"] = definition.get(
-                "Label",
-                "Pieza"
+            data["Label"] = (
+                definition.get(
+                    "Label",
+                    "Pieza"
+                )
             )
 
-            data["PartType"] = definition.get(
-                "PartType",
-                "Personalizado"
+            data["PartType"] = (
+                definition.get(
+                    "PartType",
+                    "Personalizado"
+                )
             )
 
         return data
 
 
+    #
     # =========================================================
     # TO FLOAT
     # =========================================================
+    #
 
     @staticmethod
     def toFloat(

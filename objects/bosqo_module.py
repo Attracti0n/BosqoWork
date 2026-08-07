@@ -1,434 +1,337 @@
 import FreeCAD
-import os
-
-from app_paths import ICONS_DIR
-
-from dialogs.module_dialog import ModuleDialog
-from core.builders.module_builder import ModuleBuilder
+import json
 
 
 class BosqoModule:
 
-    def __init__(
-        self,
-        obj
-    ):
+    def __init__(self, obj):
+
+        self.ObjectType = "BosqoModule"
 
         obj.Proxy = self
 
-        self.initProperties(
-            obj
-        )
-
-        ViewProviderBosqoModule(
-            obj.ViewObject
-        )
+        self.initProperties(obj)
 
 
-    #
     # =========================================================
     # PROPERTIES
     # =========================================================
-    #
 
-    def initProperties(
-        self,
-        obj
-    ):
+    def initProperties(self, obj):
 
-        #
-        # NAME
-        #
-
-        if not obj.Label:
-
-            obj.Label = "Módulo"
-
-
-        #
-        # TYPE
-        #
-
-        if not hasattr(
+        self.addString(
             obj,
-            "Type"
-        ):
+            "ModuleName",
+            "Módulo",
+            "Nombre del módulo",
+            "Nuevo módulo"
+        )
 
-            obj.addProperty(
-                "App::PropertyEnumeration",
-                "Type",
-                "Module",
-                "Tipo de módulo"
-            )
-
-            obj.Type = [
-
-                "Módulo bajo",
-                "Módulo alto",
-                "Columna",
-                "Armario",
-                "Personalizado"
-
-            ]
-
-            obj.Type = "Módulo bajo"
-
-
-        #
-        # TOP TYPE
-        #
-
-        if not hasattr(
+        self.addEnumeration(
             obj,
-            "TopType"
-        ):
-
-            obj.addProperty(
-                "App::PropertyEnumeration",
-                "TopType",
-                "Module",
-                "Sistema superior del módulo"
-            )
-
-            obj.TopType = [
-
-                "Tapa completa",
-                "2 travesaños",
-                "3 travesaños"
-
-            ]
-
-            obj.TopType = "Tapa completa"
-
-
-        #
-        # BACK TYPE
-        #
-
-        if not hasattr(
-            obj,
-            "BackType"
-        ):
-
-            obj.addProperty(
-                "App::PropertyEnumeration",
-                "BackType",
-                "Module",
-                "Sistema trasero del módulo"
-            )
-
-            obj.BackType = [
-
-                "Trasera sobrepuesta",
-                "Trasera oculta",
-                "2 travesaños",
-                "3 travesaños",
-                "Sin trasera"
-
-            ]
-
-            obj.BackType = "Trasera sobrepuesta"
-
-
-        #
-        # DIMENSIONS
-        #
+            "Type",
+            "Módulo",
+            "Tipo de módulo",
+            [
+                "Módulo bajo"
+            ],
+            "Módulo bajo"
+        )
 
         self.addLength(
             obj,
             "Width",
-            600,
-            "Parameters"
+            "Dimensiones",
+            "Ancho",
+            600
         )
 
         self.addLength(
             obj,
             "Height",
-            720,
-            "Parameters"
+            "Dimensiones",
+            "Alto",
+            720
         )
 
         self.addLength(
             obj,
             "Depth",
-            560,
-            "Parameters"
+            "Dimensiones",
+            "Profundidad",
+            560
         )
-
-
-        #
-        # PANEL THICKNESS
-        #
 
         self.addLength(
             obj,
             "PanelThickness",
-            19,
-            "Parameters"
+            "Espesores",
+            "Espesor panel",
+            19
         )
-
-
-        #
-        # BACK THICKNESS
-        #
 
         self.addLength(
             obj,
             "BackThickness",
-            10,
-            "Parameters"
+            "Espesores",
+            "Espesor fondo",
+            10
         )
-
-
-        #
-        # BACK INSET
-        #
 
         self.addLength(
             obj,
             "BackInset",
-            0,
-            "Parameters"
+            "Fondo",
+            "Retranqueo fondo",
+            0
+        )
+
+        self.addEnumeration(
+            obj,
+            "TopType",
+            "Estructura",
+            "Tipo de tapa",
+            [
+                "Tapa completa",
+                "2 travesaños",
+                "3 travesaños"
+            ],
+            "Tapa completa"
+        )
+
+        self.addEnumeration(
+            obj,
+            "BackType",
+            "Estructura",
+            "Tipo de trasera",
+            [
+                "Trasera sobrepuesta",
+                "Trasera oculta",
+                "2 travesaños",
+                "3 travesaños",
+                "Sin trasera"
+            ],
+            "Trasera sobrepuesta"
+        )
+
+        self.addString(
+            obj,
+            "PartsJSON",
+            "Interno",
+            "Piezas personalizadas",
+            "[]"
+        )
+
+        self.addString(
+            obj,
+            "StructuralPlacementsJSON",
+            "Interno",
+            "Posiciones manuales de estructura",
+            "{}"
+        )
+
+        obj.setEditorMode(
+            "PartsJSON",
+            2
+        )
+
+        obj.setEditorMode(
+            "StructuralPlacementsJSON",
+            2
         )
 
 
-    #
     # =========================================================
-    # HELPERS
+    # ADD STRING
     # =========================================================
-    #
+
+    def addString(
+        self,
+        obj,
+        name,
+        group,
+        label,
+        value
+    ):
+
+        if hasattr(obj, name):
+            return
+
+        obj.addProperty(
+            "App::PropertyString",
+            name,
+            group,
+            label
+        )
+
+        setattr(
+            obj,
+            name,
+            value
+        )
+
+
+    # =========================================================
+    # ADD LENGTH
+    # =========================================================
 
     def addLength(
         self,
         obj,
         name,
-        value,
-        group
+        group,
+        label,
+        value
     ):
 
-        if not hasattr(
-            obj,
-            name
-        ):
+        if hasattr(obj, name):
+            return
 
-            obj.addProperty(
-                "App::PropertyLength",
-                name,
-                group
-            )
+        obj.addProperty(
+            "App::PropertyLength",
+            name,
+            group,
+            label
+        )
+
+        setattr(
+            obj,
+            name,
+            value
+        )
+
+
+    # =========================================================
+    # ADD ENUMERATION
+    # =========================================================
+
+    def addEnumeration(
+        self,
+        obj,
+        name,
+        group,
+        label,
+        values,
+        default
+    ):
+
+        if hasattr(obj, name):
+            return
+
+        obj.addProperty(
+            "App::PropertyEnumeration",
+            name,
+            group,
+            label
+        )
+
+        setattr(
+            obj,
+            name,
+            values
+        )
+
+        try:
 
             setattr(
                 obj,
                 name,
-                FreeCAD.Units.Quantity(
-                    f"{value} mm"
-                )
+                default
             )
 
+        except Exception:
 
-    #
+            pass
+
+
     # =========================================================
-    # DATA
+    # GET PARTS
     # =========================================================
-    #
-
-    def getData(
-        self,
-        obj
-    ):
-
-        return {
-
-            "Label":
-                obj.Label,
-
-            "Type":
-                obj.Type,
-
-            "TopType":
-                obj.TopType,
-
-            "BackType":
-                obj.BackType,
-
-            "Width":
-                obj.Width,
-
-            "Height":
-                obj.Height,
-
-            "Depth":
-                obj.Depth,
-
-            "PanelThickness":
-                obj.PanelThickness,
-
-            "BackThickness":
-                obj.BackThickness,
-
-            "BackInset":
-                obj.BackInset
-
-        }
-
-
-    def setData(
-        self,
-        obj,
-        data
-    ):
-
-        for key, value in data.items():
-
-            if hasattr(
-                obj,
-                key
-            ):
-
-                setattr(
-                    obj,
-                    key,
-                    value
-                )
-
-
-    #
-    # =========================================================
-    # PARTS
-    # =========================================================
-    #
-
-    def addPart(
-        self,
-        obj,
-        part
-    ):
-
-        if part not in obj.Group:
-
-            obj.addObject(
-                part
-            )
-
-
-    def removePart(
-        self,
-        obj,
-        part
-    ):
-
-        if part in obj.Group:
-
-            obj.removeObject(
-                part
-            )
-
 
     def getParts(
         self,
         obj
     ):
 
-        return list(
-            obj.Group
-        )
+        parts = []
+
+        for child in getattr(
+            obj,
+            "Group",
+            []
+        ):
+
+            if child is obj:
+                continue
+
+            parts.append(
+                child
+            )
+
+        return parts
 
 
-    #
     # =========================================================
-    # MODULE DATA
+    # GET USER PARTS
     # =========================================================
-    #
 
-    def getModuleData(
+    def getUserParts(
         self,
         obj
     ):
-
-        from core.data.module_data import ModuleData
-
-        data = ModuleData()
-
-        return data.fromObject(
-            obj
-        )
-
-
-    #
-    # =========================================================
-    # FREECAD
-    # =========================================================
-    #
-
-    def execute(
-        self,
-        obj
-    ):
-
-        pass
-
-
-    def onChanged(
-        self,
-        obj,
-        prop
-    ):
-
-        rebuild_properties = {
-
-            "Type",
-            "TopType",
-            "BackType",
-
-            "Width",
-            "Height",
-            "Depth",
-
-            "PanelThickness",
-            "BackThickness",
-            "BackInset"
-
-        }
-
-        if prop not in rebuild_properties:
-
-            return
-
-        required_properties = [
-
-            "Type",
-            "TopType",
-            "BackType",
-
-            "Width",
-            "Height",
-            "Depth",
-
-            "PanelThickness",
-            "BackThickness",
-            "BackInset"
-
-        ]
-
-        for property_name in required_properties:
-
-            if not hasattr(
-                obj,
-                property_name
-            ):
-
-                return
 
         try:
 
-            ModuleBuilder.build(
-                obj
+            data = json.loads(
+                getattr(
+                    obj,
+                    "PartsJSON",
+                    "[]"
+                )
+            )
+
+            if isinstance(
+                data,
+                list
+            ):
+
+                return [
+                    dict(item)
+                    for item in data
+                    if isinstance(
+                        item,
+                        dict
+                    )
+                ]
+
+        except Exception:
+
+            pass
+
+        return []
+
+
+    # =========================================================
+    # SET USER PARTS
+    # =========================================================
+
+    def setUserParts(
+        self,
+        obj,
+        parts
+    ):
+
+        try:
+
+            obj.PartsJSON = json.dumps(
+                parts,
+                ensure_ascii=False
             )
 
         except Exception as error:
 
             FreeCAD.Console.PrintError(
-                "BosqoModule rebuild error: "
+                "Error guardando piezas personalizadas: "
                 +
                 str(error)
                 +
@@ -436,130 +339,327 @@ class BosqoModule:
             )
 
 
-    #
     # =========================================================
-    # ICON
+    # GET STRUCTURAL PLACEMENTS
     # =========================================================
-    #
 
-    def getIcon(
-        self
-    ):
-
-        return os.path.join(
-            ICONS_DIR,
-            "module.svg"
-        )
-
-
-    #
-    # =========================================================
-    # SERIALIZATION
-    # =========================================================
-    #
-
-    def __getstate__(
-        self
-    ):
-
-        return None
-
-
-    def __setstate__(
+    def getStructuralPlacements(
         self,
-        state
+        obj
     ):
 
-        return None
+        try:
+
+            data = json.loads(
+                getattr(
+                    obj,
+                    "StructuralPlacementsJSON",
+                    "{}"
+                )
+            )
+
+            if isinstance(
+                data,
+                dict
+            ):
+
+                return data
+
+        except Exception:
+
+            pass
+
+        return {}
 
 
-class ViewProviderBosqoModule:
+    # =========================================================
+    # SET STRUCTURAL PLACEMENTS
+    # =========================================================
 
-    def __init__(
-        self,
-        view_object
-    ):
-
-        view_object.Proxy = self
-
-
-    def attach(
-        self,
-        view_object
-    ):
-
-        pass
-
-
-    def updateData(
+    def setStructuralPlacements(
         self,
         obj,
-        prop
+        data
     ):
 
-        pass
+        try:
 
+            obj.StructuralPlacementsJSON = json.dumps(
+                data,
+                ensure_ascii=False
+            )
+
+        except Exception as error:
+
+            FreeCAD.Console.PrintError(
+                "Error guardando posiciones estructurales: "
+                +
+                str(error)
+                +
+                "\n"
+            )
+
+
+    # =========================================================
+    # EXECUTE
+    # =========================================================
+
+    def execute(
+        self,
+        obj
+    ):
+
+        return
+
+
+    # =========================================================
+    # ON CHANGED
+    # =========================================================
 
     def onChanged(
         self,
-        view_object,
-        prop
+        obj,
+        property
     ):
 
-        pass
+        # -----------------------------------------------------
+        # DEBUG
+        # -----------------------------------------------------
 
+        try:
 
-    def doubleClicked(
-        self,
-        view_object
-    ):
-
-        obj = view_object.Object
-
-        dialog = ModuleDialog(
-            obj.Proxy.getData(
-                obj
-            )
-        )
-
-        if dialog.exec():
-
-            obj.Proxy.setData(
-                obj,
-                dialog.getData()
+            FreeCAD.Console.PrintMessage(
+                "\n"
+                "=== BOSQO MODULE ONCHANGED ===\n"
             )
 
-            ModuleBuilder.build(
-                obj
+            FreeCAD.Console.PrintMessage(
+                "obj.Name = "
+                +
+                str(
+                    getattr(
+                        obj,
+                        "Name",
+                        "SIN NAME"
+                    )
+                )
+                +
+                "\n"
             )
 
-            obj.Document.recompute()
+            FreeCAD.Console.PrintMessage(
+                "obj.Label = "
+                +
+                str(
+                    getattr(
+                        obj,
+                        "Label",
+                        "SIN LABEL"
+                    )
+                )
+                +
+                "\n"
+            )
 
-        return True
+            FreeCAD.Console.PrintMessage(
+                "obj.TypeId = "
+                +
+                str(
+                    getattr(
+                        obj,
+                        "TypeId",
+                        "SIN TYPEID"
+                    )
+                )
+                +
+                "\n"
+            )
+
+            FreeCAD.Console.PrintMessage(
+                "property = "
+                +
+                str(
+                    property
+                )
+                +
+                "\n"
+            )
+
+            FreeCAD.Console.PrintMessage(
+                "Has Width = "
+                +
+                str(
+                    hasattr(
+                        obj,
+                        "Width"
+                    )
+                )
+                +
+                "\n"
+            )
+
+            FreeCAD.Console.PrintMessage(
+                "Has Height = "
+                +
+                str(
+                    hasattr(
+                        obj,
+                        "Height"
+                    )
+                )
+                +
+                "\n"
+            )
+
+            FreeCAD.Console.PrintMessage(
+                "Has Depth = "
+                +
+                str(
+                    hasattr(
+                        obj,
+                        "Depth"
+                    )
+                )
+                +
+                "\n"
+            )
+
+            FreeCAD.Console.PrintMessage(
+                "Has PanelThickness = "
+                +
+                str(
+                    hasattr(
+                        obj,
+                        "PanelThickness"
+                    )
+                )
+                +
+                "\n"
+            )
+
+            FreeCAD.Console.PrintMessage(
+                "Has BackThickness = "
+                +
+                str(
+                    hasattr(
+                        obj,
+                        "BackThickness"
+                    )
+                )
+                +
+                "\n"
+            )
+
+            FreeCAD.Console.PrintMessage(
+                "Has BackInset = "
+                +
+                str(
+                    hasattr(
+                        obj,
+                        "BackInset"
+                    )
+                )
+                +
+                "\n"
+            )
+
+            FreeCAD.Console.PrintMessage(
+                "Proxy = "
+                +
+                str(
+                    type(
+                        getattr(
+                            obj,
+                            "Proxy",
+                            None
+                        )
+                    )
+                )
+                +
+                "\n"
+            )
+
+            FreeCAD.Console.PrintMessage(
+                "================================\n"
+            )
+
+        except Exception as error:
+
+            FreeCAD.Console.PrintError(
+                "Error en diagnóstico onChanged: "
+                +
+                str(error)
+                +
+                "\n"
+            )
 
 
-    def getIcon(
-        self
-    ):
+        # -----------------------------------------------------
+        # MODULE NAME
+        # -----------------------------------------------------
 
-        return os.path.join(
-            ICONS_DIR,
-            "module.svg"
-        )
+        if property == "ModuleName":
+
+            try:
+
+                name = str(
+                    obj.ModuleName
+                ).strip()
+
+                if name:
+
+                    obj.Label = name
+
+            except Exception:
+
+                pass
 
 
-#
-# =========================================================
-# FACTORY
-# =========================================================
-#
+        # -----------------------------------------------------
+        # RECALCULATE MODULE
+        # -----------------------------------------------------
+
+        if property in (
+            "Width",
+            "Height",
+            "Depth",
+            "PanelThickness",
+            "BackThickness",
+            "BackInset",
+            "TopType",
+            "BackType"
+        ):
+
+            try:
+
+                from core.builders.module_builder import (
+                    ModuleBuilder
+                )
+
+                ModuleBuilder.build(
+                    obj
+                )
+
+            except Exception as error:
+
+                FreeCAD.Console.PrintError(
+                    "Error recalculando módulo: "
+                    +
+                    str(error)
+                    +
+                    "\n"
+                )
+
+
+# =============================================================
+# CREATE MODULE
+# =============================================================
 
 def create_module(
-    doc,
-    data=None
+    document
 ):
 
-    module = doc.addObject(
+    module = document.addObject(
         "App::DocumentObjectGroupPython",
         "BosqoModule"
     )
@@ -567,12 +667,5 @@ def create_module(
     BosqoModule(
         module
     )
-
-    if data:
-
-        module.Proxy.setData(
-            module,
-            data
-        )
 
     return module

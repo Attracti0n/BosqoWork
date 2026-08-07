@@ -1,5 +1,11 @@
-from PySide import QtWidgets
+import FreeCAD
 
+from PySide import QtWidgets, QtCore
+
+
+# =============================================================
+# MANUAL PLACEMENT DIALOG
+# =============================================================
 
 class ManualPlacementDialog(QtWidgets.QDialog):
 
@@ -34,66 +40,42 @@ class ManualPlacementDialog(QtWidgets.QDialog):
         # =====================================================
         #
 
-        positionGroup = QtWidgets.QGroupBox(
+        position_group = QtWidgets.QGroupBox(
             "Posición"
         )
 
-        positionLayout = QtWidgets.QGridLayout()
-
-        positionLayout.addWidget(
-            QtWidgets.QLabel(
-                "X:"
-            ),
-            0,
-            0
-        )
+        position_layout = QtWidgets.QGridLayout()
 
         self.xSpin = self.createSpinBox()
-
-        positionLayout.addWidget(
-            self.xSpin,
-            0,
-            1
-        )
-
-        positionLayout.addWidget(
-            QtWidgets.QLabel(
-                "Y:"
-            ),
-            1,
-            0
-        )
-
         self.ySpin = self.createSpinBox()
-
-        positionLayout.addWidget(
-            self.ySpin,
-            1,
-            1
-        )
-
-        positionLayout.addWidget(
-            QtWidgets.QLabel(
-                "Z:"
-            ),
-            2,
-            0
-        )
-
         self.zSpin = self.createSpinBox()
 
-        positionLayout.addWidget(
-            self.zSpin,
-            2,
-            1
-        )
+        for row, label, widget in (
+            (0, "X:", self.xSpin),
+            (1, "Y:", self.ySpin),
+            (2, "Z:", self.zSpin)
+        ):
 
-        positionGroup.setLayout(
-            positionLayout
+            position_layout.addWidget(
+                QtWidgets.QLabel(
+                    label
+                ),
+                row,
+                0
+            )
+
+            position_layout.addWidget(
+                widget,
+                row,
+                1
+            )
+
+        position_group.setLayout(
+            position_layout
         )
 
         layout.addWidget(
-            positionGroup
+            position_group
         )
 
         #
@@ -102,66 +84,42 @@ class ManualPlacementDialog(QtWidgets.QDialog):
         # =====================================================
         #
 
-        rotationGroup = QtWidgets.QGroupBox(
+        rotation_group = QtWidgets.QGroupBox(
             "Giro"
         )
 
-        rotationLayout = QtWidgets.QGridLayout()
-
-        rotationLayout.addWidget(
-            QtWidgets.QLabel(
-                "Giro X:"
-            ),
-            0,
-            0
-        )
+        rotation_layout = QtWidgets.QGridLayout()
 
         self.rxSpin = self.createAngleSpinBox()
-
-        rotationLayout.addWidget(
-            self.rxSpin,
-            0,
-            1
-        )
-
-        rotationLayout.addWidget(
-            QtWidgets.QLabel(
-                "Giro Y:"
-            ),
-            1,
-            0
-        )
-
         self.rySpin = self.createAngleSpinBox()
-
-        rotationLayout.addWidget(
-            self.rySpin,
-            1,
-            1
-        )
-
-        rotationLayout.addWidget(
-            QtWidgets.QLabel(
-                "Giro Z:"
-            ),
-            2,
-            0
-        )
-
         self.rzSpin = self.createAngleSpinBox()
 
-        rotationLayout.addWidget(
-            self.rzSpin,
-            2,
-            1
-        )
+        for row, label, widget in (
+            (0, "Giro X:", self.rxSpin),
+            (1, "Giro Y:", self.rySpin),
+            (2, "Giro Z:", self.rzSpin)
+        ):
 
-        rotationGroup.setLayout(
-            rotationLayout
+            rotation_layout.addWidget(
+                QtWidgets.QLabel(
+                    label
+                ),
+                row,
+                0
+            )
+
+            rotation_layout.addWidget(
+                widget,
+                row,
+                1
+            )
+
+        rotation_group.setLayout(
+            rotation_layout
         )
 
         layout.addWidget(
-            rotationGroup
+            rotation_group
         )
 
         #
@@ -174,47 +132,40 @@ class ManualPlacementDialog(QtWidgets.QDialog):
 
         buttons.addStretch()
 
-        cancelButton = QtWidgets.QPushButton(
+        cancel_button = QtWidgets.QPushButton(
             "Cancelar"
         )
 
-        okButton = QtWidgets.QPushButton(
+        ok_button = QtWidgets.QPushButton(
             "Aceptar"
         )
 
         buttons.addWidget(
-            cancelButton
+            cancel_button
         )
 
         buttons.addWidget(
-            okButton
+            ok_button
         )
 
         layout.addLayout(
             buttons
         )
 
-        cancelButton.clicked.connect(
+        cancel_button.clicked.connect(
             self.reject
         )
 
-        okButton.clicked.connect(
+        ok_button.clicked.connect(
             self.accept
         )
 
-        #
-        # =====================================================
-        # LOAD EXISTING VALUES
-        # =====================================================
-        #
-
         self.loadData()
 
-    #
+
     # =========================================================
-    # SPINBOX
+    # SPIN BOX
     # =========================================================
-    #
 
     def createSpinBox(
         self
@@ -237,6 +188,7 @@ class ManualPlacementDialog(QtWidgets.QDialog):
 
         return spin
 
+
     def createAngleSpinBox(
         self
     ):
@@ -258,11 +210,10 @@ class ManualPlacementDialog(QtWidgets.QDialog):
 
         return spin
 
-    #
+
     # =========================================================
-    # LOAD
+    # LOAD DATA
     # =========================================================
-    #
 
     def loadData(
         self
@@ -290,7 +241,10 @@ class ManualPlacementDialog(QtWidgets.QDialog):
             self.toFloat(
                 self.part.get(
                     "PositionZ",
-                    0
+                    self.part.get(
+                        "Position",
+                        0
+                    )
                 )
             )
         )
@@ -322,11 +276,10 @@ class ManualPlacementDialog(QtWidgets.QDialog):
             )
         )
 
-    #
+
     # =========================================================
-    # DATA
+    # GET DATA
     # =========================================================
-    #
 
     def getData(
         self
@@ -354,11 +307,10 @@ class ManualPlacementDialog(QtWidgets.QDialog):
 
         }
 
-    #
+
     # =========================================================
-    # FLOAT
+    # TO FLOAT
     # =========================================================
-    #
 
     def toFloat(
         self,
@@ -385,11 +337,17 @@ class ManualPlacementDialog(QtWidgets.QDialog):
             return 0.0
 
 
-class ParametricModuleDialog(QtWidgets.QDialog):
+# =============================================================
+# PARAMETRIC MODULE DIALOG
+# =============================================================
+
+class ParametricModuleDialog(
+    QtWidgets.QDialog
+):
 
     def __init__(
         self,
-        parameters=None,
+        module=None,
         parent=None
     ):
 
@@ -397,7 +355,42 @@ class ParametricModuleDialog(QtWidgets.QDialog):
             parent
         )
 
-        self.parameters = parameters
+        self.module = module
+
+        #
+        # Only user-created pieces.
+        #
+        # Structural pieces are generated
+        # by ModuleBuilder.
+        #
+
+        self.userParts = []
+
+        #
+        # Manual placement of structural beams.
+        #
+
+        self.structuralPlacements = {}
+
+        #
+        # Material selected for structural pieces.
+        #
+        # This is kept while the dialog is open.
+        #
+
+        self.structuralMaterials = {}
+
+        #
+        # Current generated parts.
+        #
+
+        self.parts = []
+
+        #
+        # Prevent recursive table updates.
+        #
+
+        self._loading_table = False
 
         self.setWindowTitle(
             "Módulo paramétrico"
@@ -408,51 +401,47 @@ class ParametricModuleDialog(QtWidgets.QDialog):
             750
         )
 
-        #
-        # User-created pieces.
-        #
-
-        self.userParts = []
-
-        #
-        # Complete calculated list.
-        #
-
-        self.parts = []
-
         self.createUI()
 
-        self.loadParameters()
+        self.loadModule()
 
         self.calculateParts()
 
-    #
+
     # =========================================================
-    # UI
+    # CREATE UI
     # =========================================================
-    #
 
     def createUI(
         self
     ):
 
-        mainLayout = QtWidgets.QVBoxLayout(
+        main_layout = QtWidgets.QVBoxLayout(
             self
         )
 
         #
         # =====================================================
-        # MODULE PARAMETERS
+        # MODULE DATA
         # =====================================================
         #
 
-        moduleGroup = QtWidgets.QGroupBox(
+        module_group = QtWidgets.QGroupBox(
             "Datos del módulo"
         )
 
-        moduleLayout = QtWidgets.QGridLayout()
+        module_layout = QtWidgets.QGridLayout()
 
-        moduleLayout.addWidget(
+        self.nameEdit = QtWidgets.QLineEdit()
+
+        self.widthSpin = self.createSpinBox()
+        self.heightSpin = self.createSpinBox()
+        self.depthSpin = self.createSpinBox()
+        self.thicknessSpin = self.createSpinBox()
+        self.backThicknessSpin = self.createSpinBox()
+        self.backInsetSpin = self.createSpinBox()
+
+        module_layout.addWidget(
             QtWidgets.QLabel(
                 "Nombre del módulo:"
             ),
@@ -460,136 +449,162 @@ class ParametricModuleDialog(QtWidgets.QDialog):
             0
         )
 
-        self.nameEdit = QtWidgets.QLineEdit()
-
-        moduleLayout.addWidget(
+        module_layout.addWidget(
             self.nameEdit,
             0,
             1,
             1,
-            3
+            5
         )
 
-        moduleLayout.addWidget(
-            QtWidgets.QLabel(
-                "Ancho:"
+        fields = [
+
+            (
+                "Ancho:",
+                self.widthSpin,
+                1,
+                0
             ),
-            1,
-            0
-        )
 
-        self.widthSpin = self.createSpinBox()
-
-        moduleLayout.addWidget(
-            self.widthSpin,
-            1,
-            1
-        )
-
-        moduleLayout.addWidget(
-            QtWidgets.QLabel(
-                "Alto:"
+            (
+                "Alto:",
+                self.heightSpin,
+                1,
+                2
             ),
-            1,
-            2
-        )
 
-        self.heightSpin = self.createSpinBox()
-
-        moduleLayout.addWidget(
-            self.heightSpin,
-            1,
-            3
-        )
-
-        moduleLayout.addWidget(
-            QtWidgets.QLabel(
-                "Profundidad:"
+            (
+                "Profundidad:",
+                self.depthSpin,
+                2,
+                0
             ),
-            2,
-            0
-        )
 
-        self.depthSpin = self.createSpinBox()
-
-        moduleLayout.addWidget(
-            self.depthSpin,
-            2,
-            1
-        )
-
-        moduleLayout.addWidget(
-            QtWidgets.QLabel(
-                "Espesor panel:"
+            (
+                "Espesor panel:",
+                self.thicknessSpin,
+                2,
+                2
             ),
-            2,
-            2
-        )
 
-        self.thicknessSpin = self.createSpinBox()
-
-        moduleLayout.addWidget(
-            self.thicknessSpin,
-            2,
-            3
-        )
-
-        moduleLayout.addWidget(
-            QtWidgets.QLabel(
-                "Espesor fondo:"
+            (
+                "Espesor fondo:",
+                self.backThicknessSpin,
+                3,
+                0
             ),
-            3,
-            0
-        )
 
-        self.backThicknessSpin = self.createSpinBox()
+            (
+                "Retranqueo trasero:",
+                self.backInsetSpin,
+                3,
+                2
+            )
 
-        moduleLayout.addWidget(
-            self.backThicknessSpin,
-            3,
-            1
-        )
+        ]
 
-        moduleLayout.addWidget(
-            QtWidgets.QLabel(
-                "Retranqueo trasero:"
-            ),
-            3,
-            2
-        )
+        for label, widget, row, col in fields:
 
-        self.backInsetSpin = self.createSpinBox()
+            module_layout.addWidget(
+                QtWidgets.QLabel(
+                    label
+                ),
+                row,
+                col
+            )
 
-        moduleLayout.addWidget(
-            self.backInsetSpin,
-            3,
-            3
-        )
+            module_layout.addWidget(
+                widget,
+                row,
+                col + 1
+            )
 
-        moduleGroup.setLayout(
-            moduleLayout
-        )
+        #
+        # =====================================================
+        # TOP TYPE
+        # =====================================================
+        #
 
-        mainLayout.addWidget(
-            moduleGroup
+        self.topTypeCombo = QtWidgets.QComboBox()
+
+        self.topTypeCombo.addItems(
+            [
+                "Tapa completa",
+                "2 travesaños",
+                "3 travesaños"
+            ]
         )
 
         #
         # =====================================================
-        # PARTS
+        # BACK TYPE
         # =====================================================
         #
 
-        partsGroup = QtWidgets.QGroupBox(
+        self.backTypeCombo = QtWidgets.QComboBox()
+
+        self.backTypeCombo.addItems(
+            [
+                "Trasera sobrepuesta",
+                "Trasera oculta",
+                "2 travesaños",
+                "3 travesaños",
+                "Sin trasera"
+            ]
+        )
+
+        module_layout.addWidget(
+            QtWidgets.QLabel(
+                "Tipo de tapa:"
+            ),
+            4,
+            0
+        )
+
+        module_layout.addWidget(
+            self.topTypeCombo,
+            4,
+            1
+        )
+
+        module_layout.addWidget(
+            QtWidgets.QLabel(
+                "Tipo de trasera:"
+            ),
+            4,
+            2
+        )
+
+        module_layout.addWidget(
+            self.backTypeCombo,
+            4,
+            3
+        )
+
+        module_group.setLayout(
+            module_layout
+        )
+
+        main_layout.addWidget(
+            module_group
+        )
+
+        #
+        # =====================================================
+        # PARTS TABLE
+        # =====================================================
+        #
+
+        parts_group = QtWidgets.QGroupBox(
             "Tabla de piezas"
         )
 
-        partsLayout = QtWidgets.QVBoxLayout()
+        parts_layout = QtWidgets.QVBoxLayout()
 
         self.table = QtWidgets.QTableWidget()
 
         self.table.setColumnCount(
-            9
+            8
         )
 
         self.table.setHorizontalHeaderLabels(
@@ -601,36 +616,41 @@ class ParametricModuleDialog(QtWidgets.QDialog):
                 "Espesor",
                 "Cantidad",
                 "Material",
-                "Posición",
                 "Modo"
             ]
         )
 
         self.table.setSelectionBehavior(
-            QtWidgets.QAbstractItemView.SelectRows
+            QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows
         )
 
         self.table.setSelectionMode(
-            QtWidgets.QAbstractItemView.SingleSelection
+            QtWidgets.QAbstractItemView.SelectionMode.SingleSelection
         )
 
         self.table.setAlternatingRowColors(
             True
         )
 
-        partsLayout.addWidget(
+        self.table.setEditTriggers(
+            QtWidgets.QAbstractItemView.EditTrigger.DoubleClicked
+            |
+            QtWidgets.QAbstractItemView.EditTrigger.EditKeyPressed
+        )
+
+        parts_layout.addWidget(
             self.table
         )
 
         #
         # =====================================================
-        # BUTTONS
+        # PART BUTTONS
         # =====================================================
         #
 
-        buttonsLayout = QtWidgets.QHBoxLayout()
+        buttons_layout = QtWidgets.QHBoxLayout()
 
-        self.addPartButton = QtWidgets.QPushButton(
+        self.addButton = QtWidgets.QPushButton(
             "Añadir pieza"
         )
 
@@ -646,53 +666,47 @@ class ParametricModuleDialog(QtWidgets.QDialog):
             "Posición / giro"
         )
 
-        buttonsLayout.addWidget(
-            self.addPartButton
+        buttons_layout.addWidget(
+            self.addButton
         )
 
-        buttonsLayout.addWidget(
+        buttons_layout.addWidget(
             self.deleteButton
         )
 
-        buttonsLayout.addWidget(
+        buttons_layout.addWidget(
             self.duplicateButton
         )
 
-        buttonsLayout.addWidget(
+        buttons_layout.addWidget(
             self.placementButton
         )
 
-        buttonsLayout.addStretch()
+        buttons_layout.addStretch()
 
-        partsLayout.addLayout(
-            buttonsLayout
+        parts_layout.addLayout(
+            buttons_layout
         )
 
-        partsGroup.setLayout(
-            partsLayout
+        parts_group.setLayout(
+            parts_layout
         )
 
-        mainLayout.addWidget(
-            partsGroup
+        main_layout.addWidget(
+            parts_group
         )
 
         #
         # =====================================================
-        # BOTTOM
+        # BOTTOM BUTTONS
         # =====================================================
         #
 
-        bottomLayout = QtWidgets.QHBoxLayout()
+        bottom_layout = QtWidgets.QHBoxLayout()
 
         self.recalculateButton = QtWidgets.QPushButton(
             "Recalcular"
         )
-
-        bottomLayout.addWidget(
-            self.recalculateButton
-        )
-
-        bottomLayout.addStretch()
 
         self.saveButton = QtWidgets.QPushButton(
             "Guardar"
@@ -702,25 +716,31 @@ class ParametricModuleDialog(QtWidgets.QDialog):
             "Cancelar"
         )
 
-        bottomLayout.addWidget(
+        bottom_layout.addWidget(
+            self.recalculateButton
+        )
+
+        bottom_layout.addStretch()
+
+        bottom_layout.addWidget(
             self.saveButton
         )
 
-        bottomLayout.addWidget(
+        bottom_layout.addWidget(
             self.cancelButton
         )
 
-        mainLayout.addLayout(
-            bottomLayout
+        main_layout.addLayout(
+            bottom_layout
         )
 
         #
         # =====================================================
-        # SIGNALS
+        # CONNECTIONS
         # =====================================================
         #
 
-        self.addPartButton.clicked.connect(
+        self.addButton.clicked.connect(
             self.addCustomPart
         )
 
@@ -748,11 +768,18 @@ class ParametricModuleDialog(QtWidgets.QDialog):
             self.reject
         )
 
-    #
+        self.topTypeCombo.currentIndexChanged.connect(
+            self.calculateParts
+        )
+
+        self.backTypeCombo.currentIndexChanged.connect(
+            self.calculateParts
+        )
+
+
     # =========================================================
-    # SPINBOX
+    # SPIN BOX
     # =========================================================
-    #
 
     def createSpinBox(
         self
@@ -775,19 +802,22 @@ class ParametricModuleDialog(QtWidgets.QDialog):
 
         return spin
 
-    #
-    # =========================================================
-    # LOAD PARAMETERS
-    # =========================================================
-    #
 
-    def loadParameters(
+    # =========================================================
+    # LOAD MODULE
+    # =========================================================
+
+    def loadModule(
         self
     ):
 
-        obj = self.parameters
+        #
+        # =====================================================
+        # NEW MODULE
+        # =====================================================
+        #
 
-        if obj is None:
+        if self.module is None:
 
             self.nameEdit.setText(
                 "Nuevo módulo"
@@ -810,7 +840,7 @@ class ParametricModuleDialog(QtWidgets.QDialog):
             )
 
             self.backThicknessSpin.setValue(
-                3
+                10
             )
 
             self.backInsetSpin.setValue(
@@ -820,75 +850,88 @@ class ParametricModuleDialog(QtWidgets.QDialog):
             return
 
         #
+        # =====================================================
         # NAME
+        # =====================================================
         #
 
-        if hasattr(
-            obj,
-            "ModuleName"
-        ):
-
-            self.nameEdit.setText(
-                str(
-                    obj.ModuleName
+        self.nameEdit.setText(
+            str(
+                getattr(
+                    self.module,
+                    "ModuleName",
+                    getattr(
+                        self.module,
+                        "Label",
+                        "Nuevo módulo"
+                    )
                 )
             )
-
-        elif hasattr(
-            obj,
-            "Label"
-        ):
-
-            self.nameEdit.setText(
-                str(
-                    obj.Label
-                )
-            )
-
-        else:
-
-            self.nameEdit.setText(
-                "Nuevo módulo"
-            )
+        )
 
         #
+        # =====================================================
         # DIMENSIONS
+        #
+        # IMPORTANT:
+        # ModuleBuilder uses Width / Height / Depth.
+        # ModuleWidth / ModuleHeight / ModuleDepth are
+        # supported only as fallback for older modules.
+        # =====================================================
         #
 
         self.widthSpin.setValue(
-            self.getValue(
+            self.value(
                 getattr(
-                    obj,
-                    "ModuleWidth",
-                    600
+                    self.module,
+                    "Width",
+                    getattr(
+                        self.module,
+                        "ModuleWidth",
+                        600
+                    )
                 )
             )
         )
 
         self.heightSpin.setValue(
-            self.getValue(
+            self.value(
                 getattr(
-                    obj,
-                    "ModuleHeight",
-                    720
+                    self.module,
+                    "Height",
+                    getattr(
+                        self.module,
+                        "ModuleHeight",
+                        720
+                    )
                 )
             )
         )
 
         self.depthSpin.setValue(
-            self.getValue(
+            self.value(
                 getattr(
-                    obj,
-                    "ModuleDepth",
-                    560
+                    self.module,
+                    "Depth",
+                    getattr(
+                        self.module,
+                        "ModuleDepth",
+                        560
+                    )
                 )
             )
         )
 
+        #
+        # =====================================================
+        # THICKNESSES
+        # =====================================================
+        #
+
         self.thicknessSpin.setValue(
-            self.getValue(
+            self.value(
                 getattr(
-                    obj,
+                    self.module,
                     "PanelThickness",
                     19
                 )
@@ -896,40 +939,166 @@ class ParametricModuleDialog(QtWidgets.QDialog):
         )
 
         self.backThicknessSpin.setValue(
-            self.getValue(
+            self.value(
                 getattr(
-                    obj,
+                    self.module,
                     "BackThickness",
-                    3
+                    10
                 )
             )
         )
 
         self.backInsetSpin.setValue(
-            self.getValue(
+            self.value(
                 getattr(
-                    obj,
+                    self.module,
                     "BackInset",
                     0
                 )
             )
         )
 
-    #
-    # =========================================================
-    # UPDATE PARAMETERS
-    # =========================================================
-    #
+        #
+        # =====================================================
+        # TOP TYPE
+        # =====================================================
+        #
 
-    def updateParameters(
+        self.setCombo(
+            self.topTypeCombo,
+            getattr(
+                self.module,
+                "TopType",
+                "Tapa completa"
+            )
+        )
+
+        #
+        # =====================================================
+        # BACK TYPE
+        # =====================================================
+        #
+
+        self.setCombo(
+            self.backTypeCombo,
+            getattr(
+                self.module,
+                "BackType",
+                "Trasera sobrepuesta"
+            )
+        )
+
+        #
+        # =====================================================
+        # PROXY
+        # =====================================================
+        #
+
+        proxy = getattr(
+            self.module,
+            "Proxy",
+            None
+        )
+
+        if proxy is None:
+
+            return
+
+        #
+        # =====================================================
+        # USER PARTS
+        # =====================================================
+        #
+
+        if hasattr(
+            proxy,
+            "getUserParts"
+        ):
+
+            try:
+
+                self.userParts = [
+
+                    dict(
+                        item
+                    )
+
+                    for item in proxy.getUserParts(
+                        self.module
+                    )
+
+                ]
+
+            except Exception:
+
+                self.userParts = []
+
+        elif hasattr(
+            self.module,
+            "Parts"
+        ):
+
+            try:
+
+                self.userParts = [
+
+                    dict(
+                        item
+                    )
+
+                    for item in self.module.Parts
+
+                ]
+
+            except Exception:
+
+                self.userParts = []
+
+        #
+        # =====================================================
+        # STRUCTURAL PLACEMENTS
+        # =====================================================
+        #
+
+        if hasattr(
+            proxy,
+            "getStructuralPlacements"
+        ):
+
+            try:
+
+                self.structuralPlacements = dict(
+                    proxy.getStructuralPlacements(
+                        self.module
+                    )
+                )
+
+            except Exception:
+
+                self.structuralPlacements = {}
+
+        else:
+
+            self.structuralPlacements = {}
+
+
+    # =========================================================
+    # UPDATE MODULE
+    # =========================================================
+
+    def updateModule(
         self
     ):
 
-        obj = self.parameters
-
-        if obj is None:
+        if self.module is None:
 
             return
+
+        #
+        # =====================================================
+        # IDENTIFICATION
+        # =====================================================
+        #
 
         name = (
             self.nameEdit.text().strip()
@@ -938,204 +1107,410 @@ class ParametricModuleDialog(QtWidgets.QDialog):
         )
 
         if hasattr(
-            obj,
+            self.module,
             "ModuleName"
         ):
 
-            obj.ModuleName = name
+            self.module.ModuleName = name
+
+        self.module.Label = name
+
+        #
+        # =====================================================
+        # DIMENSIONS
+        #
+        # ModuleBuilder reads Width / Height / Depth.
+        # Therefore these MUST be updated.
+        #
+        # Older aliases are also updated when present.
+        # =====================================================
+        #
+
+        width = self.widthSpin.value()
+        height = self.heightSpin.value()
+        depth = self.depthSpin.value()
 
         if hasattr(
-            obj,
+            self.module,
+            "Width"
+        ):
+
+            self.module.Width = width
+
+        if hasattr(
+            self.module,
             "ModuleWidth"
         ):
 
-            obj.ModuleWidth = (
-                self.widthSpin.value()
-            )
+            self.module.ModuleWidth = width
 
         if hasattr(
-            obj,
+            self.module,
+            "Height"
+        ):
+
+            self.module.Height = height
+
+        if hasattr(
+            self.module,
             "ModuleHeight"
         ):
 
-            obj.ModuleHeight = (
-                self.heightSpin.value()
-            )
+            self.module.ModuleHeight = height
 
         if hasattr(
-            obj,
+            self.module,
+            "Depth"
+        ):
+
+            self.module.Depth = depth
+
+        if hasattr(
+            self.module,
             "ModuleDepth"
         ):
 
-            obj.ModuleDepth = (
-                self.depthSpin.value()
+            self.module.ModuleDepth = depth
+
+        #
+        # =====================================================
+        # THICKNESSES
+        # =====================================================
+        #
+
+        self.module.PanelThickness = (
+            self.thicknessSpin.value()
+        )
+
+        self.module.BackThickness = (
+            self.backThicknessSpin.value()
+        )
+
+        self.module.BackInset = (
+            self.backInsetSpin.value()
+        )
+
+        #
+        # =====================================================
+        # TYPES
+        # =====================================================
+        #
+
+        if hasattr(
+            self.module,
+            "TopType"
+        ):
+
+            self.module.TopType = (
+                self.topTypeCombo.currentText()
             )
 
         if hasattr(
-            obj,
-            "PanelThickness"
+            self.module,
+            "BackType"
         ):
 
-            obj.PanelThickness = (
-                self.thicknessSpin.value()
+            self.module.BackType = (
+                self.backTypeCombo.currentText()
             )
+
+        #
+        # =====================================================
+        # PROXY
+        # =====================================================
+        #
+
+        proxy = getattr(
+            self.module,
+            "Proxy",
+            None
+        )
+
+        if proxy is None:
+
+            return
+
+        #
+        # =====================================================
+        # USER PARTS
+        # =====================================================
+        #
 
         if hasattr(
-            obj,
-            "BackThickness"
+            proxy,
+            "setUserParts"
         ):
 
-            obj.BackThickness = (
-                self.backThicknessSpin.value()
-            )
+            try:
+
+                proxy.setUserParts(
+                    self.module,
+                    self.userParts
+                )
+
+            except Exception as error:
+
+                FreeCAD.Console.PrintError(
+                    "Error guardando piezas de usuario: "
+                    +
+                    str(error)
+                    +
+                    "\n"
+                )
+
+        elif hasattr(
+            self.module,
+            "Parts"
+        ):
+
+            try:
+
+                self.module.Parts = [
+
+                    dict(
+                        part
+                    )
+
+                    for part in self.userParts
+
+                ]
+
+            except Exception:
+
+                pass
+
+        #
+        # =====================================================
+        # STRUCTURAL PLACEMENTS
+        # =====================================================
+        #
 
         if hasattr(
-            obj,
-            "BackInset"
+            proxy,
+            "setStructuralPlacements"
         ):
 
-            obj.BackInset = (
-                self.backInsetSpin.value()
-            )
+            try:
 
-    #
+                proxy.setStructuralPlacements(
+                    self.module,
+                    self.structuralPlacements
+                )
+
+            except Exception:
+
+                pass
+
+
     # =========================================================
     # CALCULATE PARTS
     # =========================================================
-    #
 
     def calculateParts(
         self
     ):
 
+        if self.module is None:
+
+            return
+
         #
-        # First save any changes made directly in the table.
+        # =====================================================
+        # STEP 1
         #
+        # Read the table only for user-editable information:
+        # label, material, quantity, type, manual dimensions,
+        # etc.
+        #
+        # Automatic shelf/divider dimensions are NOT taken
+        # from the old table values.
+        # =====================================================
+        #
+
+        self.updateTableData()
+
+        #
+        # =====================================================
+        # STEP 2
+        #
+        # Update module Width / Height / Depth first.
+        # =====================================================
+        #
+
+        self.updateModule()
+
+        #
+        # =====================================================
+        # STEP 3
+        #
+        # Recalculate automatic shelf/divider positions.
+        # =====================================================
+        #
+
+        self.recalculateAutomaticUserPartPositions()
+
+        #
+        # =====================================================
+        # STEP 4
+        #
+        # Recalculate automatic dimensions of user parts.
+        #
+        # This is deliberately done here as well as inside
+        # ModuleBuilder. This guarantees that the data which
+        # will be stored and shown in the table is already
+        # correct before rebuilding the module.
+        # =====================================================
+        #
+
+        self.recalculateAutomaticUserPartDimensions()
+
+        #
+        # Save the corrected user data.
+        #
+
+        self.updateModule()
+
+        #
+        # =====================================================
+        # STEP 5
+        # BUILD
+        # =====================================================
+        #
+
+        try:
+
+            from core.builders.module_builder import (
+                ModuleBuilder
+            )
+
+        except Exception as error:
+
+            FreeCAD.Console.PrintError(
+                "Error importando ModuleBuilder: "
+                +
+                str(error)
+                +
+                "\n"
+            )
+
+            return
+
+        try:
+
+            ModuleBuilder.build(
+                self.module,
+                self.userParts
+            )
+
+        except Exception as error:
+
+            FreeCAD.Console.PrintError(
+                "Error construyendo módulo: "
+                +
+                str(error)
+                +
+                "\n"
+            )
+
+            return
+
+        #
+        # =====================================================
+        # STEP 6
+        # GET GENERATED PARTS
+        # =====================================================
+        #
+
+        proxy = getattr(
+            self.module,
+            "Proxy",
+            None
+        )
+
+        if proxy is None:
+
+            return
 
         if hasattr(
-            self,
-            "table"
+            proxy,
+            "getParts"
         ):
 
-            self.updateTableData()
+            try:
 
-        #
-        # Save module parameters.
-        #
+                self.parts = proxy.getParts(
+                    self.module
+                )
 
-        self.updateParameters()
+            except Exception as error:
 
-        width = (
-            self.widthSpin.value()
-        )
+                FreeCAD.Console.PrintError(
+                    "Error obteniendo piezas: "
+                    +
+                    str(error)
+                    +
+                    "\n"
+                )
 
-        height = (
-            self.heightSpin.value()
-        )
+                self.parts = []
 
-        depth = (
-            self.depthSpin.value()
-        )
+        else:
 
-        thickness = (
-            self.thicknessSpin.value()
-        )
-
-        backThickness = (
-            self.backThicknessSpin.value()
-        )
-
-        calculated = []
+            self.parts = []
 
         #
         # =====================================================
-        # LEFT
+        # STEP 7
+        #
+        # Restore material selections for generated structural
+        # pieces.
         # =====================================================
         #
 
-        calculated.append(
-            self.createStructuralPart(
-                "LS",
-                "Lateral izquierdo",
-                "Side",
-                height,
-                depth,
-                thickness,
-                0
-            )
+        self.applyStructuralMaterials()
+
+        #
+        # =====================================================
+        # STEP 8
+        # REBUILD TABLE
+        # =====================================================
+        #
+
+        self.loadTable()
+
+
+    # =========================================================
+    # RECALCULATE AUTOMATIC USER PART DIMENSIONS
+    # =========================================================
+
+    def recalculateAutomaticUserPartDimensions(
+        self
+    ):
+
+        width = self.widthSpin.value()
+        height = self.heightSpin.value()
+        depth = self.depthSpin.value()
+        thickness = self.thicknessSpin.value()
+        backThickness = self.backThicknessSpin.value()
+        backInset = self.backInsetSpin.value()
+
+        #
+        # Useful depth.
+        #
+        # Same logic used by ModuleBuilder.
+        #
+
+        useful_depth = (
+            depth
+            -
+            backInset
+            -
+            backThickness
         )
 
-        #
-        # =====================================================
-        # RIGHT
-        # =====================================================
-        #
+        if useful_depth < 0:
 
-        calculated.append(
-            self.createStructuralPart(
-                "RS",
-                "Lateral derecho",
-                "Side",
-                height,
-                depth,
-                thickness,
-                width - thickness
-            )
-        )
-
-        #
-        # =====================================================
-        # BOTTOM
-        # =====================================================
-        #
-
-        calculated.append(
-            self.createStructuralPart(
-                "BT",
-                "Base",
-                "Bottom",
-                width - thickness * 2,
-                depth,
-                thickness,
-                0
-            )
-        )
-
-        #
-        # =====================================================
-        # TOP
-        # =====================================================
-        #
-
-        calculated.append(
-            self.createStructuralPart(
-                "TP",
-                "Tapa",
-                "Top",
-                width - thickness * 2,
-                depth,
-                thickness,
-                height - thickness
-            )
-        )
-
-        #
-        # =====================================================
-        # BACK
-        # =====================================================
-        #
-
-        calculated.append(
-            self.createStructuralPart(
-                "BK",
-                "Trasera",
-                "Back",
-                height,
-                width,
-                backThickness,
-                0
-            )
-        )
+            useful_depth = 0
 
         #
         # =====================================================
@@ -1145,635 +1520,159 @@ class ParametricModuleDialog(QtWidgets.QDialog):
 
         for part in self.userParts:
 
-            calculatedPart = dict(
-                part
+            role = str(
+                part.get(
+                    "Role",
+                    "Custom"
+                )
             )
 
-            #
-            # =================================================
-            # AUTOMATIC SHELF
-            # =================================================
-            #
-            # The shelf dimensions follow the module.
-            #
-
-            if (
-                part.get(
-                    "Role"
-                ) == "Shelf"
-                and
+            mode = str(
                 part.get(
                     "PositionMode",
                     "Automatic"
-                ) == "Automatic"
+                )
+            )
+
+            #
+            # -------------------------------------------------
+            # SHELF
+            # -------------------------------------------------
+            #
+
+            if (
+                role == "Shelf"
+                and
+                mode == "Automatic"
             ):
 
-                calculatedPart["Length"] = (
+                part["PartType"] = (
+                    "Balda"
+                )
+
+                part["Length"] = max(
+                    0,
                     width
                     -
                     thickness * 2
                 )
 
-                calculatedPart["Width"] = (
-                    depth
+                part["Width"] = max(
+                    0,
+                    useful_depth
                 )
 
-                calculatedPart["Thickness"] = (
+                part["Thickness"] = max(
+                    0,
                     thickness
                 )
 
+                part["LengthAxis"] = "X"
+                part["WidthAxis"] = "Y"
+                part["ThicknessAxis"] = "Z"
+
             #
-            # =================================================
-            # AUTOMATIC DIVIDER
-            # =================================================
+            # -------------------------------------------------
+            # DIVIDER
+            # -------------------------------------------------
             #
 
             elif (
-                part.get(
-                    "Role"
-                ) == "Divider"
+                role == "Divider"
                 and
-                part.get(
-                    "PositionMode",
-                    "Automatic"
-                ) == "Automatic"
+                mode == "Automatic"
             ):
 
-                calculatedPart["Length"] = (
+                part["PartType"] = (
+                    "Separador"
+                )
+
+                part["Length"] = max(
+                    0,
                     height
                     -
                     thickness * 2
                 )
 
-                calculatedPart["Width"] = (
-                    depth
+                part["Width"] = max(
+                    0,
+                    useful_depth
                 )
 
-                calculatedPart["Thickness"] = (
+                part["Thickness"] = max(
+                    0,
                     thickness
                 )
 
-            calculated.append(
-                calculatedPart
-            )
+                part["LengthAxis"] = "Z"
+                part["WidthAxis"] = "Y"
+                part["ThicknessAxis"] = "X"
 
-        #
-        # =====================================================
-        # AUTOMATIC POSITIONS
-        # =====================================================
-        #
+            #
+            # -------------------------------------------------
+            # CUSTOM
+            # -------------------------------------------------
+            #
 
-        self.calculateAutomaticPositions(
-            calculated
-        )
+            elif role == "Custom":
 
-        #
-        # =====================================================
-        # SYNCHRONIZE USER PARTS
-        # =====================================================
-        #
-        # This is the important part.
-        #
-        # The calculated dimensions of automatic pieces are
-        # copied back into userParts so loadTable() displays
-        # the new dimensions.
-        #
-
-        for calculatedPart in calculated:
-
-            code = calculatedPart.get(
-                "Code",
-                ""
-            )
-
-            if not code:
-
-                continue
-
-            for userPart in self.userParts:
-
-                if userPart.get(
-                    "Code",
-                    ""
-                ) != code:
-
-                    continue
-
-                role = userPart.get(
-                    "Role",
-                    ""
+                part["PartType"] = (
+                    "Personalizado"
                 )
 
-                positionMode = userPart.get(
-                    "PositionMode",
+            #
+            # -------------------------------------------------
+            # DEFAULTS
+            # -------------------------------------------------
+            #
+
+            if "Quantity" not in part:
+
+                part["Quantity"] = 1
+
+            if "MaterialCode" not in part:
+
+                part["MaterialCode"] = ""
+
+            if "PositionMode" not in part:
+
+                part["PositionMode"] = (
                     "Automatic"
                 )
 
-                #
-                # AUTOMATIC SHELF
-                #
+            if "PositionType" not in part:
 
-                if (
-                    role == "Shelf"
-                    and
-                    positionMode == "Automatic"
-                ):
-
-                    userPart["Length"] = (
-                        calculatedPart.get(
-                            "Length",
-                            userPart.get(
-                                "Length",
-                                0
-                            )
-                        )
+                part["PositionType"] = (
+                    part.get(
+                        "PositionMode",
+                        "Automatic"
                     )
+                )
 
-                    userPart["Width"] = (
-                        calculatedPart.get(
-                            "Width",
-                            userPart.get(
-                                "Width",
-                                0
-                            )
-                        )
-                    )
 
-                    userPart["Thickness"] = (
-                        calculatedPart.get(
-                            "Thickness",
-                            userPart.get(
-                                "Thickness",
-                                0
-                            )
-                        )
-                    )
-
-                #
-                # AUTOMATIC DIVIDER
-                #
-
-                elif (
-                    role == "Divider"
-                    and
-                    positionMode == "Automatic"
-                ):
-
-                    userPart["Length"] = (
-                        calculatedPart.get(
-                            "Length",
-                            userPart.get(
-                                "Length",
-                                0
-                            )
-                        )
-                    )
-
-                    userPart["Width"] = (
-                        calculatedPart.get(
-                            "Width",
-                            userPart.get(
-                                "Width",
-                                0
-                            )
-                        )
-                    )
-
-                    userPart["Thickness"] = (
-                        calculatedPart.get(
-                            "Thickness",
-                            userPart.get(
-                                "Thickness",
-                                0
-                            )
-                        )
-                    )
-
-                break
-
-        #
-        # =====================================================
-        # STORE CALCULATED PARTS
-        # =====================================================
-        #
-
-        self.parts = calculated
-
-        #
-        # =====================================================
-        # REFRESH TABLE
-        # =====================================================
-        #
-
-        self.loadTable()
-
-    #
     # =========================================================
-    # STRUCTURAL PART
+    # AUTOMATIC USER PART POSITIONS
     # =========================================================
-    #
 
-    def createStructuralPart(
-        self,
-        code,
-        label,
-        role,
-        length,
-        width,
-        thickness,
-        position
-    ):
-
-        return {
-
-            "Code":
-                code,
-
-            "Label":
-                label,
-
-            "Role":
-                role,
-
-            "PartType":
-                "Estructural",
-
-            "Length":
-                length,
-
-            "Width":
-                width,
-
-            "Thickness":
-                thickness,
-
-            "Quantity":
-                1,
-
-            "MaterialCode":
-                "",
-
-            "Position":
-                position,
-
-            "PositionType":
-                "Automatic",
-
-            "PositionMode":
-                "Automatic"
-        }
-
-    #
-    # =========================================================
-    # ADD CUSTOM PART
-    # =========================================================
-    #
-
-    def addCustomPart(
+    def recalculateAutomaticUserPartPositions(
         self
     ):
 
-        self.updateTableData()
+        if not self.userParts:
 
-        number = 1
-
-        while True:
-
-            code = (
-                "CU"
-                +
-                str(
-                    number
-                )
-            )
-
-            exists = False
-
-            for part in self.userParts:
-
-                if part.get(
-                    "Code"
-                ) == code:
-
-                    exists = True
-
-                    break
-
-            if not exists:
-
-                break
-
-            number += 1
-
-        #
-        # =====================================================
-        # DEFAULT DIMENSIONS
-        # =====================================================
-        #
-
-        internalWidth = (
-            self.widthSpin.value()
-            -
-            self.thicknessSpin.value() * 2
-        )
-
-        internalDepth = (
-            self.depthSpin.value()
-        )
+            return
 
         panelThickness = (
             self.thicknessSpin.value()
         )
 
-        part = {
-
-            "Code":
-                code,
-
-            "Label":
-                "Nueva pieza "
-                +
-                str(
-                    number
-                ),
-
-            "Role":
-                "Custom",
-
-            "PartType":
-                "Personalizado",
-
-            "Length":
-                internalWidth,
-
-            "Width":
-                internalDepth,
-
-            "Thickness":
-                panelThickness,
-
-            "Quantity":
-                1,
-
-            "MaterialCode":
-                "",
-
-            #
-            # POSITION
-            #
-
-            "Position":
-                0,
-
-            "PositionX":
-                0,
-
-            "PositionY":
-                0,
-
-            "PositionZ":
-                0,
-
-            #
-            # ROTATION
-            #
-
-            "RotationX":
-                0,
-
-            "RotationY":
-                0,
-
-            "RotationZ":
-                0,
-
-            "PositionType":
-                "Manual",
-
-            "PositionMode":
-                "Manual"
-        }
-
-        self.userParts.append(
-            part
+        moduleHeight = (
+            self.heightSpin.value()
         )
 
-        self.calculateParts()
-
-        self.table.selectRow(
-            self.table.rowCount() - 1
+        moduleWidth = (
+            self.widthSpin.value()
         )
-
-    #
-    # =========================================================
-    # EDIT PLACEMENT
-    # =========================================================
-    #
-
-    def editPlacement(
-        self
-    ):
-
-        self.updateTableData()
-
-        row = self.table.currentRow()
-
-        if row < 5:
-
-            QtWidgets.QMessageBox.information(
-                self,
-                "Posición / giro",
-                "Las piezas estructurales "
-                "se posicionan automáticamente."
-            )
-
-            return
-
-        userIndex = row - 5
-
-        if (
-            userIndex < 0
-            or
-            userIndex >= len(
-                self.userParts
-            )
-        ):
-
-            return
-
-        part = self.userParts[
-            userIndex
-        ]
-
-        dialog = ManualPlacementDialog(
-            part,
-            self
-        )
-
-        if dialog.exec_():
-
-            data = dialog.getData()
-
-            part.update(
-                data
-            )
-
-            part["PositionMode"] = (
-                "Manual"
-            )
-
-            part["PositionType"] = (
-                "Manual"
-            )
-
-            self.calculateParts()
-
-    #
-    # =========================================================
-    # DELETE
-    # =========================================================
-    #
-
-    def deletePart(
-        self
-    ):
-
-        self.updateTableData()
-
-        row = self.table.currentRow()
-
-        if row < 0:
-
-            return
-
-        if row < 5:
-
-            QtWidgets.QMessageBox.information(
-                self,
-                "Eliminar pieza",
-                "Las piezas estructurales del módulo "
-                "no se pueden eliminar."
-            )
-
-            return
-
-        userIndex = row - 5
-
-        if (
-            userIndex >= 0
-            and
-            userIndex < len(
-                self.userParts
-            )
-        ):
-
-            del self.userParts[
-                userIndex
-            ]
-
-        self.calculateParts()
-
-    #
-    # =========================================================
-    # DUPLICATE
-    # =========================================================
-    #
-
-    def duplicatePart(
-        self
-    ):
-
-        self.updateTableData()
-
-        row = self.table.currentRow()
-
-        if row < 5:
-
-            QtWidgets.QMessageBox.information(
-                self,
-                "Duplicar pieza",
-                "Selecciona una pieza creada "
-                "por el usuario."
-            )
-
-            return
-
-        userIndex = row - 5
-
-        if (
-            userIndex < 0
-            or
-            userIndex >= len(
-                self.userParts
-            )
-        ):
-
-            return
-
-        source = self.userParts[
-            userIndex
-        ]
-
-        copy = dict(
-            source
-        )
-
-        number = 1
-
-        while True:
-
-            code = (
-                "CU"
-                +
-                str(
-                    number
-                )
-            )
-
-            exists = False
-
-            for part in self.userParts:
-
-                if part.get(
-                    "Code"
-                ) == code:
-
-                    exists = True
-
-                    break
-
-            if not exists:
-
-                break
-
-            number += 1
-
-        copy["Code"] = code
-
-        copy["Label"] = (
-            "Nueva pieza "
-            +
-            str(
-                number
-            )
-        )
-
-        self.userParts.append(
-            copy
-        )
-
-        self.calculateParts()
-
-    #
-    # =========================================================
-    # AUTOMATIC POSITIONS
-    # =========================================================
-    #
-
-    def calculateAutomaticPositions(
-        self,
-        parts
-    ):
 
         #
         # =====================================================
@@ -1785,92 +1684,132 @@ class ParametricModuleDialog(QtWidgets.QDialog):
 
             part
 
-            for part in parts
+            for part in self.userParts
 
-            if part.get(
-                "Role"
-            ) == "Shelf"
+            if (
+                str(
+                    part.get(
+                        "Role",
+                        ""
+                    )
+                )
+                ==
+                "Shelf"
+            )
 
             and
-            part.get(
-                "PositionMode",
-                "Automatic"
-            ) == "Automatic"
+
+            str(
+                part.get(
+                    "PositionMode",
+                    "Automatic"
+                )
+            )
+            ==
+            "Automatic"
+
+            and
+
+            str(
+                part.get(
+                    "PositionType",
+                    "Automatic"
+                )
+            )
+            ==
+            "Automatic"
 
         ]
 
         if shelves:
 
             usableHeight = (
-                self.heightSpin.value()
+                moduleHeight
                 -
-                self.thicknessSpin.value() * 2
+                panelThickness * 2
             )
 
-            count = len(
-                shelves
-            )
+            if usableHeight < 0:
 
-            #
-            # Take shelf thickness into account.
-            #
+                usableHeight = 0
 
-            totalThickness = sum(
-                float(
-                    part.get(
-                        "Thickness",
-                        self.thicknessSpin.value()
-                    )
+            totalShelfThickness = (
+                panelThickness
+                *
+                len(
+                    shelves
                 )
-                for part in shelves
             )
 
             freeHeight = (
                 usableHeight
                 -
-                totalThickness
+                totalShelfThickness
             )
+
+            if freeHeight < 0:
+
+                freeHeight = 0
 
             spacing = (
                 freeHeight
                 /
                 (
-                    count + 1
-                )
-            )
-
-            currentZ = (
-                self.thicknessSpin.value()
-                +
-                spacing
-            )
-
-            for part in shelves:
-
-                thickness = float(
-                    part.get(
-                        "Thickness",
-                        self.thicknessSpin.value()
+                    len(
+                        shelves
                     )
+                    +
+                    1
+                )
+            )
+
+            for index, part in enumerate(
+                shelves
+            ):
+
+                z = (
+
+                    panelThickness
+
+                    +
+
+                    spacing
+                    *
+                    (
+                        index
+                        +
+                        1
+                    )
+
+                    +
+
+                    panelThickness
+                    *
+                    index
+
                 )
 
-                part["Position"] = (
-                    currentZ
-                )
-
-                part["PositionZ"] = (
-                    currentZ
-                )
+                part["Position"] = z
 
                 part["PositionType"] = (
                     "Automatic"
                 )
 
-                currentZ += (
-                    thickness
-                    +
-                    spacing
+                part["PositionMode"] = (
+                    "Automatic"
                 )
+
+                part["PositionX"] = (
+                    panelThickness
+                )
+
+                part["PositionY"] = 0
+
+                part["PositionZ"] = z
+
+                part["RotationX"] = 0
+                part["RotationY"] = 0
+                part["RotationZ"] = 0
 
         #
         # =====================================================
@@ -1882,468 +1821,964 @@ class ParametricModuleDialog(QtWidgets.QDialog):
 
             part
 
-            for part in parts
+            for part in self.userParts
 
-            if part.get(
-                "Role"
-            ) == "Divider"
+            if (
+                str(
+                    part.get(
+                        "Role",
+                        ""
+                    )
+                )
+                ==
+                "Divider"
+            )
 
             and
-            part.get(
-                "PositionMode",
-                "Automatic"
-            ) == "Automatic"
+
+            str(
+                part.get(
+                    "PositionMode",
+                    "Automatic"
+                )
+            )
+            ==
+            "Automatic"
+
+            and
+
+            str(
+                part.get(
+                    "PositionType",
+                    "Automatic"
+                )
+            )
+            ==
+            "Automatic"
 
         ]
 
         if dividers:
 
             usableWidth = (
-                self.widthSpin.value()
+                moduleWidth
                 -
-                self.thicknessSpin.value() * 2
+                panelThickness * 2
             )
 
-            count = len(
-                dividers
-            )
+            if usableWidth < 0:
 
-            totalThickness = sum(
-                float(
-                    part.get(
-                        "Thickness",
-                        self.thicknessSpin.value()
-                    )
+                usableWidth = 0
+
+            totalDividerThickness = (
+                panelThickness
+                *
+                len(
+                    dividers
                 )
-                for part in dividers
             )
 
             freeWidth = (
                 usableWidth
                 -
-                totalThickness
+                totalDividerThickness
             )
+
+            if freeWidth < 0:
+
+                freeWidth = 0
 
             spacing = (
                 freeWidth
                 /
                 (
-                    count + 1
-                )
-            )
-
-            currentX = (
-                self.thicknessSpin.value()
-                +
-                spacing
-            )
-
-            for part in dividers:
-
-                thickness = float(
-                    part.get(
-                        "Thickness",
-                        self.thicknessSpin.value()
+                    len(
+                        dividers
                     )
+                    +
+                    1
+                )
+            )
+
+            for index, part in enumerate(
+                dividers
+            ):
+
+                x = (
+
+                    panelThickness
+
+                    +
+
+                    spacing
+                    *
+                    (
+                        index
+                        +
+                        1
+                    )
+
+                    +
+
+                    panelThickness
+                    *
+                    index
+
                 )
 
-                part["Position"] = (
-                    currentX
-                )
-
-                part["PositionX"] = (
-                    currentX
-                )
+                part["Position"] = x
 
                 part["PositionType"] = (
                     "Automatic"
                 )
 
-                currentX += (
-                    thickness
-                    +
-                    spacing
+                part["PositionMode"] = (
+                    "Automatic"
                 )
 
-    #
+                part["PositionX"] = x
+
+                part["PositionY"] = 0
+
+                part["PositionZ"] = (
+                    panelThickness
+                )
+
+                part["RotationX"] = 0
+                part["RotationY"] = 0
+                part["RotationZ"] = 0
+
+
     # =========================================================
     # LOAD TABLE
     # =========================================================
-    #
 
     def loadTable(
         self
     ):
 
-        self.table.blockSignals(
-            True
+        self._loading_table = True
+
+        try:
+
+            self.table.setRowCount(
+                0
+            )
+
+            for row, part in enumerate(
+                self.parts
+            ):
+
+                self.table.insertRow(
+                    row
+                )
+
+                #
+                # =================================================
+                # LABEL
+                # =================================================
+                #
+
+                self.setItem(
+                    row,
+                    0,
+                    getattr(
+                        part,
+                        "Label",
+                        ""
+                    )
+                )
+
+                #
+                # =================================================
+                # CODE
+                # =================================================
+                #
+
+                code = str(
+                    getattr(
+                        part,
+                        "Code",
+                        ""
+                    )
+                )
+
+                #
+                # =================================================
+                # ROLE
+                # =================================================
+                #
+
+                role = str(
+                    getattr(
+                        part,
+                        "Role",
+                        "Custom"
+                    )
+                )
+
+                #
+                # =================================================
+                # TYPE COMBO
+                # =================================================
+                #
+
+                type_combo = QtWidgets.QComboBox()
+
+                type_combo.addItem(
+                    "Estructural",
+                    "Structural"
+                )
+
+                type_combo.addItem(
+                    "Balda",
+                    "Shelf"
+                )
+
+                type_combo.addItem(
+                    "Separador",
+                    "Divider"
+                )
+
+                type_combo.addItem(
+                    "Personalizado",
+                    "Custom"
+                )
+
+                if role in (
+                    "Side",
+                    "Bottom",
+                    "Top",
+                    "Back",
+                    "TopBeam",
+                    "BackBeam"
+                ):
+
+                    type_role = (
+                        "Structural"
+                    )
+
+                else:
+
+                    type_role = role
+
+                index = (
+                    type_combo.findData(
+                        type_role
+                    )
+                )
+
+                if index >= 0:
+
+                    type_combo.setCurrentIndex(
+                        index
+                    )
+
+                #
+                # Structural type remains fixed.
+                #
+
+                structural = (
+                    code
+                    in
+                    {
+                        "LS",
+                        "RS",
+                        "BT",
+                        "TP",
+                        "BK",
+                        "TT1",
+                        "TT2",
+                        "TT3",
+                        "TB1",
+                        "TB2",
+                        "TB3"
+                    }
+                )
+
+                type_combo.setEnabled(
+                    not structural
+                )
+
+                self.table.setCellWidget(
+                    row,
+                    1,
+                    type_combo
+                )
+
+                #
+                # =================================================
+                # DIMENSIONS
+                # =================================================
+                #
+
+                self.setItem(
+                    row,
+                    2,
+                    self.number(
+                        getattr(
+                            part,
+                            "Length",
+                            0
+                        )
+                    )
+                )
+
+                self.setItem(
+                    row,
+                    3,
+                    self.number(
+                        getattr(
+                            part,
+                            "Width",
+                            0
+                        )
+                    )
+                )
+
+                self.setItem(
+                    row,
+                    4,
+                    self.number(
+                        getattr(
+                            part,
+                            "Thickness",
+                            0
+                        )
+                    )
+                )
+
+                self.setItem(
+                    row,
+                    5,
+                    self.number(
+                        getattr(
+                            part,
+                            "Quantity",
+                            1
+                        )
+                    )
+                )
+
+                #
+                # =================================================
+                # MATERIAL
+                #
+                # ACTIVE FOR ALL PIECES.
+                # =================================================
+                #
+
+                material_code = str(
+                    getattr(
+                        part,
+                        "MaterialCode",
+                        ""
+                    )
+                )
+
+                material_combo = (
+                    self.createMaterialCombo(
+                        material_code
+                    )
+                )
+
+                material_combo.currentIndexChanged.connect(
+                    lambda value,
+                    r=row:
+                    self.materialChanged(
+                        r
+                    )
+                )
+
+                #
+                # IMPORTANT:
+                #
+                # Material is NOT disabled for structural
+                # pieces.
+                #
+
+                material_combo.setEnabled(
+                    True
+                )
+
+                self.table.setCellWidget(
+                    row,
+                    6,
+                    material_combo
+                )
+
+                #
+                # =================================================
+                # MODE
+                # =================================================
+                #
+
+                mode_combo = QtWidgets.QComboBox()
+
+                mode_combo.addItem(
+                    "Automática",
+                    "Automatic"
+                )
+
+                mode_combo.addItem(
+                    "Manual",
+                    "Manual"
+                )
+
+                mode = str(
+                    getattr(
+                        part,
+                        "PositionMode",
+                        "Automatic"
+                    )
+                )
+
+                mode_index = (
+                    mode_combo.findData(
+                        mode
+                    )
+                )
+
+                if mode_index < 0:
+
+                    mode_index = 0
+
+                mode_combo.setCurrentIndex(
+                    mode_index
+                )
+
+                #
+                # Structural pieces fixed,
+                # beams can be manually positioned.
+                #
+
+                beam = (
+                    code.startswith(
+                        "TT"
+                    )
+                    or
+                    code.startswith(
+                        "TB"
+                    )
+                )
+
+                mode_combo.setEnabled(
+                    beam
+                    or
+                    not structural
+                )
+
+                mode_combo.currentIndexChanged.connect(
+                    lambda value,
+                    r=row:
+                    self.modeChanged(
+                        r
+                    )
+                )
+
+                self.table.setCellWidget(
+                    row,
+                    7,
+                    mode_combo
+                )
+
+            self.resizeColumns()
+
+        finally:
+
+            self._loading_table = False
+
+
+    # =========================================================
+    # MATERIAL COMBO
+    # =========================================================
+
+    def createMaterialCombo(
+        self,
+        selectedCode=""
+    ):
+
+        combo = QtWidgets.QComboBox()
+
+        combo.addItem(
+            "— Sin material —",
+            ""
         )
 
-        self.table.setRowCount(
-            0
+        try:
+
+            from library.material_library import (
+                MaterialLibrary
+            )
+
+            materials = (
+                MaterialLibrary.all()
+            )
+
+        except Exception as error:
+
+            FreeCAD.Console.PrintError(
+                "Error cargando biblioteca de materiales: "
+                +
+                str(error)
+                +
+                "\n"
+            )
+
+            materials = []
+
+        for material in materials:
+
+            if not isinstance(
+                material,
+                dict
+            ):
+
+                continue
+
+            code = str(
+                material.get(
+                    "Code",
+                    ""
+                )
+            ).strip()
+
+            if not code:
+
+                continue
+
+            name = str(
+                material.get(
+                    "MaterialName",
+                    ""
+                )
+            ).strip()
+
+            if name:
+
+                text = (
+                    code
+                    +
+                    " — "
+                    +
+                    name
+                )
+
+            else:
+
+                text = code
+
+            combo.addItem(
+                text,
+                code
+            )
+
+        selected = str(
+            selectedCode
+            or
+            ""
         )
 
-        for row, part in enumerate(
+        index = combo.findData(
+            selected
+        )
+
+        if index >= 0:
+
+            combo.setCurrentIndex(
+                index
+            )
+
+        else:
+
+            combo.setCurrentIndex(
+                0
+            )
+
+        return combo
+
+
+    # =========================================================
+    # MATERIAL CHANGED
+    # =========================================================
+
+    def materialChanged(
+        self,
+        row
+    ):
+
+        if self._loading_table:
+
+            return
+
+        if row < 0:
+
+            return
+
+        if row >= len(
             self.parts
         ):
 
-            self.table.insertRow(
-                row
+            return
+
+        combo = self.table.cellWidget(
+            row,
+            6
+        )
+
+        if combo is None:
+
+            return
+
+        material_code = (
+            combo.currentData()
+            or
+            ""
+        )
+
+        part = self.parts[
+            row
+        ]
+
+        code = str(
+            getattr(
+                part,
+                "Code",
+                ""
             )
+        )
 
-            #
-            # NAME
-            #
+        #
+        # Store in generated part immediately.
+        #
 
-            self.setItem(
-                row,
-                0,
-                part.get(
-                    "Label",
+        try:
+
+            if hasattr(
+                part,
+                "MaterialCode"
+            ):
+
+                part.MaterialCode = (
+                    material_code
+                )
+
+                part.touch()
+
+        except Exception:
+
+            pass
+
+        #
+        # User part.
+        #
+
+        for user_part in self.userParts:
+
+            if (
+                str(
+                    user_part.get(
+                        "Code",
+                        ""
+                    )
+                )
+                ==
+                code
+            ):
+
+                user_part[
+                    "MaterialCode"
+                ] = material_code
+
+                break
+
+        #
+        # Structural piece.
+        #
+
+        if code in {
+
+            "LS",
+            "RS",
+            "BT",
+            "TP",
+            "BK",
+            "TT1",
+            "TT2",
+            "TT3",
+            "TB1",
+            "TB2",
+            "TB3"
+
+        }:
+
+            self.structuralMaterials[
+                code
+            ] = material_code
+
+
+    # =========================================================
+    # APPLY STRUCTURAL MATERIALS
+    # =========================================================
+
+    def applyStructuralMaterials(
+        self
+    ):
+
+        if not self.structuralMaterials:
+
+            return
+
+        for part in self.parts:
+
+            code = str(
+                getattr(
+                    part,
+                    "Code",
                     ""
                 )
             )
 
-            #
-            # =================================================
-            # TYPE
-            # =================================================
-            #
+            if code not in (
+                self.structuralMaterials
+            ):
 
-            typeCombo = QtWidgets.QComboBox()
+                continue
 
-            typeCombo.addItem(
-                "Estructural",
-                "Structural"
+            material_code = (
+                self.structuralMaterials[
+                    code
+                ]
             )
 
-            typeCombo.addItem(
-                "Balda",
-                "Shelf"
-            )
+            try:
 
-            typeCombo.addItem(
-                "Separador",
-                "Divider"
-            )
+                if hasattr(
+                    part,
+                    "MaterialCode"
+                ):
 
-            typeCombo.addItem(
-                "Personalizado",
-                "Custom"
-            )
-
-            role = part.get(
-                "Role",
-                "Structural"
-            )
-
-            index = typeCombo.findData(
-                role
-            )
-
-            if index < 0:
-
-                index = 0
-
-            typeCombo.setCurrentIndex(
-                index
-            )
-
-
-            self.table.setCellWidget(
-                row,
-                1,
-                typeCombo
-            )
-
-            #
-            # =================================================
-            # DIMENSIONS
-            # =================================================
-            #
-
-            self.setItem(
-                row,
-                2,
-                self.number(
-                    part.get(
-                        "Length",
-                        0
+                    part.MaterialCode = (
+                        material_code
                     )
-                )
-            )
 
-            self.setItem(
-                row,
-                3,
-                self.number(
-                    part.get(
-                        "Width",
-                        0
-                    )
-                )
-            )
+                    part.touch()
 
-            self.setItem(
-                row,
-                4,
-                self.number(
-                    part.get(
-                        "Thickness",
-                        0
-                    )
-                )
-            )
+            except Exception:
 
-            self.setItem(
-                row,
-                5,
-                self.number(
-                    part.get(
-                        "Quantity",
-                        1
-                    )
-                )
-            )
+                pass
 
-            #
-            # =================================================
-            # MATERIAL
-            # =================================================
-            #
 
-            materialCombo = QtWidgets.QComboBox()
-
-            materialCombo.addItem(
-                "— Sin material —",
-                ""
-            )
-
-            materialCode = part.get(
-                "MaterialCode",
-                ""
-            )
-
-            index = materialCombo.findData(
-                materialCode
-            )
-
-            if index >= 0:
-
-                materialCombo.setCurrentIndex(
-                    index
-                )
-
-            self.table.setCellWidget(
-                row,
-                6,
-                materialCombo
-            )
-
-            #
-            # =================================================
-            # POSITION TYPE
-            # =================================================
-            #
-
-            positionCombo = QtWidgets.QComboBox()
-
-            positionCombo.addItem(
-                "Automática",
-                "Automatic"
-            )
-
-            positionCombo.addItem(
-                "Inferior",
-                "Bottom"
-            )
-
-            positionCombo.addItem(
-                "Centro",
-                "Center"
-            )
-
-            positionCombo.addItem(
-                "Superior",
-                "Top"
-            )
-
-            positionCombo.addItem(
-                "Manual",
-                "Manual"
-            )
-
-            positionType = part.get(
-                "PositionType",
-                "Automatic"
-            )
-
-            index = positionCombo.findData(
-                positionType
-            )
-
-            if index < 0:
-
-                index = 0
-
-            positionCombo.setCurrentIndex(
-                index
-            )
-
-            self.table.setCellWidget(
-                row,
-                7,
-                positionCombo
-            )
-
-            #
-            # =================================================
-            # MODE
-            # =================================================
-            #
-
-            modeCombo = QtWidgets.QComboBox()
-
-            modeCombo.addItem(
-                "Automática",
-                "Automatic"
-            )
-
-            modeCombo.addItem(
-                "Manual",
-                "Manual"
-            )
-
-            mode = part.get(
-                "PositionMode",
-                "Automatic"
-            )
-
-            index = modeCombo.findData(
-                mode
-            )
-
-            if index < 0:
-
-                index = 0
-
-            modeCombo.setCurrentIndex(
-                index
-            )
-
-            self.table.setCellWidget(
-                row,
-                8,
-                modeCombo
-            )
-
-        self.table.blockSignals(
-            False
-        )
-
-        #
-        # =====================================================
-        # COLUMN WIDTHS
-        # =====================================================
-        #
-
-        self.table.setColumnWidth(
-            0,
-            180
-        )
-
-        self.table.setColumnWidth(
-            1,
-            120
-        )
-
-        self.table.setColumnWidth(
-            6,
-            180
-        )
-
-        self.table.setColumnWidth(
-            7,
-            110
-        )
-
-        self.table.setColumnWidth(
-            8,
-            110
-        )
-
-    #
     # =========================================================
     # UPDATE TABLE DATA
     # =========================================================
-    #
 
     def updateTableData(
         self
     ):
 
-        if not hasattr(
-            self,
-            "table"
-        ):
+        if self._loading_table:
 
             return
 
+        structural_codes = {
+
+            "LS",
+            "RS",
+            "BT",
+            "TP",
+            "BK",
+            "TT1",
+            "TT2",
+            "TT3",
+            "TB1",
+            "TB2",
+            "TB3"
+
+        }
+
+        current_user = {
+
+            str(
+                part.get(
+                    "Code",
+                    ""
+                )
+            ):
+                part
+
+            for part in self.userParts
+
+        }
+
         for row in range(
-            5,
             self.table.rowCount()
         ):
 
-            userIndex = row - 5
-
-            if (
-                userIndex < 0
-                or
-                userIndex >= len(
-                    self.userParts
-                )
+            if row >= len(
+                self.parts
             ):
 
                 continue
-
-            part = self.userParts[
-                userIndex
-            ]
-
-            #
-            # =================================================
-            # LABEL
-            # =================================================
-            #
 
             item = self.table.item(
                 row,
                 0
             )
 
-            if item is not None:
+            if item is None:
 
-                part["Label"] = (
-                    item.text()
+                continue
+
+            part_object = self.parts[
+                row
+            ]
+
+            code = str(
+                getattr(
+                    part_object,
+                    "Code",
+                    ""
                 )
+            )
 
-            #
-            # =================================================
-            # TYPE / ROLE
-            # =================================================
-            #
-
-            typeCombo = (
+            type_combo = (
                 self.table.cellWidget(
                     row,
                     1
                 )
             )
 
-            if typeCombo is not None:
+            mode_combo = (
+                self.table.cellWidget(
+                    row,
+                    7
+                )
+            )
+
+            material_combo = (
+                self.table.cellWidget(
+                    row,
+                    6
+                )
+            )
+
+            #
+            # =================================================
+            # STRUCTURAL
+            # =================================================
+            #
+
+            if code in structural_codes:
+
+                #
+                # Material is still editable.
+                #
+
+                if material_combo is not None:
+
+                    material_code = (
+                        material_combo.currentData()
+                        or
+                        ""
+                    )
+
+                    self.structuralMaterials[
+                        code
+                    ] = material_code
+
+                    try:
+
+                        if hasattr(
+                            part_object,
+                            "MaterialCode"
+                        ):
+
+                            part_object.MaterialCode = (
+                                material_code
+                            )
+
+                    except Exception:
+
+                        pass
+
+                #
+                # Beam placement.
+                #
+
+                if (
+                    code.startswith(
+                        "TT"
+                    )
+                    or
+                    code.startswith(
+                        "TB"
+                    )
+                ):
+
+                    mode = (
+
+                        mode_combo.currentData()
+
+                        if mode_combo is not None
+
+                        else
+
+                        "Automatic"
+
+                    )
+
+                    if mode == "Manual":
+
+                        data = (
+                            self.partPlacementData(
+                                part_object
+                            )
+                        )
+
+                        self.structuralPlacements[
+                            code
+                        ] = data
+
+                    else:
+
+                        self.structuralPlacements.pop(
+                            code,
+                            None
+                        )
+
+                continue
+
+            #
+            # =================================================
+            # USER PART
+            # =================================================
+            #
+
+            part = current_user.get(
+                code
+            )
+
+            if part is None:
+
+                continue
+
+            #
+            # Label.
+            #
+
+            part["Label"] = (
+                item.text()
+            )
+
+            #
+            # Type.
+            #
+
+            if type_combo is not None:
 
                 role = (
-                    typeCombo.currentData()
+                    type_combo.currentData()
                 )
 
                 part["Role"] = role
@@ -2360,38 +2795,71 @@ class ParametricModuleDialog(QtWidgets.QDialog):
                         "Separador"
                     )
 
-                elif role == "Custom":
+                else:
 
                     part["PartType"] = (
                         "Personalizado"
                     )
 
             #
-            # =================================================
-            # DIMENSIONS
-            # =================================================
+            # Dimensions.
+            #
+            # IMPORTANT:
+            #
+            # For automatic Shelf / Divider we DO NOT read
+            # the old table dimensions here.
+            #
+            # Otherwise the old values would overwrite the
+            # freshly calculated values.
             #
 
-            part["Length"] = (
-                self.getFloat(
-                    row,
-                    2
+            role = str(
+                part.get(
+                    "Role",
+                    "Custom"
                 )
             )
 
-            part["Width"] = (
-                self.getFloat(
-                    row,
-                    3
+            position_mode = str(
+                part.get(
+                    "PositionMode",
+                    "Automatic"
                 )
             )
 
-            part["Thickness"] = (
-                self.getFloat(
-                    row,
-                    4
+            if not (
+                role in (
+                    "Shelf",
+                    "Divider"
                 )
-            )
+                and
+                position_mode == "Automatic"
+            ):
+
+                part["Length"] = (
+                    self.getFloat(
+                        row,
+                        2
+                    )
+                )
+
+                part["Width"] = (
+                    self.getFloat(
+                        row,
+                        3
+                    )
+                )
+
+                part["Thickness"] = (
+                    self.getFloat(
+                        row,
+                        4
+                    )
+                )
+
+            #
+            # Quantity.
+            #
 
             part["Quantity"] = (
                 self.getFloat(
@@ -2401,133 +2869,752 @@ class ParametricModuleDialog(QtWidgets.QDialog):
             )
 
             #
-            # =================================================
-            # MATERIAL
-            # =================================================
+            # Material.
             #
 
-            materialCombo = (
-                self.table.cellWidget(
-                    row,
-                    6
-                )
-            )
-
-            if materialCombo is not None:
+            if material_combo is not None:
 
                 part["MaterialCode"] = (
-                    materialCombo.currentData()
+                    material_combo.currentData()
+                    or
+                    ""
                 )
 
             #
-            # =================================================
-            # POSITION TYPE
-            # =================================================
+            # Position mode.
             #
 
-            positionCombo = (
+            if mode_combo is not None:
+
+                part["PositionMode"] = (
+                    mode_combo.currentData()
+                )
+
+                part["PositionType"] = (
+                    part["PositionMode"]
+                )
+
+
+    # =========================================================
+    # MODE CHANGED
+    # =========================================================
+
+    def modeChanged(
+        self,
+        row
+    ):
+
+        if self._loading_table:
+
+            return
+
+        if row < 0:
+
+            return
+
+        if row >= len(
+            self.parts
+        ):
+
+            return
+
+        combo = self.table.cellWidget(
+            row,
+            7
+        )
+
+        if combo is None:
+
+            return
+
+        mode = (
+            combo.currentData()
+        )
+
+        part_object = self.parts[
+            row
+        ]
+
+        code = str(
+            getattr(
+                part_object,
+                "Code",
+                ""
+            )
+        )
+
+        #
+        # User part.
+        #
+
+        for user_part in self.userParts:
+
+            if (
+                str(
+                    user_part.get(
+                        "Code",
+                        ""
+                    )
+                )
+                ==
+                code
+            ):
+
+                user_part[
+                    "PositionMode"
+                ] = mode
+
+                if mode == "Automatic":
+
+                    user_part[
+                        "PositionType"
+                    ] = "Automatic"
+
+                break
+
+        #
+        # Recalculate.
+        #
+
+        self.calculateParts()
+
+
+    # =========================================================
+    # PART PLACEMENT DATA
+    # =========================================================
+
+    def partPlacementData(
+        self,
+        part
+    ):
+
+        placement = getattr(
+            part,
+            "Placement",
+            FreeCAD.Placement()
+        )
+
+        return {
+
+            "PositionX":
+                self.value(
+                    placement.Base.x
+                ),
+
+            "PositionY":
+                self.value(
+                    placement.Base.y
+                ),
+
+            "PositionZ":
+                self.value(
+                    placement.Base.z
+                ),
+
+            "RotationX":
+                0,
+
+            "RotationY":
+                0,
+
+            "RotationZ":
+                0
+
+        }
+
+
+    # =========================================================
+    # EDIT PLACEMENT
+    # =========================================================
+
+    def editPlacement(
+        self
+    ):
+
+        row = self.table.currentRow()
+
+        if row < 0:
+
+            return
+
+        if row >= len(
+            self.parts
+        ):
+
+            return
+
+        part = self.parts[
+            row
+        ]
+
+        code = str(
+            getattr(
+                part,
+                "Code",
+                ""
+            )
+        )
+
+        structural_codes = {
+
+            "LS",
+            "RS",
+            "BT",
+            "TP",
+            "BK"
+
+        }
+
+        beam = (
+            code.startswith(
+                "TT"
+            )
+            or
+            code.startswith(
+                "TB"
+            )
+        )
+
+        structural = (
+            code in structural_codes
+            or
+            beam
+        )
+
+        #
+        # Fixed structural pieces.
+        #
+
+        if structural and not beam:
+
+            QtWidgets.QMessageBox.information(
+                self,
+                "Posición / giro",
+                "Esta pieza estructural se posiciona automáticamente."
+            )
+
+            return
+
+        #
+        # Current placement.
+        #
+
+        placement = getattr(
+            part,
+            "Placement",
+            FreeCAD.Placement()
+        )
+
+        data = {
+
+            "PositionX":
+                self.value(
+                    placement.Base.x
+                ),
+
+            "PositionY":
+                self.value(
+                    placement.Base.y
+                ),
+
+            "PositionZ":
+                self.value(
+                    placement.Base.z
+                ),
+
+            "RotationX":
+                0,
+
+            "RotationY":
+                0,
+
+            "RotationZ":
+                0
+
+        }
+
+        #
+        # Structural beam placement.
+        #
+
+        if code in self.structuralPlacements:
+
+            data.update(
+                self.structuralPlacements[
+                    code
+                ]
+            )
+
+        #
+        # User part placement.
+        #
+
+        if not structural:
+
+            for user_part in self.userParts:
+
+                if (
+                    user_part.get(
+                        "Code"
+                    )
+                    ==
+                    code
+                ):
+
+                    for key in (
+                        "PositionX",
+                        "PositionY",
+                        "PositionZ",
+                        "RotationX",
+                        "RotationY",
+                        "RotationZ"
+                    ):
+
+                        data[key] = (
+                            user_part.get(
+                                key,
+                                data[key]
+                            )
+                        )
+
+                    break
+
+        dialog = ManualPlacementDialog(
+            data,
+            self
+        )
+
+        if not dialog.exec_():
+
+            return
+
+        placement_data = (
+            dialog.getData()
+        )
+
+        #
+        # Beam.
+        #
+
+        if beam:
+
+            self.structuralPlacements[
+                code
+            ] = placement_data
+
+            mode_combo = (
                 self.table.cellWidget(
                     row,
                     7
                 )
             )
 
-            if positionCombo is not None:
+            if mode_combo is not None:
 
-                part["PositionType"] = (
-                    positionCombo.currentData()
+                index = (
+                    mode_combo.findData(
+                        "Manual"
+                    )
                 )
 
-            #
-            # =================================================
-            # MODE
-            # =================================================
-            #
+                if index >= 0:
 
-            modeCombo = (
-                self.table.cellWidget(
-                    row,
-                    8
-                )
-            )
+                    mode_combo.setCurrentIndex(
+                        index
+                    )
 
-            if modeCombo is not None:
+        #
+        # User piece.
+        #
 
-                part["PositionMode"] = (
-                    modeCombo.currentData()
-                )
+        else:
 
-    #
+            for user_part in self.userParts:
+
+                if (
+                    user_part.get(
+                        "Code"
+                    )
+                    ==
+                    code
+                ):
+
+                    user_part.update(
+                        placement_data
+                    )
+
+                    user_part[
+                        "PositionMode"
+                    ] = "Manual"
+
+                    user_part[
+                        "PositionType"
+                    ] = "Manual"
+
+                    break
+
+        self.calculateParts()
+
+
     # =========================================================
-    # GET DATA
+    # ADD CUSTOM PART
     # =========================================================
-    #
 
-    def getData(
+    def addCustomPart(
         self
     ):
 
         self.updateTableData()
 
-        self.calculateParts()
+        used = {
 
-        return {
+            str(
+                part.get(
+                    "Code",
+                    ""
+                )
+            )
 
-            "Label":
-                self.nameEdit.text().strip()
-                or
-                "Nuevo módulo",
+            for part in self.userParts
 
-            "Width":
-                self.widthSpin.value(),
-
-            "Height":
-                self.heightSpin.value(),
-
-            "Depth":
-                self.depthSpin.value(),
-
-            "PanelThickness":
-                self.thicknessSpin.value(),
-
-            "BackThickness":
-                self.backThicknessSpin.value(),
-
-            "BackInset":
-                self.backInsetSpin.value(),
-
-            "Parts":
-                [
-                    dict(
-                        part
-                    )
-                    for part in self.userParts
-                ]
         }
 
-    #
+        number = 1
+
+        while (
+            "CU"
+            +
+            str(
+                number
+            )
+            in used
+        ):
+
+            number += 1
+
+        internal_width = (
+
+            self.widthSpin.value()
+            -
+            self.thicknessSpin.value()
+            *
+            2
+
+        )
+
+        if internal_width < 0:
+
+            internal_width = 0
+
+        part = {
+
+            "Code":
+                "CU"
+                +
+                str(
+                    number
+                ),
+
+            "Label":
+                "Nueva pieza "
+                +
+                str(
+                    number
+                ),
+
+            "Role":
+                "Custom",
+
+            "PartType":
+                "Personalizado",
+
+            "Length":
+                internal_width,
+
+            "Width":
+                self.depthSpin.value(),
+
+            "Thickness":
+                self.thicknessSpin.value(),
+
+            "Quantity":
+                1,
+
+            "MaterialCode":
+                "",
+
+            "Position":
+                0,
+
+            "PositionX":
+                0,
+
+            "PositionY":
+                0,
+
+            "PositionZ":
+                0,
+
+            "RotationX":
+                0,
+
+            "RotationY":
+                0,
+
+            "RotationZ":
+                0,
+
+            "PositionMode":
+                "Manual",
+
+            "PositionType":
+                "Manual"
+
+        }
+
+        self.userParts.append(
+            part
+        )
+
+        self.calculateParts()
+
+        if self.table.rowCount() > 0:
+
+            self.table.selectRow(
+                self.table.rowCount() - 1
+            )
+
+
+    # =========================================================
+    # DELETE PART
+    # =========================================================
+
+    def deletePart(
+        self
+    ):
+
+        row = self.table.currentRow()
+
+        if row < 0:
+
+            return
+
+        if row >= len(
+            self.parts
+        ):
+
+            return
+
+        code = str(
+            getattr(
+                self.parts[row],
+                "Code",
+                ""
+            )
+        )
+
+        if code in {
+
+            "LS",
+            "RS",
+            "BT",
+            "TP",
+            "BK",
+            "TT1",
+            "TT2",
+            "TT3",
+            "TB1",
+            "TB2",
+            "TB3"
+
+        }:
+
+            QtWidgets.QMessageBox.information(
+                self,
+                "Eliminar pieza",
+                "Las piezas estructurales no se pueden eliminar."
+            )
+
+            return
+
+        self.userParts = [
+
+            part
+
+            for part in self.userParts
+
+            if part.get(
+                "Code"
+            )
+            !=
+            code
+
+        ]
+
+        self.calculateParts()
+
+
+    # =========================================================
+    # DUPLICATE PART
+    # =========================================================
+
+    def duplicatePart(
+        self
+    ):
+
+        row = self.table.currentRow()
+
+        if row < 0:
+
+            return
+
+        if row >= len(
+            self.parts
+        ):
+
+            return
+
+        code = str(
+            getattr(
+                self.parts[row],
+                "Code",
+                ""
+            )
+        )
+
+        source = None
+
+        for part in self.userParts:
+
+            if (
+                part.get(
+                    "Code"
+                )
+                ==
+                code
+            ):
+
+                source = dict(
+                    part
+                )
+
+                break
+
+        if source is None:
+
+            return
+
+        used = {
+
+            str(
+                part.get(
+                    "Code",
+                    ""
+                )
+            )
+
+            for part in self.userParts
+
+        }
+
+        number = 1
+
+        while (
+            "CU"
+            +
+            str(
+                number
+            )
+            in used
+        ):
+
+            number += 1
+
+        source["Code"] = (
+            "CU"
+            +
+            str(
+                number
+            )
+        )
+
+        source["Label"] = (
+            "Nueva pieza "
+            +
+            str(
+                number
+            )
+        )
+
+        self.userParts.append(
+            source
+        )
+
+        self.calculateParts()
+
+
     # =========================================================
     # SAVE
     # =========================================================
-    #
 
     def save(
         self
     ):
 
-        self.updateTableData()
+        try:
 
-        self.updateParameters()
+            #
+            # Preserve current table information.
+            #
 
-        self.calculateParts()
+            self.updateTableData()
 
-        self.accept()
+            #
+            # Recalculate automatic positions.
+            #
 
-    #
+            self.recalculateAutomaticUserPartPositions()
+
+            #
+            # Recalculate automatic dimensions.
+            #
+
+            self.recalculateAutomaticUserPartDimensions()
+
+            #
+            # Save module.
+            #
+
+            self.updateModule()
+
+            #
+            # Final build.
+            #
+
+            self.calculateParts()
+
+            #
+            # Preserve material selections.
+            #
+
+            self.updateTableData()
+
+            self.accept()
+
+        except Exception as error:
+
+            QtWidgets.QMessageBox.warning(
+                self,
+                "Guardar",
+                "Error guardando el módulo:\n\n"
+                +
+                str(error)
+            )
+
+
     # =========================================================
-    # SET ITEM
+    # TABLE ITEM
     # =========================================================
-    #
 
     def setItem(
         self,
@@ -2536,23 +3623,20 @@ class ParametricModuleDialog(QtWidgets.QDialog):
         value
     ):
 
-        item = QtWidgets.QTableWidgetItem(
-            str(
-                value
-            )
-        )
-
         self.table.setItem(
             row,
             column,
-            item
+            QtWidgets.QTableWidgetItem(
+                str(
+                    value
+                )
+            )
         )
 
-    #
+
     # =========================================================
     # GET FLOAT
     # =========================================================
-    #
 
     def getFloat(
         self,
@@ -2582,49 +3666,12 @@ class ParametricModuleDialog(QtWidgets.QDialog):
 
             return 0
 
-    #
+
     # =========================================================
-    # NUMBER
+    # VALUE
     # =========================================================
-    #
 
-    def number(
-        self,
-        value
-    ):
-
-        try:
-
-            value = float(
-                value
-            )
-
-            if value.is_integer():
-
-                return str(
-                    int(
-                        value
-                    )
-                )
-
-            return str(
-                round(
-                    value,
-                    2
-                )
-            )
-
-        except Exception:
-
-            return "0"
-
-    #
-    # =========================================================
-    # GET VALUE
-    # =========================================================
-    #
-
-    def getValue(
+    def value(
         self,
         value
     ):
@@ -2646,4 +3693,93 @@ class ParametricModuleDialog(QtWidgets.QDialog):
 
         except Exception:
 
-            return 0
+            return 0.0
+
+
+    # =========================================================
+    # NUMBER
+    # =========================================================
+
+    def number(
+        self,
+        value
+    ):
+
+        try:
+
+            number = float(
+                value
+            )
+
+            if number.is_integer():
+
+                return str(
+                    int(
+                        number
+                    )
+                )
+
+            return str(
+                round(
+                    number,
+                    2
+                )
+            )
+
+        except Exception:
+
+            return "0"
+
+
+    # =========================================================
+    # SET COMBO
+    # =========================================================
+
+    def setCombo(
+        self,
+        combo,
+        value
+    ):
+
+        index = combo.findText(
+            str(
+                value
+            )
+        )
+
+        if index >= 0:
+
+            combo.setCurrentIndex(
+                index
+            )
+
+
+    # =========================================================
+    # RESIZE COLUMNS
+    # =========================================================
+
+    def resizeColumns(
+        self
+    ):
+
+        self.table.resizeColumnsToContents()
+
+        widths = {
+
+            0: 190,
+            1: 130,
+            2: 90,
+            3: 90,
+            4: 90,
+            5: 80,
+            6: 200,
+            7: 120
+
+        }
+
+        for column, width in widths.items():
+
+            self.table.setColumnWidth(
+                column,
+                width
+            )

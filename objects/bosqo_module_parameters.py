@@ -139,6 +139,44 @@ class BosqoModuleParameters:
         )
 
 
+        #
+        # User parts
+        #
+
+        if not hasattr(
+            obj,
+            "Parts"
+        ):
+
+            obj.addProperty(
+                "App::PropertyPythonObject",
+                "Parts",
+                "Piezas",
+                "Piezas añadidas al módulo"
+            )
+
+            obj.Parts = []
+
+
+        #
+        # Structural placements
+        #
+
+        if not hasattr(
+            obj,
+            "StructuralPlacements"
+        ):
+
+            obj.addProperty(
+                "App::PropertyPythonObject",
+                "StructuralPlacements",
+                "Piezas",
+                "Posiciones manuales de piezas estructurales"
+            )
+
+            obj.StructuralPlacements = {}
+
+
     #
     # Add String property
     #
@@ -239,6 +277,125 @@ class BosqoModuleParameters:
             name,
             value
         )
+
+
+    #
+    # User parts
+    #
+
+    def getUserParts(
+        self,
+        obj
+    ):
+
+        try:
+
+            parts = getattr(
+                obj,
+                "Parts",
+                []
+            )
+
+            if isinstance(
+                parts,
+                list
+            ):
+
+                return [
+                    dict(part)
+                    for part in parts
+                    if isinstance(
+                        part,
+                        dict
+                    )
+                ]
+
+        except Exception:
+
+            pass
+
+        return []
+
+
+    def setUserParts(
+        self,
+        obj,
+        parts
+    ):
+
+        try:
+
+            obj.Parts = [
+                dict(part)
+                for part in parts
+                if isinstance(
+                    part,
+                    dict
+                )
+            ]
+
+        except Exception:
+
+            obj.Parts = []
+
+
+    #
+    # Structural placements
+    #
+
+    def getStructuralPlacements(
+        self,
+        obj
+    ):
+
+        try:
+
+            placements = getattr(
+                obj,
+                "StructuralPlacements",
+                {}
+            )
+
+            if isinstance(
+                placements,
+                dict
+            ):
+
+                return dict(
+                    placements
+                )
+
+        except Exception:
+
+            pass
+
+        return {}
+
+
+    def setStructuralPlacements(
+        self,
+        obj,
+        placements
+    ):
+
+        try:
+
+            if isinstance(
+                placements,
+                dict
+            ):
+
+                obj.StructuralPlacements = dict(
+                    placements
+                )
+
+            else:
+
+                obj.StructuralPlacements = {}
+
+        except Exception:
+
+            obj.StructuralPlacements = {}
 
 
     #
@@ -347,6 +504,10 @@ class BosqoModuleParameters:
                 - (2 * thickness)
             )
 
+            if topWidth < 0:
+
+                topWidth = 0
+
 
             parts.append(
                 {
@@ -384,6 +545,10 @@ class BosqoModuleParameters:
                 width
                 - (2 * thickness)
             )
+
+            if bottomWidth < 0:
+
+                bottomWidth = 0
 
 
             parts.append(
@@ -423,11 +588,19 @@ class BosqoModuleParameters:
                 - (2 * thickness)
             )
 
+            if backWidth < 0:
+
+                backWidth = 0
+
 
             backHeight = (
                 height
                 - (2 * thickness)
             )
+
+            if backHeight < 0:
+
+                backHeight = 0
 
 
             parts.append(
@@ -446,6 +619,9 @@ class BosqoModuleParameters:
 
                     "Thickness":
                         backThickness,
+
+                    "BackInset":
+                        backInset,
 
                     "Quantity":
                         1,

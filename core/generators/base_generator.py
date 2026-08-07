@@ -7,11 +7,9 @@ class BaseGenerator:
 
         parts = []
 
-        #
         # =====================================================
-        # LATERALS
+        # STRUCTURAL SIDES
         # =====================================================
-        #
 
         parts.append(
             {
@@ -27,24 +25,9 @@ class BaseGenerator:
             }
         )
 
-        #
-        # =====================================================
-        # BOTTOM
-        # =====================================================
-        #
-
-        parts.append(
-            {
-                "Code": "BT",
-                "Role": "Bottom"
-            }
-        )
-
-        #
         # =====================================================
         # TOP SYSTEM
         # =====================================================
-        #
 
         top_type = getattr(
             module,
@@ -61,83 +44,94 @@ class BaseGenerator:
             parts.append(
                 {
                     "Code": "TP",
-                    "Role": "Top",
-                    "TopSystem": "Panel"
+                    "Role": "Top"
                 }
             )
 
         #
-        # TWO RAILS
+        # TWO TOP BEAMS
         #
 
         elif top_type == "2 travesaños":
 
             parts.append(
                 {
-                    "Code": "TR1",
-                    "Role": "Top",
-                    "TopSystem": "Rail",
-                    "RailCount": 2,
-                    "RailIndex": 0,
-                    "Label": "Travesaño superior 1"
+                    "Code": "TT1",
+                    "Role": "TopBeam",
+                    "BeamIndex": 1,
+                    "BeamCount": 2
                 }
             )
 
             parts.append(
                 {
-                    "Code": "TR2",
-                    "Role": "Top",
-                    "TopSystem": "Rail",
-                    "RailCount": 2,
-                    "RailIndex": 1,
-                    "Label": "Travesaño superior 2"
+                    "Code": "TT2",
+                    "Role": "TopBeam",
+                    "BeamIndex": 2,
+                    "BeamCount": 2
                 }
             )
 
         #
-        # THREE RAILS
+        # THREE TOP BEAMS
         #
 
         elif top_type == "3 travesaños":
 
             parts.append(
                 {
-                    "Code": "TR1",
-                    "Role": "Top",
-                    "TopSystem": "Rail",
-                    "RailCount": 3,
-                    "RailIndex": 0,
-                    "Label": "Travesaño superior 1"
+                    "Code": "TT1",
+                    "Role": "TopBeam",
+                    "BeamIndex": 1,
+                    "BeamCount": 3
                 }
             )
 
             parts.append(
                 {
-                    "Code": "TR2",
-                    "Role": "Top",
-                    "TopSystem": "Rail",
-                    "RailCount": 3,
-                    "RailIndex": 1,
-                    "Label": "Travesaño superior 2"
+                    "Code": "TT2",
+                    "Role": "TopBeam",
+                    "BeamIndex": 2,
+                    "BeamCount": 3
                 }
             )
 
             parts.append(
                 {
-                    "Code": "TR3",
-                    "Role": "Top",
-                    "TopSystem": "Rail",
-                    "RailCount": 3,
-                    "RailIndex": 2,
-                    "Label": "Travesaño superior 3"
+                    "Code": "TT3",
+                    "Role": "TopBeam",
+                    "BeamIndex": 3,
+                    "BeamCount": 3
                 }
             )
 
         #
+        # SAFETY FALLBACK
+        #
+
+        else:
+
+            parts.append(
+                {
+                    "Code": "TP",
+                    "Role": "Top"
+                }
+            )
+
+        # =====================================================
+        # BOTTOM
+        # =====================================================
+
+        parts.append(
+            {
+                "Code": "BT",
+                "Role": "Bottom"
+            }
+        )
+
         # =====================================================
         # BACK SYSTEM
         # =====================================================
-        #
 
         back_type = getattr(
             module,
@@ -158,74 +152,64 @@ class BaseGenerator:
                 {
                     "Code": "BK",
                     "Role": "Back",
-                    "BackSystem": "Panel"
+                    "BackType": back_type
                 }
             )
 
         #
-        # TWO BACK RAILS
+        # TWO BACK BEAMS
         #
 
         elif back_type == "2 travesaños":
 
             parts.append(
                 {
-                    "Code": "BK1",
-                    "Role": "Back",
-                    "BackSystem": "Rail",
-                    "RailCount": 2,
-                    "RailIndex": 0,
-                    "Label": "Travesaño trasero 1"
+                    "Code": "TB1",
+                    "Role": "BackBeam",
+                    "BeamIndex": 1,
+                    "BeamCount": 2
                 }
             )
 
             parts.append(
                 {
-                    "Code": "BK2",
-                    "Role": "Back",
-                    "BackSystem": "Rail",
-                    "RailCount": 2,
-                    "RailIndex": 1,
-                    "Label": "Travesaño trasero 2"
+                    "Code": "TB2",
+                    "Role": "BackBeam",
+                    "BeamIndex": 2,
+                    "BeamCount": 2
                 }
             )
 
         #
-        # THREE BACK RAILS
+        # THREE BACK BEAMS
         #
 
         elif back_type == "3 travesaños":
 
             parts.append(
                 {
-                    "Code": "BK1",
-                    "Role": "Back",
-                    "BackSystem": "Rail",
-                    "RailCount": 3,
-                    "RailIndex": 0,
-                    "Label": "Travesaño trasero 1"
+                    "Code": "TB1",
+                    "Role": "BackBeam",
+                    "BeamIndex": 1,
+                    "BeamCount": 3
                 }
             )
 
             parts.append(
                 {
-                    "Code": "BK2",
-                    "Role": "Back",
-                    "BackSystem": "Rail",
-                    "RailCount": 3,
-                    "RailIndex": 1,
-                    "Label": "Travesaño trasero 2"
+                    "Code": "TB2",
+                    "Role": "BackBeam",
+                    "BeamIndex": 2,
+                    "BeamCount": 3
                 }
             )
 
             parts.append(
                 {
-                    "Code": "BK3",
-                    "Role": "Back",
-                    "BackSystem": "Rail",
-                    "RailCount": 3,
-                    "RailIndex": 2,
-                    "Label": "Travesaño trasero 3"
+                    "Code": "TB3",
+                    "Role": "BackBeam",
+                    "BeamIndex": 3,
+                    "BeamCount": 3
                 }
             )
 
@@ -238,9 +222,17 @@ class BaseGenerator:
             pass
 
         #
-        # =====================================================
-        # RETURN
-        # =====================================================
+        # SAFETY FALLBACK
         #
+
+        else:
+
+            parts.append(
+                {
+                    "Code": "BK",
+                    "Role": "Back",
+                    "BackType": "Trasera sobrepuesta"
+                }
+            )
 
         return parts

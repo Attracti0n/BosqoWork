@@ -43,6 +43,7 @@ class BosqoWorkbench(FreeCADGui.Workbench):
             [
                 "Bosqo_AddPart",
                 "Bosqo_ParametricModule",
+                "Bosqo_ModulePlacement",
                 "Bosqo_ProjectProperties",
                 "Bosqo_PartsTable",
                 "Bosqo_Materials",
@@ -74,6 +75,7 @@ class BosqoWorkbench(FreeCADGui.Workbench):
             [
                 "Bosqo_AddPart",
                 "Bosqo_ParametricModule",
+                "Bosqo_ModulePlacement",
                 "Bosqo_ProjectProperties",
                 "Bosqo_PartsTable",
                 "Bosqo_Materials"

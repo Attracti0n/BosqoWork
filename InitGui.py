@@ -14,5 +14,6 @@ import commands.bom
 import commands.materials
 import commands.parts_table
 import commands.parametric_module
+import commands.module_placement
 
 FreeCADGui.addWorkbench(BosqoWorkbench())

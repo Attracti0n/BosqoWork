@@ -8,24 +8,37 @@ import json
 
 class ViewProviderBosqoImportedModule:
 
-    def __init__(self, viewObject):
+    def __init__(
+        self,
+        viewObject
+    ):
 
         self.Object = viewObject.Object
+
         viewObject.Proxy = self
 
+        # -----------------------------------------------------
         # Make the module selectable.
+        # -----------------------------------------------------
+
         try:
+
             viewObject.Selectable = True
+
         except Exception:
+
             pass
 
     # =========================================================
     # CHILDREN
     # =========================================================
 
-    def claimChildren(self):
+    def claimChildren(
+        self
+    ):
 
         try:
+
             return list(
                 getattr(
                     self.Object,
@@ -33,24 +46,36 @@ class ViewProviderBosqoImportedModule:
                     []
                 )
             )
+
         except Exception:
+
             return []
 
     # =========================================================
     # ICON
     # =========================================================
 
-    def getIcon(self):
+    def getIcon(
+        self
+    ):
+
         return ""
 
     # =========================================================
     # SERIALIZATION
     # =========================================================
 
-    def __getstate__(self):
+    def __getstate__(
+        self
+    ):
+
         return None
 
-    def __setstate__(self, state):
+    def __setstate__(
+        self,
+        state
+    ):
+
         return None
 
 
@@ -60,23 +85,47 @@ class ViewProviderBosqoImportedModule:
 
 class BosqoImportedModule:
 
-    def __init__(self, obj):
+    def __init__(
+        self,
+        obj
+    ):
 
-        # Keep a different ObjectType so this object can be
-        # distinguished internally from a real parametric module.
-        self.ObjectType = "BosqoImportedModule"
+        # -----------------------------------------------------
+        # INTERNAL TYPE
+        # -----------------------------------------------------
+
+        self.ObjectType = (
+            "BosqoImportedModule"
+        )
 
         self._applying_module_placement = False
 
-        # Assign Proxy
+        # -----------------------------------------------------
+        # ASSIGN PROXY
+        # -----------------------------------------------------
+
         obj.Proxy = self
 
-        # Create the same property structure as BosqoModule.
-        self.initProperties(obj)
+        # -----------------------------------------------------
+        # PROPERTIES
+        # -----------------------------------------------------
 
-        # Create ViewProvider
+        self.initProperties(
+            obj
+        )
+
+        # -----------------------------------------------------
+        # VIEW PROVIDER
+        # -----------------------------------------------------
+
         try:
-            if getattr(obj, "ViewObject", None) is not None:
+
+            if getattr(
+                obj,
+                "ViewObject",
+                None
+            ) is not None:
+
                 ViewProviderBosqoImportedModule(
                     obj.ViewObject
                 )
@@ -84,16 +133,22 @@ class BosqoImportedModule:
         except Exception as error:
 
             FreeCAD.Console.PrintError(
-                "Error creando ViewProvider del módulo importado: "
-                + str(error)
-                + "\n"
+                "Error creando ViewProvider "
+                "del módulo importado: "
+                +
+                str(error)
+                +
+                "\n"
             )
 
     # =========================================================
     # PROPERTIES
     # =========================================================
 
-    def initProperties(self, obj):
+    def initProperties(
+        self,
+        obj
+    ):
 
         # -----------------------------------------------------
         # MODULE NAME
@@ -106,6 +161,29 @@ class BosqoImportedModule:
             "Nombre del módulo",
             "Módulo importado"
         )
+
+        # -----------------------------------------------------
+        # MODULE SOURCE
+        # -----------------------------------------------------
+
+        self.addString(
+            obj,
+            "ModuleSource",
+            "Módulo",
+            "Origen del módulo",
+            "Imported"
+        )
+
+        try:
+
+            obj.setEditorMode(
+                "ModuleSource",
+                2
+            )
+
+        except Exception:
+
+            pass
 
         # -----------------------------------------------------
         # MODULE TYPE
@@ -186,10 +264,12 @@ class BosqoImportedModule:
         # MODULE PLACEMENT
         # -----------------------------------------------------
 
-        self.addPlacement(obj)
+        self.addPlacement(
+            obj
+        )
 
         # -----------------------------------------------------
-        # INTERNAL / LAST APPLIED PLACEMENT
+        # LAST APPLIED MODULE PLACEMENT
         # -----------------------------------------------------
 
         self.addString(
@@ -200,10 +280,16 @@ class BosqoImportedModule:
             ""
         )
 
-        obj.setEditorMode(
-            "AppliedModulePlacement",
-            2
-        )
+        try:
+
+            obj.setEditorMode(
+                "AppliedModulePlacement",
+                2
+            )
+
+        except Exception:
+
+            pass
 
         # -----------------------------------------------------
         # TOP TYPE
@@ -242,16 +328,39 @@ class BosqoImportedModule:
         )
 
         # -----------------------------------------------------
-        # USER PARTS
+        # PARTS DATA
+        #
+        # This contains the information edited in ModuleDialog:
+        #
+        # ObjectName
+        # Name
+        # Type
+        # Length
+        # Width
+        # Thickness
+        # Quantity
+        # Material
+        #
         # -----------------------------------------------------
 
         self.addString(
             obj,
             "PartsJSON",
             "Interno",
-            "Piezas personalizadas",
+            "Datos de las piezas",
             "[]"
         )
+
+        try:
+
+            obj.setEditorMode(
+                "PartsJSON",
+                2
+            )
+
+        except Exception:
+
+            pass
 
         # -----------------------------------------------------
         # STRUCTURAL PLACEMENTS
@@ -265,15 +374,16 @@ class BosqoImportedModule:
             "{}"
         )
 
-        obj.setEditorMode(
-            "PartsJSON",
-            2
-        )
+        try:
 
-        obj.setEditorMode(
-            "StructuralPlacementsJSON",
-            2
-        )
+            obj.setEditorMode(
+                "StructuralPlacementsJSON",
+                2
+            )
+
+        except Exception:
+
+            pass
 
     # =========================================================
     # ADD STRING
@@ -288,7 +398,11 @@ class BosqoImportedModule:
         value
     ):
 
-        if hasattr(obj, name):
+        if hasattr(
+            obj,
+            name
+        ):
+
             return
 
         obj.addProperty(
@@ -317,7 +431,11 @@ class BosqoImportedModule:
         value
     ):
 
-        if hasattr(obj, name):
+        if hasattr(
+            obj,
+            name
+        ):
+
             return
 
         obj.addProperty(
@@ -337,9 +455,16 @@ class BosqoImportedModule:
     # ADD PLACEMENT
     # =========================================================
 
-    def addPlacement(self, obj):
+    def addPlacement(
+        self,
+        obj
+    ):
 
-        if hasattr(obj, "Placement"):
+        if hasattr(
+            obj,
+            "Placement"
+        ):
+
             return
 
         try:
@@ -351,14 +476,19 @@ class BosqoImportedModule:
                 "Posición y orientación del módulo"
             )
 
-            obj.Placement = FreeCAD.Placement()
+            obj.Placement = (
+                FreeCAD.Placement()
+            )
 
         except Exception as error:
 
             FreeCAD.Console.PrintError(
-                "Error creando Placement del módulo importado: "
-                + str(error)
-                + "\n"
+                "Error creando Placement "
+                "del módulo importado: "
+                +
+                str(error)
+                +
+                "\n"
             )
 
     # =========================================================
@@ -375,7 +505,11 @@ class BosqoImportedModule:
         default
     ):
 
-        if hasattr(obj, name):
+        if hasattr(
+            obj,
+            name
+        ):
+
             return
 
         obj.addProperty(
@@ -400,13 +534,17 @@ class BosqoImportedModule:
             )
 
         except Exception:
+
             pass
 
     # =========================================================
     # GET PARTS
     # =========================================================
 
-    def getParts(self, obj):
+    def getParts(
+        self,
+        obj
+    ):
 
         parts = []
 
@@ -417,17 +555,23 @@ class BosqoImportedModule:
         ):
 
             if child is obj:
+
                 continue
 
-            parts.append(child)
+            parts.append(
+                child
+            )
 
         return parts
 
     # =========================================================
-    # GET USER PARTS
+    # GET USER PARTS / SAVED PART DATA
     # =========================================================
 
-    def getUserParts(self, obj):
+    def getUserParts(
+        self,
+        obj
+    ):
 
         try:
 
@@ -439,21 +583,38 @@ class BosqoImportedModule:
                 )
             )
 
-            if isinstance(data, list):
+            if isinstance(
+                data,
+                list
+            ):
 
                 return [
+
                     dict(item)
+
                     for item in data
-                    if isinstance(item, dict)
+
+                    if isinstance(
+                        item,
+                        dict
+                    )
+
                 ]
 
-        except Exception:
-            pass
+        except Exception as error:
+
+            FreeCAD.Console.PrintWarning(
+                "Error leyendo PartsJSON: "
+                +
+                str(error)
+                +
+                "\n"
+            )
 
         return []
 
     # =========================================================
-    # SET USER PARTS
+    # SET USER PARTS / SAVE MODULE DIALOG DATA
     # =========================================================
 
     def setUserParts(
@@ -462,26 +623,139 @@ class BosqoImportedModule:
         parts
     ):
 
+        if parts is None:
+
+            parts = []
+
         try:
 
+            data = []
+
+            for item in parts:
+
+                if not isinstance(
+                    item,
+                    dict
+                ):
+
+                    continue
+
+                data.append(
+                    dict(
+                        item
+                    )
+                )
+
             obj.PartsJSON = json.dumps(
-                parts,
+                data,
                 ensure_ascii=False
+            )
+
+            obj.touch()
+
+            return True
+
+        except Exception as error:
+
+            FreeCAD.Console.PrintError(
+                "Error guardando piezas del módulo: "
+                +
+                str(error)
+                +
+                "\n"
+            )
+
+            return False
+
+    # =========================================================
+    # SAVE MODULE DIALOG DATA
+    # =========================================================
+    #
+    # This is the method that ModuleDialog uses indirectly.
+    #
+    # It stores:
+    #
+    # Type
+    # Material
+    # Quantity
+    # Dimensions
+    # Name
+    # ObjectName
+    #
+    # ---------------------------------------------------------
+
+    def saveModuleDialogData(
+        self,
+        obj,
+        data
+    ):
+
+        if not isinstance(
+            data,
+            dict
+        ):
+
+            return False
+
+        try:
+
+            # -------------------------------------------------
+            # MODULE NAME
+            # -------------------------------------------------
+
+            label = str(
+                data.get(
+                    "Label",
+                    ""
+                )
+            ).strip()
+
+            if label:
+
+                obj.ModuleName = label
+                obj.Label = label
+
+            # -------------------------------------------------
+            # PARTS
+            # -------------------------------------------------
+
+            parts = data.get(
+                "Parts",
+                []
+            )
+
+            if not isinstance(
+                parts,
+                list
+            ):
+
+                parts = []
+
+            return self.setUserParts(
+                obj,
+                parts
             )
 
         except Exception as error:
 
             FreeCAD.Console.PrintError(
-                "Error guardando piezas personalizadas: "
-                + str(error)
-                + "\n"
+                "Error guardando datos de ModuleDialog: "
+                +
+                str(error)
+                +
+                "\n"
             )
+
+            return False
 
     # =========================================================
     # GET STRUCTURAL PLACEMENTS
     # =========================================================
 
-    def getStructuralPlacements(self, obj):
+    def getStructuralPlacements(
+        self,
+        obj
+    ):
 
         try:
 
@@ -493,10 +767,15 @@ class BosqoImportedModule:
                 )
             )
 
-            if isinstance(data, dict):
+            if isinstance(
+                data,
+                dict
+            ):
+
                 return data
 
         except Exception:
+
             pass
 
         return {}
@@ -513,21 +792,25 @@ class BosqoImportedModule:
 
         try:
 
-            obj.StructuralPlacementsJSON = json.dumps(
-                data,
-                ensure_ascii=False
+            obj.StructuralPlacementsJSON = (
+                json.dumps(
+                    data,
+                    ensure_ascii=False
+                )
             )
 
         except Exception as error:
 
             FreeCAD.Console.PrintError(
                 "Error guardando posiciones estructurales: "
-                + str(error)
-                + "\n"
+                +
+                str(error)
+                +
+                "\n"
             )
 
     # =========================================================
-    # PLACEMENT SERIALIZATION
+    # PLACEMENT TO DATA
     # =========================================================
 
     def placementToData(
@@ -541,6 +824,7 @@ class BosqoImportedModule:
             rotation = placement.Rotation
 
             return {
+
                 "x": float(base.x),
                 "y": float(base.y),
                 "z": float(base.z),
@@ -549,22 +833,26 @@ class BosqoImportedModule:
                 "qy": float(rotation.Q[1]),
                 "qz": float(rotation.Q[2]),
                 "qw": float(rotation.Q[3])
+
             }
 
         except Exception:
 
             return {
+
                 "x": 0.0,
                 "y": 0.0,
                 "z": 0.0,
+
                 "qx": 0.0,
                 "qy": 0.0,
                 "qz": 0.0,
                 "qw": 1.0
+
             }
 
     # =========================================================
-    # PLACEMENT DESERIALIZATION
+    # DATA TO PLACEMENT
     # =========================================================
 
     def dataToPlacement(
@@ -574,35 +862,60 @@ class BosqoImportedModule:
 
         try:
 
-            if not isinstance(data, dict):
+            if not isinstance(
+                data,
+                dict
+            ):
+
                 return FreeCAD.Placement()
 
             x = float(
-                data.get("x", 0)
+                data.get(
+                    "x",
+                    0
+                )
             )
 
             y = float(
-                data.get("y", 0)
+                data.get(
+                    "y",
+                    0
+                )
             )
 
             z = float(
-                data.get("z", 0)
+                data.get(
+                    "z",
+                    0
+                )
             )
 
             qx = float(
-                data.get("qx", 0)
+                data.get(
+                    "qx",
+                    0
+                )
             )
 
             qy = float(
-                data.get("qy", 0)
+                data.get(
+                    "qy",
+                    0
+                )
             )
 
             qz = float(
-                data.get("qz", 0)
+                data.get(
+                    "qz",
+                    0
+                )
             )
 
             qw = float(
-                data.get("qw", 1)
+                data.get(
+                    "qw",
+                    1
+                )
             )
 
             rotation = FreeCAD.Rotation(
@@ -645,11 +958,16 @@ class BosqoImportedModule:
             ).strip()
 
             if not raw:
+
                 return None
 
-            data = json.loads(raw)
+            data = json.loads(
+                raw
+            )
 
-            return self.dataToPlacement(data)
+            return self.dataToPlacement(
+                data
+            )
 
         except Exception:
 
@@ -671,11 +989,14 @@ class BosqoImportedModule:
                 placement
             )
 
-            obj.AppliedModulePlacement = json.dumps(
-                data
+            obj.AppliedModulePlacement = (
+                json.dumps(
+                    data
+                )
             )
 
         except Exception:
+
             pass
 
     # =========================================================
@@ -689,6 +1010,7 @@ class BosqoImportedModule:
     ):
 
         if self._applying_module_placement:
+
             return
 
         self._applying_module_placement = True
@@ -701,7 +1023,9 @@ class BosqoImportedModule:
                 FreeCAD.Placement()
             )
 
-            parts = self.getParts(obj)
+            parts = self.getParts(
+                obj
+            )
 
             if not parts:
 
@@ -713,7 +1037,7 @@ class BosqoImportedModule:
                 return
 
             # -------------------------------------------------
-            # CASE 1: FIRST APPLICATION / REBUILT
+            # FIRST APPLICATION / REBUILT
             # -------------------------------------------------
 
             if rebuilt:
@@ -724,11 +1048,14 @@ class BosqoImportedModule:
                         part,
                         "Placement"
                     ):
+
                         continue
 
                     try:
 
-                        localPlacement = part.Placement
+                        localPlacement = (
+                            part.Placement
+                        )
 
                         part.Placement = (
                             modulePlacement.multiply(
@@ -741,21 +1068,26 @@ class BosqoImportedModule:
                     except Exception as error:
 
                         FreeCAD.Console.PrintError(
-                            "Error aplicando Placement al "
-                            + str(
+                            "Error aplicando Placement "
+                            "al objeto "
+                            +
+                            str(
                                 getattr(
                                     part,
                                     "Name",
                                     "part"
                                 )
                             )
-                            + ": "
-                            + str(error)
-                            + "\n"
+                            +
+                            ": "
+                            +
+                            str(error)
+                            +
+                            "\n"
                         )
 
             # -------------------------------------------------
-            # CASE 2: EXISTING MODULE MOVED
+            # EXISTING MODULE MOVED
             # -------------------------------------------------
 
             else:
@@ -766,7 +1098,6 @@ class BosqoImportedModule:
                     )
                 )
 
-                # No previous placement
                 if oldPlacement is None:
 
                     for part in parts:
@@ -775,11 +1106,14 @@ class BosqoImportedModule:
                             part,
                             "Placement"
                         ):
+
                             continue
 
                         try:
 
-                            localPlacement = part.Placement
+                            localPlacement = (
+                                part.Placement
+                            )
 
                             part.Placement = (
                                 modulePlacement.multiply(
@@ -790,9 +1124,9 @@ class BosqoImportedModule:
                             part.touch()
 
                         except Exception:
+
                             pass
 
-                # Module already had a placement
                 else:
 
                     inverseOld = (
@@ -805,6 +1139,7 @@ class BosqoImportedModule:
                             part,
                             "Placement"
                         ):
+
                             continue
 
                         try:
@@ -825,7 +1160,9 @@ class BosqoImportedModule:
                                 )
                             )
 
-                            part.Placement = newGlobal
+                            part.Placement = (
+                                newGlobal
+                            )
 
                             part.touch()
 
@@ -833,16 +1170,20 @@ class BosqoImportedModule:
 
                             FreeCAD.Console.PrintError(
                                 "Error moviendo pieza "
-                                + str(
+                                +
+                                str(
                                     getattr(
                                         part,
                                         "Name",
                                         "part"
                                     )
                                 )
-                                + ": "
-                                + str(error)
-                                + "\n"
+                                +
+                                ": "
+                                +
+                                str(error)
+                                +
+                                "\n"
                             )
 
             # -------------------------------------------------
@@ -857,9 +1198,12 @@ class BosqoImportedModule:
         except Exception as error:
 
             FreeCAD.Console.PrintError(
-                "Error aplicando posición del módulo importado: "
-                + str(error)
-                + "\n"
+                "Error aplicando posición "
+                "del módulo importado: "
+                +
+                str(error)
+                +
+                "\n"
             )
 
         finally:
@@ -875,7 +1219,8 @@ class BosqoImportedModule:
         obj
     ):
 
-        # Imported modules NEVER rebuild their geometry.
+        # Imported modules NEVER rebuild geometry.
+
         return
 
     # =========================================================
@@ -901,9 +1246,11 @@ class BosqoImportedModule:
                 ).strip()
 
                 if name:
+
                     obj.Label = name
 
             except Exception:
+
                 pass
 
         # -----------------------------------------------------
@@ -924,6 +1271,8 @@ class BosqoImportedModule:
         # -----------------------------------------------------
 
         if property in (
+
+            "ModuleSource",
             "Width",
             "Height",
             "Depth",
@@ -931,7 +1280,10 @@ class BosqoImportedModule:
             "BackThickness",
             "BackInset",
             "TopType",
-            "BackType"
+            "BackType",
+            "PartsJSON",
+            "StructuralPlacementsJSON"
+
         ):
 
             return
@@ -940,13 +1292,17 @@ class BosqoImportedModule:
     # SERIALIZATION
     # =========================================================
 
-    def __getstate__(self):
+    def __getstate__(
+        self
+    ):
+
         return None
 
     def __setstate__(
         self,
         state
     ):
+
         return None
 
 
@@ -966,11 +1322,14 @@ def create_imported_module(
         )
 
     if parts is None:
+
         parts = []
 
     try:
 
-        parts = list(parts)
+        parts = list(
+            parts
+        )
 
     except Exception:
 
@@ -1002,6 +1361,7 @@ def create_imported_module(
     for part in parts:
 
         if part is None:
+
             continue
 
         try:
@@ -1018,16 +1378,20 @@ def create_imported_module(
 
             FreeCAD.Console.PrintError(
                 "Error añadiendo pieza "
-                + str(
+                +
+                str(
                     getattr(
                         part,
                         "Name",
                         "desconocida"
                     )
                 )
-                + ": "
-                + str(error)
-                + "\n"
+                +
+                ": "
+                +
+                str(error)
+                +
+                "\n"
             )
 
     # ---------------------------------------------------------
@@ -1045,13 +1409,28 @@ def create_imported_module(
         )
 
     except Exception:
+
+        pass
+
+    # ---------------------------------------------------------
+    # INITIAL MODULE SOURCE
+    # ---------------------------------------------------------
+
+    try:
+
+        module.ModuleSource = (
+            "Imported"
+        )
+
+    except Exception:
+
         pass
 
     # ---------------------------------------------------------
     # INITIAL PLACEMENT
     #
-    # The imported pieces already have their correct global
-    # placements.
+    # The selected pieces already have their correct
+    # global placements.
     #
     # Therefore we DO NOT apply module placement here.
     # ---------------------------------------------------------
@@ -1066,7 +1445,87 @@ def create_imported_module(
         )
 
     except Exception:
+
         pass
+
+    # ---------------------------------------------------------
+    # INITIAL PART DATA
+    #
+    # Save the selected objects immediately so that
+    # ModuleDialog has persistent data to work with.
+    # ---------------------------------------------------------
+
+    try:
+
+        initialParts = []
+
+        for part in validParts:
+
+            if part is None:
+
+                continue
+
+            objectName = str(
+                getattr(
+                    part,
+                    "Name",
+                    ""
+                )
+            )
+
+            displayName = str(
+                getattr(
+                    part,
+                    "Label",
+                    objectName
+                )
+            )
+
+            initialParts.append(
+                {
+
+                    "ObjectName":
+                        objectName,
+
+                    "Name":
+                        displayName,
+
+                    "Type":
+                        "Personalizado",
+
+                    "Length":
+                        "",
+
+                    "Width":
+                        "",
+
+                    "Thickness":
+                        "",
+
+                    "Quantity":
+                        "1",
+
+                    "Material":
+                        ""
+
+                }
+            )
+
+        proxy.setUserParts(
+            module,
+            initialParts
+        )
+
+    except Exception as error:
+
+        FreeCAD.Console.PrintWarning(
+            "No se pudieron guardar los datos "
+            "iniciales de las piezas: "
+            +
+            str(error)
+            +
+            "\n"
+        )
 
     # ---------------------------------------------------------
     # RECOMPUTE
@@ -1077,6 +1536,7 @@ def create_imported_module(
         document.recompute()
 
     except Exception:
+
         pass
 
     return module

@@ -1,4 +1,6 @@
 from PySide import QtWidgets, QtCore
+import json
+import FreeCAD
 
 
 # =============================================================
@@ -15,16 +17,41 @@ class ModuleDialog(QtWidgets.QDialog):
         self,
         data=None,
         parts=None,
-        parent=None
+        parent=None,
+        module=None
     ):
 
         super().__init__(parent)
 
+        # -----------------------------------------------------
+        # DATA
+        # -----------------------------------------------------
+
         self.data = data or {}
+
+        # -----------------------------------------------------
+        # REAL FREECAD MODULE OBJECT
+        # -----------------------------------------------------
+
+        self.module = module
+
+        # -----------------------------------------------------
+        # PARTS
+        # -----------------------------------------------------
 
         self.parts = list(
             parts or []
         )
+
+        # -----------------------------------------------------
+        # REAL FREECAD OBJECT ASSOCIATED WITH EACH ROW
+        # -----------------------------------------------------
+
+        self.rowParts = []
+
+        # -----------------------------------------------------
+        # WINDOW
+        # -----------------------------------------------------
 
         self.setWindowTitle(
             "Módulo"
@@ -35,7 +62,15 @@ class ModuleDialog(QtWidgets.QDialog):
             560
         )
 
+        # -----------------------------------------------------
+        # UI
+        # -----------------------------------------------------
+
         self.createUI()
+
+        # -----------------------------------------------------
+        # LOAD
+        # -----------------------------------------------------
 
         self.loadData()
 
@@ -43,7 +78,9 @@ class ModuleDialog(QtWidgets.QDialog):
     # UI
     # =========================================================
 
-    def createUI(self):
+    def createUI(
+        self
+    ):
 
         mainLayout = QtWidgets.QVBoxLayout(
             self
@@ -101,12 +138,6 @@ class ModuleDialog(QtWidgets.QDialog):
             QtWidgets.QAbstractItemView.SingleSelection
         )
 
-        # -----------------------------------------------------
-        # NO DIRECT CELL EDITING
-        #
-        # Type and Material are edited through their combos.
-        # -----------------------------------------------------
-
         self.partsTable.setEditTriggers(
             QtWidgets.QAbstractItemView.NoEditTriggers
         )
@@ -141,7 +172,7 @@ class ModuleDialog(QtWidgets.QDialog):
         )
 
         buttons.accepted.connect(
-            self.accept
+            self.saveChanges
         )
 
         buttons.rejected.connect(
@@ -156,16 +187,52 @@ class ModuleDialog(QtWidgets.QDialog):
     # LOAD DATA
     # =========================================================
 
-    def loadData(self):
+    def loadData(
+        self
+    ):
 
-        self.nameEdit.setText(
-            str(
+        # -----------------------------------------------------
+        # NAME
+        # -----------------------------------------------------
+
+        name = ""
+
+        # First try real module object.
+
+        if self.module is not None:
+
+            try:
+
+                name = str(
+                    getattr(
+                        self.module,
+                        "ModuleName",
+                        ""
+                    )
+                ).strip()
+
+            except Exception:
+
+                name = ""
+
+        # Fallback to Label from data.
+
+        if not name:
+
+            name = str(
                 self.data.get(
                     "Label",
                     "Módulo importado"
                 )
             )
+
+        self.nameEdit.setText(
+            name
         )
+
+        # -----------------------------------------------------
+        # PARTS
+        # -----------------------------------------------------
 
         self.loadParts()
 
@@ -173,21 +240,34 @@ class ModuleDialog(QtWidgets.QDialog):
     # LOAD PARTS
     # =========================================================
 
-    def loadParts(self):
+    def loadParts(
+        self
+    ):
 
         self.partsTable.setRowCount(
             0
         )
 
+        self.rowParts = []
+
         for part in self.parts:
 
             if part is None:
+
                 continue
 
             row = self.partsTable.rowCount()
 
             self.partsTable.insertRow(
                 row
+            )
+
+            # -------------------------------------------------
+            # SAVE REAL FREECAD OBJECT
+            # -------------------------------------------------
+
+            self.rowParts.append(
+                part
             )
 
             # =================================================
@@ -207,16 +287,10 @@ class ModuleDialog(QtWidgets.QDialog):
             # =================================================
             # TYPE
             # =================================================
-            #
-            # Imported parts are ALWAYS initially:
-            #
-            # Personalizado
-            #
-            # The user can change the type manually.
-            # =================================================
 
             self.createTypeCombo(
-                row
+                row,
+                part
             )
 
             # =================================================
@@ -304,6 +378,411 @@ class ModuleDialog(QtWidgets.QDialog):
         self.partsTable.resizeColumnsToContents()
 
     # =========================================================
+    # SAVE CHANGES
+    # =========================================================
+
+    def saveChanges(
+        self
+    ):
+
+        try:
+
+            # -------------------------------------------------
+            # COLLECT DATA FROM TABLE
+            # -------------------------------------------------
+
+            result = self.getData()
+
+            # -------------------------------------------------
+            # SAVE TO REAL FREECAD MODULE
+            # -------------------------------------------------
+
+            if self.module is not None:
+
+                self.saveToModule(
+                    result
+                )
+
+            # -------------------------------------------------
+            # KEEP LOCAL DATA UPDATED
+            # -------------------------------------------------
+
+            self.data = result
+
+            # -------------------------------------------------
+            # ACCEPT
+            # -------------------------------------------------
+
+            self.accept()
+
+        except Exception as error:
+
+            FreeCAD.Console.PrintError(
+                "Error guardando cambios del módulo: "
+                +
+                str(error)
+                +
+                "\n"
+            )
+
+            QtWidgets.QMessageBox.critical(
+                self,
+                "Error",
+                "No se pudieron guardar los cambios:\n\n"
+                +
+                str(error)
+            )
+
+    # =========================================================
+    # SAVE TO FREECAD MODULE
+    # =========================================================
+
+    def saveToModule(
+        self,
+        data
+    ):
+
+        module = self.module
+
+        if module is None:
+
+            return
+
+        # =====================================================
+        # MODULE NAME
+        # =====================================================
+
+        try:
+
+            moduleName = str(
+                data.get(
+                    "Label",
+                    "Módulo importado"
+                )
+            ).strip()
+
+            if not moduleName:
+
+                moduleName = "Módulo importado"
+
+            if hasattr(
+                module,
+                "ModuleName"
+            ):
+
+                module.ModuleName = moduleName
+
+            module.Label = moduleName
+
+        except Exception as error:
+
+            FreeCAD.Console.PrintWarning(
+                "No se pudo guardar el nombre del módulo: "
+                +
+                str(error)
+                +
+                "\n"
+            )
+
+        # =====================================================
+        # PARTS JSON
+        # =====================================================
+
+        try:
+
+            partsData = data.get(
+                "Parts",
+                []
+            )
+
+            jsonData = json.dumps(
+                partsData,
+                ensure_ascii=False
+            )
+
+            if hasattr(
+                module,
+                "PartsJSON"
+            ):
+
+                module.PartsJSON = jsonData
+
+        except Exception as error:
+
+            FreeCAD.Console.PrintWarning(
+                "No se pudo guardar PartsJSON: "
+                +
+                str(error)
+                +
+                "\n"
+            )
+
+        # =====================================================
+        # SAVE TYPE + MATERIAL TO REAL PARTS
+        # =====================================================
+
+        for row in range(
+            self.partsTable.rowCount()
+        ):
+
+            if row >= len(
+                self.rowParts
+            ):
+
+                continue
+
+            part = self.rowParts[
+                row
+            ]
+
+            if part is None:
+
+                continue
+
+            # -------------------------------------------------
+            # TYPE
+            # -------------------------------------------------
+
+            typeWidget = self.partsTable.cellWidget(
+                row,
+                1
+            )
+
+            if isinstance(
+                typeWidget,
+                QtWidgets.QComboBox
+            ):
+
+                partType = str(
+                    typeWidget.currentText()
+                ).strip()
+
+            else:
+
+                partType = "Personalizada"
+
+            # -------------------------------------------------
+            # MATERIAL
+            # -------------------------------------------------
+
+            materialWidget = self.partsTable.cellWidget(
+                row,
+                6
+            )
+
+            if isinstance(
+                materialWidget,
+                QtWidgets.QComboBox
+            ):
+
+                material = str(
+                    materialWidget.currentText()
+                ).strip()
+
+            else:
+
+                material = ""
+
+            # -------------------------------------------------
+            # WRITE TYPE
+            # -------------------------------------------------
+
+            self.setPartProperty(
+                part,
+                "PartType",
+                partType
+            )
+
+            # -------------------------------------------------
+            # WRITE MATERIAL
+            # -------------------------------------------------
+
+            self.setPartProperty(
+                part,
+                "Material",
+                material
+            )
+
+            # -------------------------------------------------
+            # ALSO TRY MaterialName
+            # -------------------------------------------------
+
+            if not self.hasProperty(
+                part,
+                "Material"
+            ):
+
+                self.setPartProperty(
+                    part,
+                    "MaterialName",
+                    material
+                )
+
+            # -------------------------------------------------
+            # TOUCH PART
+            # -------------------------------------------------
+
+            try:
+
+                part.touch()
+
+            except Exception:
+
+                pass
+
+        # =====================================================
+        # TOUCH MODULE
+        # =====================================================
+
+        try:
+
+            module.touch()
+
+        except Exception:
+
+            pass
+
+        # =====================================================
+        # RECOMPUTE DOCUMENT
+        # =====================================================
+
+        try:
+
+            document = module.Document
+
+            if document is not None:
+
+                document.recompute()
+
+        except Exception as error:
+
+            FreeCAD.Console.PrintWarning(
+                "Error recomputando documento: "
+                +
+                str(error)
+                +
+                "\n"
+            )
+
+    # =========================================================
+    # SET PART PROPERTY
+    # =========================================================
+
+    def setPartProperty(
+        self,
+        part,
+        propertyName,
+        value
+    ):
+
+        try:
+
+            if not self.hasProperty(
+                part,
+                propertyName
+            ):
+
+                return False
+
+            current = getattr(
+                part,
+                propertyName
+            )
+
+            # -------------------------------------------------
+            # ENUMERATION
+            # -------------------------------------------------
+
+            try:
+
+                values = part.getEnumerationsOfProperty(
+                    propertyName
+                )
+
+                if values:
+
+                    if value in values:
+
+                        setattr(
+                            part,
+                            propertyName,
+                            value
+                        )
+
+                        return True
+
+                    return False
+
+            except Exception:
+
+                pass
+
+            # -------------------------------------------------
+            # STRING / NORMAL PROPERTY
+            # -------------------------------------------------
+
+            setattr(
+                part,
+                propertyName,
+                value
+            )
+
+            return True
+
+        except Exception as error:
+
+            FreeCAD.Console.PrintWarning(
+                "No se pudo guardar "
+                +
+                propertyName
+                +
+                " en "
+                +
+                str(
+                    getattr(
+                        part,
+                        "Name",
+                        "pieza"
+                    )
+                )
+                +
+                ": "
+                +
+                str(error)
+                +
+                "\n"
+            )
+
+            return False
+
+    # =========================================================
+    # HAS PROPERTY
+    # =========================================================
+
+    def hasProperty(
+        self,
+        obj,
+        propertyName
+    ):
+
+        try:
+
+            return propertyName in obj.PropertiesList
+
+        except Exception:
+
+            try:
+
+                return hasattr(
+                    obj,
+                    propertyName
+                )
+
+            except Exception:
+
+                return False
+
+    # =========================================================
     # PART NAME
     # =========================================================
 
@@ -333,6 +812,7 @@ class ModuleDialog(QtWidgets.QDialog):
                 )
 
                 if value is None:
+
                     continue
 
                 value = str(
@@ -355,26 +835,17 @@ class ModuleDialog(QtWidgets.QDialog):
 
     def createTypeCombo(
         self,
-        row
+        row,
+        part
     ):
 
         combo = QtWidgets.QComboBox()
 
-        # -----------------------------------------------------
-        # THESE ARE THE BOSQO PART TYPES.
-        #
-        # Keep these names synchronized with PartTableDialog.
-        # -----------------------------------------------------
-
         types = [
-            "Personalizado",
-            "Lateral",
-            "Base",
-            "Superior",
-            "Trasera",
+            "Estructural",
             "Balda",
             "Separador",
-            "Estructural"
+            "Personalizada"
         ]
 
         combo.addItems(
@@ -382,15 +853,64 @@ class ModuleDialog(QtWidgets.QDialog):
         )
 
         # -----------------------------------------------------
-        # DEFAULT
-        #
-        # Imported pieces start as Personalizado.
+        # CURRENT TYPE
         # -----------------------------------------------------
 
+        currentType = self.getExistingPartType(
+            part
+        )
+
+        # -----------------------------------------------------
+        # NORMALIZE OLD TYPES
+        # -----------------------------------------------------
+
+        typeMap = {
+
+            "Personalizado":
+                "Personalizada",
+
+            "Personalizada":
+                "Personalizada",
+
+            "Lateral":
+                "Estructural",
+
+            "Base":
+                "Estructural",
+
+            "Superior":
+                "Estructural",
+
+            "Trasera":
+                "Estructural",
+
+            "Estructural":
+                "Estructural",
+
+            "Balda":
+                "Balda",
+
+            "Separador":
+                "Separador"
+
+        }
+
+        currentType = typeMap.get(
+            currentType,
+            "Personalizada"
+        )
+
         index = combo.findText(
-            "Personalizado",
+            currentType,
             QtCore.Qt.MatchFixedString
         )
+
+        if index < 0:
+
+            index = combo.findText(
+                "Personalizada",
+                QtCore.Qt.MatchFixedString
+            )
 
         if index >= 0:
 
@@ -403,6 +923,106 @@ class ModuleDialog(QtWidgets.QDialog):
             1,
             combo
         )
+
+    # =========================================================
+    # GET EXISTING PART TYPE
+    # =========================================================
+
+    def getExistingPartType(
+        self,
+        part
+    ):
+
+        # -----------------------------------------------------
+        # REAL BOSQO PROPERTY
+        # -----------------------------------------------------
+
+        for propertyName in (
+            "PartType",
+            "Type"
+        ):
+
+            try:
+
+                if not hasattr(
+                    part,
+                    propertyName
+                ):
+
+                    continue
+
+                value = getattr(
+                    part,
+                    propertyName
+                )
+
+                if value is None:
+
+                    continue
+
+                text = str(
+                    value
+                ).strip()
+
+                if text:
+
+                    return text
+
+            except Exception:
+
+                pass
+
+        # -----------------------------------------------------
+        # STORED MODULE DATA
+        # -----------------------------------------------------
+
+        try:
+
+            objectName = str(
+                getattr(
+                    part,
+                    "Name",
+                    ""
+                )
+            )
+
+            for item in self.data.get(
+                "Parts",
+                []
+            ):
+
+                if not isinstance(
+                    item,
+                    dict
+                ):
+
+                    continue
+
+                storedName = str(
+                    item.get(
+                        "ObjectName",
+                        ""
+                    )
+                )
+
+                if storedName == objectName:
+
+                    storedType = str(
+                        item.get(
+                            "Type",
+                            ""
+                        )
+                    ).strip()
+
+                    if storedType:
+
+                        return storedType
+
+        except Exception:
+
+            pass
+
+        return ""
 
     # =========================================================
     # MATERIAL COMBO
@@ -420,6 +1040,10 @@ class ModuleDialog(QtWidgets.QDialog):
             False
         )
 
+        # -----------------------------------------------------
+        # LOAD MATERIAL LIBRARY
+        # -----------------------------------------------------
+
         materials = self.getMaterials(
             part
         )
@@ -431,12 +1055,66 @@ class ModuleDialog(QtWidgets.QDialog):
             )
 
         # -----------------------------------------------------
-        # CURRENT MATERIAL OF THE PART
+        # CURRENT MATERIAL
         # -----------------------------------------------------
 
         currentMaterial = self.getMaterial(
             part
         )
+
+        # -----------------------------------------------------
+        # CHECK STORED DATA
+        # -----------------------------------------------------
+
+        if not currentMaterial:
+
+            try:
+
+                objectName = str(
+                    getattr(
+                        part,
+                        "Name",
+                        ""
+                    )
+                )
+
+                for item in self.data.get(
+                    "Parts",
+                    []
+                ):
+
+                    if not isinstance(
+                        item,
+                        dict
+                    ):
+
+                        continue
+
+                    if str(
+                        item.get(
+                            "ObjectName",
+                            ""
+                        )
+                    ) == objectName:
+
+                        currentMaterial = str(
+                            item.get(
+                                "Material",
+                                ""
+                            )
+                        ).strip()
+
+                        if currentMaterial:
+
+                            break
+
+            except Exception:
+
+                pass
+
+        # -----------------------------------------------------
+        # ADD CURRENT MATERIAL
+        # -----------------------------------------------------
 
         if currentMaterial:
 
@@ -445,18 +1123,21 @@ class ModuleDialog(QtWidgets.QDialog):
                 QtCore.Qt.MatchFixedString
             )
 
-            if index >= 0:
+            if index < 0:
 
-                combo.setCurrentIndex(
-                    index
+                combo.insertItem(
+                    0,
+                    currentMaterial
                 )
 
+                index = 0
+
+            combo.setCurrentIndex(
+                index
+            )
+
         # -----------------------------------------------------
-        # IF THE LIBRARY IS EMPTY
-        # -----------------------------------------------------
-        #
-        # Do NOT invent material names.
-        #
+        # EMPTY LIBRARY
         # -----------------------------------------------------
 
         if combo.count() == 0:
@@ -486,36 +1167,38 @@ class ModuleDialog(QtWidgets.QDialog):
 
             from library.material_library import MaterialLibrary
 
-            # -------------------------------------------------
-            # USE THE REAL BOSQO MATERIAL LIBRARY
-            #
-            # all(document) returns the material objects
-            # associated with the current document.
-            # -------------------------------------------------
-
-            document = None
-
-            try:
-
-                document = part.Document
-
-            except Exception:
-
-                pass
-
-            result = MaterialLibrary.all(
-                document
-            )
+            result = MaterialLibrary.all()
 
             if result is None:
 
                 return []
 
             # -------------------------------------------------
-            # DICTIONARY
+            # LIST
             # -------------------------------------------------
 
             if isinstance(
+                result,
+                list
+            ):
+
+                for value in result:
+
+                    name = self.extractMaterialName(
+                        value
+                    )
+
+                    if name:
+
+                        materials.append(
+                            name
+                        )
+
+            # -------------------------------------------------
+            # DICT
+            # -------------------------------------------------
+
+            elif isinstance(
                 result,
                 dict
             ):
@@ -531,31 +1214,6 @@ class ModuleDialog(QtWidgets.QDialog):
                         name = str(
                             key
                         ).strip()
-
-                    if name:
-
-                        materials.append(
-                            name
-                        )
-
-            # -------------------------------------------------
-            # LIST / TUPLE / SET
-            # -------------------------------------------------
-
-            elif isinstance(
-                result,
-                (
-                    list,
-                    tuple,
-                    set
-                )
-            ):
-
-                for value in result:
-
-                    name = self.extractMaterialName(
-                        value
-                    )
 
                     if name:
 
@@ -581,19 +1239,14 @@ class ModuleDialog(QtWidgets.QDialog):
 
         except Exception as error:
 
-            # -------------------------------------------------
-            # IMPORTANT:
-            # Do not create fake materials.
-            # -------------------------------------------------
-
             try:
-
-                import FreeCAD
 
                 FreeCAD.Console.PrintWarning(
                     "No se pudieron cargar los materiales: "
-                    + str(error)
-                    + "\n"
+                    +
+                    str(error)
+                    +
+                    "\n"
                 )
 
             except Exception:
@@ -613,6 +1266,7 @@ class ModuleDialog(QtWidgets.QDialog):
             ).strip()
 
             if not text:
+
                 continue
 
             if text not in clean:
@@ -648,16 +1302,70 @@ class ModuleDialog(QtWidgets.QDialog):
             return material.strip()
 
         # -----------------------------------------------------
-        # BOSQO MATERIAL
+        # DICT
+        # -----------------------------------------------------
+
+        if isinstance(
+            material,
+            dict
+        ):
+
+            materialName = str(
+                material.get(
+                    "MaterialName",
+                    ""
+                )
+            ).strip()
+
+            if materialName:
+
+                return materialName
+
+            code = str(
+                material.get(
+                    "Code",
+                    ""
+                )
+            ).strip()
+
+            if code:
+
+                return code
+
+            for propertyName in (
+                "Name",
+                "name",
+                "Label",
+                "label"
+            ):
+
+                value = material.get(
+                    propertyName,
+                    ""
+                )
+
+                if value is not None:
+
+                    value = str(
+                        value
+                    ).strip()
+
+                    if value:
+
+                        return value
+
+            return ""
+
+        # -----------------------------------------------------
+        # FREECAD OBJECT
         # -----------------------------------------------------
 
         for propertyName in (
+            "MaterialName",
             "Name",
             "name",
             "Label",
             "label",
-            "MaterialName",
-            "materialName",
             "Code",
             "code"
         ):
@@ -670,6 +1378,7 @@ class ModuleDialog(QtWidgets.QDialog):
                 )
 
                 if value is None:
+
                     continue
 
                 value = str(
@@ -715,19 +1424,19 @@ class ModuleDialog(QtWidgets.QDialog):
                 )
 
                 if value is None:
+
                     continue
 
                 # -------------------------------------------------
-                # FreeCAD / Bosqo material object
+                # MATERIAL OBJECT
                 # -------------------------------------------------
 
                 for nameProperty in (
+                    "MaterialName",
                     "Name",
                     "name",
                     "Label",
                     "label",
-                    "MaterialName",
-                    "materialName",
                     "Code",
                     "code"
                 ):
@@ -754,7 +1463,7 @@ class ModuleDialog(QtWidgets.QDialog):
                         pass
 
                 # -------------------------------------------------
-                # Plain value
+                # PLAIN VALUE
                 # -------------------------------------------------
 
                 text = str(
@@ -783,8 +1492,7 @@ class ModuleDialog(QtWidgets.QDialog):
     ):
 
         # -----------------------------------------------------
-        # FIRST:
-        # REAL BOSQO PART PROPERTY
+        # REAL BOSQO PROPERTY
         # -----------------------------------------------------
 
         for propertyName in propertyNames:
@@ -812,7 +1520,6 @@ class ModuleDialog(QtWidgets.QDialog):
                 pass
 
         # -----------------------------------------------------
-        # SECOND:
         # SHAPE BOUNDING BOX
         # -----------------------------------------------------
 
@@ -825,9 +1532,11 @@ class ModuleDialog(QtWidgets.QDialog):
             )
 
             if shape is None:
+
                 return ""
 
             if shape.isNull():
+
                 return ""
 
             box = shape.BoundBox
@@ -890,10 +1599,6 @@ class ModuleDialog(QtWidgets.QDialog):
 
             return ""
 
-        # -----------------------------------------------------
-        # FreeCAD Quantity
-        # -----------------------------------------------------
-
         try:
 
             if hasattr(
@@ -908,10 +1613,6 @@ class ModuleDialog(QtWidgets.QDialog):
         except Exception:
 
             pass
-
-        # -----------------------------------------------------
-        # Numeric
-        # -----------------------------------------------------
 
         try:
 
@@ -955,6 +1656,36 @@ class ModuleDialog(QtWidgets.QDialog):
                 continue
 
             # -------------------------------------------------
+            # REAL FREECAD OBJECT
+            # -------------------------------------------------
+
+            part = None
+
+            if row < len(
+                self.rowParts
+            ):
+
+                part = self.rowParts[
+                    row
+                ]
+
+            # -------------------------------------------------
+            # OBJECT NAME
+            # -------------------------------------------------
+
+            objectName = ""
+
+            try:
+
+                objectName = str(
+                    part.Name
+                )
+
+            except Exception:
+
+                pass
+
+            # -------------------------------------------------
             # TYPE
             # -------------------------------------------------
 
@@ -968,16 +1699,16 @@ class ModuleDialog(QtWidgets.QDialog):
                 QtWidgets.QComboBox
             ):
 
-                partType = (
+                partType = str(
                     typeWidget.currentText()
                 )
 
             else:
 
-                partType = "Personalizado"
+                partType = "Personalizada"
 
             # -------------------------------------------------
-            # LENGTH
+            # DIMENSIONS
             # -------------------------------------------------
 
             lengthItem = self.partsTable.item(
@@ -985,27 +1716,15 @@ class ModuleDialog(QtWidgets.QDialog):
                 2
             )
 
-            # -------------------------------------------------
-            # WIDTH
-            # -------------------------------------------------
-
             widthItem = self.partsTable.item(
                 row,
                 3
             )
 
-            # -------------------------------------------------
-            # THICKNESS
-            # -------------------------------------------------
-
             thicknessItem = self.partsTable.item(
                 row,
                 4
             )
-
-            # -------------------------------------------------
-            # QUANTITY
-            # -------------------------------------------------
 
             quantityItem = self.partsTable.item(
                 row,
@@ -1026,7 +1745,7 @@ class ModuleDialog(QtWidgets.QDialog):
                 QtWidgets.QComboBox
             ):
 
-                material = (
+                material = str(
                     materialWidget.currentText()
                 )
 
@@ -1035,11 +1754,13 @@ class ModuleDialog(QtWidgets.QDialog):
                 material = ""
 
             # -------------------------------------------------
-            # PART DATA
+            # DATA
             # -------------------------------------------------
 
             partsData.append(
                 {
+                    "ObjectName":
+                        objectName,
 
                     "Name":
                         nameItem.text(),
@@ -1081,7 +1802,6 @@ class ModuleDialog(QtWidgets.QDialog):
             )
 
         return {
-
             "Label":
                 self.nameEdit.text(),
 

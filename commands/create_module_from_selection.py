@@ -2,11 +2,16 @@ import FreeCAD
 import FreeCADGui
 import os
 
-from app_paths import ICONS_DIR
+from PySide import QtWidgets
 
+from app_paths import ICONS_DIR
 from dialogs.module_dialog import ModuleDialog
 from objects.bosqo_imported_module import create_imported_module
 
+
+# =============================================================
+# CREATE MODULE FROM SELECTION
+# =============================================================
 
 class CreateModuleFromSelectionCommand:
 
@@ -17,337 +22,405 @@ class CreateModuleFromSelectionCommand:
     def GetResources(self):
 
         return {
-            "Pixmap": os.path.join(
-                ICONS_DIR,
-                "select_to_group.svg"
-            ),
+
+            "Pixmap":
+                os.path.join(
+                    ICONS_DIR,
+                    "select_to_group.svg"
+                ),
 
             "MenuText":
-                "Crear módulo desde selección",
+                "Crear módulo importado",
 
             "ToolTip":
-                "Crear un módulo Bosqo con las piezas seleccionadas"
+                "Crear un módulo importado a partir de la selección"
+
         }
 
     # =========================================================
     # ACTIVATED
     # =========================================================
 
-    def Activated(self):
+    def Activated(self,):
+
+        document = FreeCAD.ActiveDocument
+
+        if document is None:
+
+            QtWidgets.QMessageBox.warning(
+                FreeCADGui.getMainWindow(),
+                "Crear módulo importado",
+                "No hay ningún documento activo."
+            )
+
+            return
 
         # -----------------------------------------------------
-        # GET SELECTION
+        # SELECTION
         # -----------------------------------------------------
 
-        selection = self.getSelectedParts()
+        selection = (
+            FreeCADGui.Selection.getSelection()
+        )
 
         if not selection:
 
-            FreeCAD.Console.PrintError(
-                "Seleccione una o más BosqoPart.\n"
+            QtWidgets.QMessageBox.information(
+                FreeCADGui.getMainWindow(),
+                "Crear módulo importado",
+                "Selecciona primero las piezas "
+                "que formarán el módulo."
             )
 
             return
 
         # -----------------------------------------------------
-        # DOCUMENT
+        # REMOVE INVALID OBJECTS
         # -----------------------------------------------------
 
-        doc = selection[0].Document
+        parts = []
+
+        for obj in selection:
+
+            if obj is None:
+                continue
+
+            # Object must belong to a document
+            if getattr(
+                obj,
+                "Document",
+                None
+            ) is None:
+
+                continue
+
+            # Do not allow selecting the module itself
+            proxy = getattr(
+                obj,
+                "Proxy",
+                None
+            )
+
+            if proxy is not None:
+
+                if proxy.__class__.__name__ == (
+                    "BosqoImportedModule"
+                ):
+
+                    continue
+
+            parts.append(
+                obj
+            )
 
         # -----------------------------------------------------
-        # GLOBAL BOUNDING BOX
+        # VALIDATION
         # -----------------------------------------------------
 
-        bbox = self.getGlobalBoundingBox(
-            selection
-        )
+        if not parts:
 
-        if bbox is None:
-
-            FreeCAD.Console.PrintError(
-                "No se pudo calcular el volumen "
-                "de las piezas seleccionadas.\n"
+            QtWidgets.QMessageBox.information(
+                FreeCADGui.getMainWindow(),
+                "Crear módulo importado",
+                "La selección no contiene piezas válidas."
             )
 
             return
 
         # -----------------------------------------------------
-        # DEFAULT MODULE DATA
+        # DEBUG
         # -----------------------------------------------------
 
-        data = {
-
-            "Label":
-                "Nuevo módulo",
-
-            "Width":
-                bbox.XLength,
-
-            "Height":
-                bbox.ZLength,
-
-            "Depth":
-                bbox.YLength
-        }
-
-        # -----------------------------------------------------
-        # DIALOG
-        # -----------------------------------------------------
-
-        dialog = ModuleDialog(
-            data=data,
-            parts=selection
+        FreeCAD.Console.PrintMessage(
+            "========================================\n"
         )
 
-        if not dialog.exec():
+        FreeCAD.Console.PrintMessage(
+            "CREAR MÓDULO IMPORTADO\n"
+        )
+
+        FreeCAD.Console.PrintMessage(
+            "Piezas seleccionadas: "
+            + str(len(parts))
+            + "\n"
+        )
+
+        for part in parts:
+
+            FreeCAD.Console.PrintMessage(
+                "  - "
+                + str(
+                    getattr(
+                        part,
+                        "Name",
+                        ""
+                    )
+                )
+                + " / "
+                + str(
+                    getattr(
+                        part,
+                        "Label",
+                        ""
+                    )
+                )
+                + "\n"
+            )
+
+        FreeCAD.Console.PrintMessage(
+            "========================================\n"
+        )
+
+        # -----------------------------------------------------
+        # MODULE DIALOG
+        # -----------------------------------------------------
+
+        module_name = "Módulo importado"
+
+        try:
+
+            # IMPORTANT:
+            #
+            # ModuleDialog expects:
+            #
+            #   data
+            #   parts
+            #   parent
+            #
+            # Previously the QMainWindow was passed as
+            # "data", causing:
+            #
+            # QMainWindow object has no attribute 'get'
+            #
+            dialog = ModuleDialog(
+                data={
+                    "Label": "Módulo importado"
+                },
+                parts=parts,
+                parent=FreeCADGui.getMainWindow()
+            )
+
+        except Exception as error:
+
+            FreeCAD.Console.PrintError(
+                "Error creando ModuleDialog: "
+                + str(error)
+                + "\n"
+            )
 
             return
 
         # -----------------------------------------------------
-        # GET DATA FROM DIALOG
+        # EXECUTE DIALOG
         # -----------------------------------------------------
 
-        data = dialog.getData()
+        try:
 
-        label = data.get(
-            "Label",
-            "Nuevo módulo"
+            result = dialog.exec()
+
+        except AttributeError:
+
+            # Compatibility with older PySide versions
+            try:
+
+                result = dialog.exec_()
+
+            except Exception as error:
+
+                FreeCAD.Console.PrintError(
+                    "Error ejecutando ModuleDialog: "
+                    + str(error)
+                    + "\n"
+                )
+
+                return
+
+        except Exception as error:
+
+            FreeCAD.Console.PrintError(
+                "Error ejecutando ModuleDialog: "
+                + str(error)
+                + "\n"
+            )
+
+            return
+
+        # -----------------------------------------------------
+        # CANCEL
+        # -----------------------------------------------------
+
+        if result != QtWidgets.QDialog.Accepted:
+
+            return
+
+        # -----------------------------------------------------
+        # GET MODULE NAME
+        # -----------------------------------------------------
+
+        module_name = (
+            self.getModuleName(
+                dialog
+            )
+            or
+            "Módulo importado"
         )
 
         # -----------------------------------------------------
         # CREATE IMPORTED MODULE
         # -----------------------------------------------------
-        #
-        # create_imported_module() already adds the selected
-        # objects to the module Group.
-        #
-        # THEREFORE WE DO NOT CALL:
-        #
-        # module.Proxy.setParts(...)
-        #
-        # -----------------------------------------------------
 
         try:
 
             module = create_imported_module(
-                doc,
-                selection
+                document,
+                parts
             )
 
         except Exception as error:
 
             FreeCAD.Console.PrintError(
-                "Error creando el módulo importado: "
+                "Error creando módulo importado: "
                 + str(error)
                 + "\n"
+            )
+
+            QtWidgets.QMessageBox.critical(
+                FreeCADGui.getMainWindow(),
+                "Crear módulo importado",
+                "No se pudo crear el módulo importado.\n\n"
+                + str(error)
             )
 
             return
 
-        # =====================================================
-        # MODULE PROPERTIES
-        # =====================================================
+        if module is None:
+
+            QtWidgets.QMessageBox.critical(
+                FreeCADGui.getMainWindow(),
+                "Crear módulo importado",
+                "La creación del módulo no devolvió ningún objeto."
+            )
+
+            return
+
+        # -----------------------------------------------------
+        # MODULE NAME
+        # -----------------------------------------------------
 
         try:
 
-            # -------------------------------------------------
-            # MODULE NAME
-            # -------------------------------------------------
+            module.ModuleName = module_name
 
-            if not hasattr(
-                module,
-                "ModuleName"
-            ):
+        except Exception:
+            pass
 
-                module.addProperty(
-                    "App::PropertyString",
-                    "ModuleName",
-                    "Módulo",
-                    "Nombre del módulo"
-                )
+        try:
 
-            module.ModuleName = label
+            module.Label = module_name
 
-            # -------------------------------------------------
-            # WIDTH
-            # -------------------------------------------------
+        except Exception:
+            pass
 
-            if not hasattr(
-                module,
-                "Width"
-            ):
+        # -----------------------------------------------------
+        # MODULE SOURCE
+        # -----------------------------------------------------
+        #
+        # Keep this if the property exists.
+        #
 
-                module.addProperty(
-                    "App::PropertyLength",
-                    "Width",
-                    "Dimensiones",
-                    "Anchura del módulo"
-                )
-
-            module.Width = float(
-                data.get(
-                    "Width",
-                    bbox.XLength
-                )
-            )
-
-            # -------------------------------------------------
-            # HEIGHT
-            # -------------------------------------------------
-
-            if not hasattr(
-                module,
-                "Height"
-            ):
-
-                module.addProperty(
-                    "App::PropertyLength",
-                    "Height",
-                    "Dimensiones",
-                    "Altura del módulo"
-                )
-
-            module.Height = float(
-                data.get(
-                    "Height",
-                    bbox.ZLength
-                )
-            )
-
-            # -------------------------------------------------
-            # DEPTH
-            # -------------------------------------------------
-
-            if not hasattr(
-                module,
-                "Depth"
-            ):
-
-                module.addProperty(
-                    "App::PropertyLength",
-                    "Depth",
-                    "Dimensiones",
-                    "Profundidad del módulo"
-                )
-
-            module.Depth = float(
-                data.get(
-                    "Depth",
-                    bbox.YLength
-                )
-            )
-
-            # -------------------------------------------------
-            # LABEL
-            # -------------------------------------------------
-
-            module.Label = label
-
-        except Exception as error:
-
-            FreeCAD.Console.PrintError(
-                "Error configurando el módulo importado: "
-                + str(error)
-                + "\n"
-            )
+        if hasattr(
+            module,
+            "ModuleSource"
+        ):
 
             try:
 
-                doc.removeObject(
-                    module.Name
-                )
+                module.ModuleSource = "Imported"
 
             except Exception:
 
                 pass
 
-            return
-
-        # =====================================================
+        # -----------------------------------------------------
         # RECOMPUTE
-        # =====================================================
+        # -----------------------------------------------------
 
         try:
 
-            doc.recompute()
+            document.recompute()
 
-        except Exception:
+        except Exception as error:
 
-            pass
+            FreeCAD.Console.PrintError(
+                "Error recomputando módulo importado: "
+                + str(error)
+                + "\n"
+            )
 
-        # =====================================================
-        # VISIBILITY
-        # =====================================================
+        # -----------------------------------------------------
+        # CLEAR SELECTION
+        # -----------------------------------------------------
 
         try:
 
-            module.ViewObject.Visibility = True
+            FreeCADGui.Selection.clearSelection()
+
+            FreeCADGui.Selection.addSelection(
+                module
+            )
 
         except Exception:
 
             pass
 
         # -----------------------------------------------------
-        # ORIGINAL PARTS
+        # MESSAGE
         # -----------------------------------------------------
-
-        for part in selection:
-
-            try:
-
-                part.ViewObject.Visibility = True
-
-            except Exception:
-
-                pass
-
-        # =====================================================
-        # GUI REDRAW
-        # =====================================================
-
-        try:
-
-            FreeCADGui.activeDocument().activeView().redraw()
-
-        except Exception:
-
-            pass
-
-        # =====================================================
-        # DEBUG
-        # =====================================================
 
         FreeCAD.Console.PrintMessage(
-            "\n"
-            "========================================\n"
-            " IMPORTED MODULE CREATED\n"
             "========================================\n"
         )
 
         FreeCAD.Console.PrintMessage(
-            "Module: "
-            + str(module.Label)
+            "MÓDULO IMPORTADO CREADO\n"
+        )
+
+        FreeCAD.Console.PrintMessage(
+            "Nombre: "
+            + str(
+                getattr(
+                    module,
+                    "Label",
+                    ""
+                )
+            )
             + "\n"
         )
 
+        FreeCAD.Console.PrintMessage(
+            "Piezas: "
+            + str(
+                len(parts)
+            )
+            + "\n"
+        )
+
+        # Also show the actual Group contents
         try:
 
-            FreeCAD.Console.PrintMessage(
-                "Width:  "
-                + str(module.Width)
-                + "\n"
+            group_parts = list(
+                getattr(
+                    module,
+                    "Group",
+                    []
+                )
             )
 
             FreeCAD.Console.PrintMessage(
-                "Height: "
-                + str(module.Height)
-                + "\n"
-            )
-
-            FreeCAD.Console.PrintMessage(
-                "Depth:  "
-                + str(module.Depth)
+                "Piezas en Group: "
+                + str(
+                    len(group_parts)
+                )
                 + "\n"
             )
 
@@ -356,224 +429,127 @@ class CreateModuleFromSelectionCommand:
             pass
 
         FreeCAD.Console.PrintMessage(
-            "\n--- ORIGINAL PARTS ---\n"
+            "========================================\n"
         )
 
-        for part in selection:
+    # =========================================================
+    # GET MODULE NAME
+    # =========================================================
+
+    def getModuleName(
+        self,
+        dialog
+    ):
+
+        # -----------------------------------------------------
+        # Current ModuleDialog
+        # -----------------------------------------------------
+
+        if hasattr(
+            dialog,
+            "nameEdit"
+        ):
 
             try:
 
-                FreeCAD.Console.PrintMessage(
-                    "\n"
-                    + str(part.Label)
-                    + "\n"
+                value = (
+                    dialog.nameEdit
+                    .text()
+                    .strip()
                 )
 
-                FreeCAD.Console.PrintMessage(
-                    "Object = "
-                    + str(part.Name)
-                    + "\n"
-                )
+                if value:
 
-                FreeCAD.Console.PrintMessage(
-                    "Placement = "
-                    + str(part.Placement)
-                    + "\n"
-                )
-
-                FreeCAD.Console.PrintMessage(
-                    "Base = "
-                    + str(part.Placement.Base)
-                    + "\n"
-                )
-
-                FreeCAD.Console.PrintMessage(
-                    "Rotation = "
-                    + str(part.Placement.Rotation)
-                    + "\n"
-                )
+                    return value
 
             except Exception:
 
                 pass
 
-        FreeCAD.Console.PrintMessage(
-            "\n"
-            "========================================\n"
-            + str(len(selection))
-            + " piezas asociadas al módulo.\n"
-            "========================================\n"
-        )
+        # -----------------------------------------------------
+        # Compatibility with possible names
+        # -----------------------------------------------------
 
-    # =========================================================
-    # GLOBAL BOUNDING BOX
-    # =========================================================
-
-    def getGlobalBoundingBox(
-        self,
-        parts
-    ):
-
-        result = None
-
-        for part in parts:
-
-            try:
-
-                shape = part.Shape
-
-                if shape is None:
-                    continue
-
-                if shape.isNull():
-                    continue
-
-                local_bbox = shape.BoundBox
-
-                # -------------------------------------------------
-                # LOCAL CORNERS
-                # -------------------------------------------------
-
-                corners = [
-
-                    FreeCAD.Vector(
-                        local_bbox.XMin,
-                        local_bbox.YMin,
-                        local_bbox.ZMin
-                    ),
-
-                    FreeCAD.Vector(
-                        local_bbox.XMin,
-                        local_bbox.YMin,
-                        local_bbox.ZMax
-                    ),
-
-                    FreeCAD.Vector(
-                        local_bbox.XMin,
-                        local_bbox.YMax,
-                        local_bbox.ZMin
-                    ),
-
-                    FreeCAD.Vector(
-                        local_bbox.XMin,
-                        local_bbox.YMax,
-                        local_bbox.ZMax
-                    ),
-
-                    FreeCAD.Vector(
-                        local_bbox.XMax,
-                        local_bbox.YMin,
-                        local_bbox.ZMin
-                    ),
-
-                    FreeCAD.Vector(
-                        local_bbox.XMax,
-                        local_bbox.YMin,
-                        local_bbox.ZMax
-                    ),
-
-                    FreeCAD.Vector(
-                        local_bbox.XMax,
-                        local_bbox.YMax,
-                        local_bbox.ZMin
-                    ),
-
-                    FreeCAD.Vector(
-                        local_bbox.XMax,
-                        local_bbox.YMax,
-                        local_bbox.ZMax
-                    )
-                ]
-
-                # -------------------------------------------------
-                # APPLY PLACEMENT
-                # -------------------------------------------------
-
-                placement = part.Placement
-
-                for point in corners:
-
-                    global_point = placement.multVec(
-                        point
-                    )
-
-                    if result is None:
-
-                        result = FreeCAD.BoundBox()
-
-                    result.add(
-                        global_point
-                    )
-
-            except Exception as error:
-
-                FreeCAD.Console.PrintWarning(
-                    "No se pudo calcular el BoundingBox "
-                    "global de "
-                    + str(
-                        getattr(
-                            part,
-                            "Label",
-                            "pieza"
-                        )
-                    )
-                    + ": "
-                    + str(error)
-                    + "\n"
-                )
-
-        return result
-
-    # =========================================================
-    # SELECTED PARTS
-    # =========================================================
-
-    def getSelectedParts(
-        self
-    ):
-
-        result = []
-
-        for obj in FreeCADGui.Selection.getSelection():
+        for name in (
+            "moduleNameEdit",
+            "nameField",
+            "moduleNameField"
+        ):
 
             if not hasattr(
-                obj,
-                "Proxy"
+                dialog,
+                name
             ):
 
                 continue
 
-            if obj.Proxy is None:
+            try:
+
+                widget = getattr(
+                    dialog,
+                    name
+                )
+
+                if hasattr(
+                    widget,
+                    "text"
+                ):
+
+                    value = (
+                        widget.text()
+                        .strip()
+                    )
+
+                    if value:
+
+                        return value
+
+            except Exception:
+
+                pass
+
+        # -----------------------------------------------------
+        # Possible getter methods
+        # -----------------------------------------------------
+
+        for method_name in (
+            "getModuleName",
+            "getName"
+        ):
+
+            if not hasattr(
+                dialog,
+                method_name
+            ):
 
                 continue
 
-            if type(
-                obj.Proxy
-            ).__name__ != "BosqoPart":
+            try:
 
-                continue
+                value = getattr(
+                    dialog,
+                    method_name
+                )()
 
-            result.append(
-                obj
-            )
+                if value is not None:
 
-        return result
+                    value = str(
+                        value
+                    ).strip()
 
-    # =========================================================
-    # IS ACTIVE
-    # =========================================================
+                    if value:
 
-    def IsActive(
-        self
-    ):
+                        return value
 
-        return (
-            FreeCAD.ActiveDocument is not None
-        )
+            except Exception:
+
+                pass
+
+        return "Módulo importado"
 
 
 # =============================================================
-# REGISTER COMMAND
+# COMMAND REGISTRATION
 # =============================================================
 
 FreeCADGui.addCommand(

@@ -62,7 +62,7 @@ class PartDialog(QtWidgets.QDialog):
         self.typeCombo.addItems(
             [
                 "Panel lateral",
-                "Estante",
+                "Balda",
                 "Fondo",
                 "Base",
                 "Travesaño",

@@ -427,12 +427,21 @@ class ModuleBuilder:
 
         if back_type == "Trasera sobrepuesta":
 
+            #
+            # La trasera sobrepuesta mantiene sus dimensiones:
+            #
+            # Length     = Height
+            # Width      = Module Width
+            # Thickness  = BackThickness
+            #
+            # Solo se coloca 10 mm más atrás para que no
+            # cruce con las piezas que llegan hasta el fondo.
+            #
+
             y = (
                 depth
                 -
                 back_inset
-                -
-                back_thickness
             )
 
             definitions.append(

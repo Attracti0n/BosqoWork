@@ -515,7 +515,7 @@ class BosqoModuleParameters:
                         "Tapa",
 
                     "PartType":
-                        "Estante",
+                        "Balda",
 
                     "Length":
                         topWidth,

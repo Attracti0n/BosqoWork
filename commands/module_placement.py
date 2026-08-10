@@ -659,7 +659,7 @@ class ModulePlacementCommand:
             "Pixmap":
                 os.path.join(
                     ICONS_DIR,
-                    "module.svg"
+                    "placement.svg"
                 ),
 
             "MenuText":

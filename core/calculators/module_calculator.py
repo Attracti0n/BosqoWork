@@ -27,6 +27,7 @@ class ModuleCalculator:
 
             return 0.0
 
+
     @staticmethod
     def calculate(
         module,
@@ -147,8 +148,11 @@ class ModuleCalculator:
                 )
         }
 
+
         #
+        # =====================================================
         # SIDE
+        # =====================================================
         #
 
         if role == "Side":
@@ -166,8 +170,11 @@ class ModuleCalculator:
             )
 
             data["LengthAxis"] = "Z"
+
             data["WidthAxis"] = "Y"
+
             data["ThicknessAxis"] = "X"
+
 
             if code == "LS":
 
@@ -189,6 +196,7 @@ class ModuleCalculator:
                     panel
                 )
 
+
             data["Placement"] = (
                 FreeCAD.Placement(
                     FreeCAD.Vector(
@@ -202,8 +210,11 @@ class ModuleCalculator:
 
             return data
 
+
         #
+        # =====================================================
         # TOP
+        # =====================================================
         #
 
         if role == "Top":
@@ -222,11 +233,16 @@ class ModuleCalculator:
                 panel
             )
 
-            data["Label"] = "Tapa"
+            data["Label"] = (
+                "Tapa"
+            )
 
             data["LengthAxis"] = "X"
+
             data["WidthAxis"] = "Y"
+
             data["ThicknessAxis"] = "Z"
+
 
             data["Placement"] = (
                 FreeCAD.Placement(
@@ -241,8 +257,11 @@ class ModuleCalculator:
 
             return data
 
+
         #
+        # =====================================================
         # BOTTOM
+        # =====================================================
         #
 
         if role == "Bottom":
@@ -261,11 +280,16 @@ class ModuleCalculator:
                 panel
             )
 
-            data["Label"] = "Base"
+            data["Label"] = (
+                "Base"
+            )
 
             data["LengthAxis"] = "X"
+
             data["WidthAxis"] = "Y"
+
             data["ThicknessAxis"] = "Z"
+
 
             data["Placement"] = (
                 FreeCAD.Placement(
@@ -280,44 +304,74 @@ class ModuleCalculator:
 
             return data
 
+
         #
+        # =====================================================
         # BACK
+        # =====================================================
+        #
+        # TRASERA SOBREPUESTA
         #
 
         if role == "Back":
 
             data["Length"] = (
                 module_height
+                +
+                panel * 2
             )
 
             data["Width"] = (
                 module_width
+                +
+                panel * 2
             )
 
             data["Thickness"] = (
                 back
             )
 
-            data["Label"] = "Trasera"
+            data["Label"] = (
+                "Trasera"
+            )
+
+            #
+            # X = ancho
+            # Y = espesor
+            # Z = alto
+            #
 
             data["LengthAxis"] = "Z"
+
             data["WidthAxis"] = "X"
+
             data["ThicknessAxis"] = "Y"
+
+
+            #
+            # Trasera situada en la parte posterior.
+            #
+            # Ejemplo:
+            #
+            # Depth = 560
+            # BackThickness = 10
+            #
+            # Y = 550
+            #
 
             y = (
                 module_depth
                 -
-                back_inset
-                -
                 back
             )
+
 
             data["Placement"] = (
                 FreeCAD.Placement(
                     FreeCAD.Vector(
-                        0,
+                        -panel,
                         y,
-                        0
+                        -panel
                     ),
                     FreeCAD.Rotation()
                 )
@@ -325,8 +379,11 @@ class ModuleCalculator:
 
             return data
 
+
         #
+        # =====================================================
         # SHELF
+        # =====================================================
         #
 
         if role == "Shelf":
@@ -337,8 +394,15 @@ class ModuleCalculator:
                 panel * 2
             )
 
+            #
+            # La balda termina en la cara interior
+            # de la trasera.
+            #
+
             data["Width"] = (
                 module_depth
+                -
+                back
             )
 
             data["Thickness"] = (
@@ -346,8 +410,11 @@ class ModuleCalculator:
             )
 
             data["LengthAxis"] = "X"
+
             data["WidthAxis"] = "Y"
+
             data["ThicknessAxis"] = "Z"
+
 
             position_mode = (
                 definition.get(
@@ -362,6 +429,7 @@ class ModuleCalculator:
                     "Automatic"
                 )
             )
+
 
             if position_mode == "Manual":
 
@@ -387,8 +455,7 @@ class ModuleCalculator:
 
                 z = (
                     module_height
-                    -
-                    panel
+                    - panel
                 )
 
             else:
@@ -400,7 +467,11 @@ class ModuleCalculator:
                         +
                         automatic_space
                         *
-                        (position_index + 1)
+                        (
+                            position_index
+                            +
+                            1
+                        )
                     )
 
                 else:
@@ -417,13 +488,23 @@ class ModuleCalculator:
                         (
                             usable
                             /
-                            (automatic_count + 1)
+                            (
+                                automatic_count
+                                +
+                                1
+                            )
                         )
                         *
-                        (position_index + 1)
+                        (
+                            position_index
+                            +
+                            1
+                        )
                     )
 
+
             data["Position"] = z
+
 
             data["Placement"] = (
                 FreeCAD.Placement(
@@ -438,8 +519,11 @@ class ModuleCalculator:
 
             return data
 
+
         #
+        # =====================================================
         # DIVIDER
+        # =====================================================
         #
 
         if role == "Divider":
@@ -452,6 +536,8 @@ class ModuleCalculator:
 
             data["Width"] = (
                 module_depth
+                -
+                back
             )
 
             data["Thickness"] = (
@@ -459,8 +545,11 @@ class ModuleCalculator:
             )
 
             data["LengthAxis"] = "Z"
+
             data["WidthAxis"] = "Y"
+
             data["ThicknessAxis"] = "X"
+
 
             position_mode = (
                 definition.get(
@@ -475,6 +564,7 @@ class ModuleCalculator:
                     "Automatic"
                 )
             )
+
 
             if position_mode == "Manual":
 
@@ -513,7 +603,11 @@ class ModuleCalculator:
                         +
                         automatic_space
                         *
-                        (position_index + 1)
+                        (
+                            position_index
+                            +
+                            1
+                        )
                     )
 
                 else:
@@ -530,13 +624,23 @@ class ModuleCalculator:
                         (
                             usable
                             /
-                            (automatic_count + 1)
+                            (
+                                automatic_count
+                                +
+                                1
+                            )
                         )
                         *
-                        (position_index + 1)
+                        (
+                            position_index
+                            +
+                            1
+                        )
                     )
 
+
             data["Position"] = x
+
 
             data["Placement"] = (
                 FreeCAD.Placement(
@@ -551,11 +655,11 @@ class ModuleCalculator:
 
             return data
 
+
         #
+        # =====================================================
         # CUSTOM / USER STRUCTURAL
-        #
-        # The important part:
-        # user-created pieces are not ignored.
+        # =====================================================
         #
 
         length = ModuleCalculator.value(
@@ -579,9 +683,13 @@ class ModuleCalculator:
             )
         )
 
+
         data["Length"] = length
+
         data["Width"] = width
+
         data["Thickness"] = thickness
+
 
         data["LengthAxis"] = (
             definition.get(
@@ -604,6 +712,7 @@ class ModuleCalculator:
             )
         )
 
+
         position_mode = (
             definition.get(
                 "PositionMode",
@@ -617,6 +726,7 @@ class ModuleCalculator:
                 "Manual"
             )
         )
+
 
         if position_mode == "Manual":
 
@@ -634,7 +744,8 @@ class ModuleCalculator:
         elif position_type == "Center":
 
             position = (
-                module_height / 2
+                module_height
+                / 2
             )
 
         elif position_type == "Top":
@@ -654,13 +765,9 @@ class ModuleCalculator:
                 )
             )
 
+
         data["Position"] = position
 
-        #
-        # Generic user part:
-        # horizontal pieces are placed
-        # as X/Y/Z boxes.
-        #
 
         data["Placement"] = (
             FreeCAD.Placement(

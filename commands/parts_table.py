@@ -60,11 +60,9 @@ class PartsTableCommand:
             return
 
 
-        #
         # =====================================================
         # SELECTION
         # =====================================================
-        #
 
         selection = (
             FreeCADGui.Selection.getSelection()
@@ -92,20 +90,30 @@ class PartsTableCommand:
                 continue
 
 
-            if type(
+            # =================================================
+            # IMPORTANT:
+            #
+            # Accept both normal and imported modules.
+            # =================================================
+
+            proxyName = type(
                 proxy
-            ).__name__ == "BosqoModule":
+            ).__name__
+
+
+            if proxyName in (
+                "BosqoModule",
+                "BosqoImportedModule"
+            ):
 
                 module = obj
 
                 break
 
 
-        #
         # =====================================================
         # NO MODULE
         # =====================================================
-        #
 
         if module is None:
 
@@ -118,11 +126,9 @@ class PartsTableCommand:
             return
 
 
-        #
         # =====================================================
         # GET REAL PARTS
         # =====================================================
-        #
 
         try:
 
@@ -153,11 +159,9 @@ class PartsTableCommand:
             parts = []
 
 
-        #
         # =====================================================
         # OPEN EDITOR
         # =====================================================
-        #
 
         dialog = PartTableDialog(
 
@@ -178,15 +182,14 @@ class PartsTableCommand:
             return
 
 
-        #
+        # =====================================================
         # IMPORTANT:
         #
         # The dialog itself has already saved
         # the real FreeCAD objects.
         #
         # We DO NOT call ModuleBuilder here.
-        #
-
+        # =====================================================
 
         try:
 
@@ -214,11 +217,9 @@ class PartsTableCommand:
             pass
 
 
-#
 # =============================================================
 # REGISTER COMMAND
 # =============================================================
-#
 
 FreeCADGui.addCommand(
     "Bosqo_PartsTable",

@@ -26,6 +26,7 @@ class BosqoPart:
             obj.ViewObject
         )
 
+
     # =========================================================
     # PROPERTIES
     # =========================================================
@@ -37,6 +38,7 @@ class BosqoPart:
 
         if not obj.Label:
             obj.Label = "Part"
+
 
         #
         # Identification
@@ -62,6 +64,7 @@ class BosqoPart:
             "",
             "Identification"
         )
+
 
         #
         # Dimensions
@@ -95,6 +98,7 @@ class BosqoPart:
             "Dimensions"
         )
 
+
         #
         # Position definition
         #
@@ -119,6 +123,7 @@ class BosqoPart:
             "Automatic",
             "Position"
         )
+
 
         #
         # Base position
@@ -145,6 +150,7 @@ class BosqoPart:
             "Geometry"
         )
 
+
         #
         # Axis mapping
         #
@@ -170,6 +176,7 @@ class BosqoPart:
             "Geometry"
         )
 
+
         #
         # Geometry analysis
         #
@@ -187,6 +194,7 @@ class BosqoPart:
             "",
             "Geometry"
         )
+
 
         #
         # Material
@@ -245,6 +253,7 @@ class BosqoPart:
             "Material"
         )
 
+
         #
         # Edgebanding
         #
@@ -277,6 +286,7 @@ class BosqoPart:
             "Edgebanding"
         )
 
+
         #
         # Original object
         #
@@ -293,6 +303,7 @@ class BosqoPart:
                 "Original imported object"
             )
 
+
         #
         # Source
         #
@@ -303,6 +314,7 @@ class BosqoPart:
             "",
             "Bosqo"
         )
+
 
     # =========================================================
     # HELPERS
@@ -333,6 +345,7 @@ class BosqoPart:
                 value
             )
 
+
     def addLength(
         self,
         obj,
@@ -360,6 +373,7 @@ class BosqoPart:
                 )
             )
 
+
     def addFloat(
         self,
         obj,
@@ -385,6 +399,7 @@ class BosqoPart:
                 value
             )
 
+
     # =========================================================
     # MATERIAL
     # =========================================================
@@ -401,13 +416,16 @@ class BosqoPart:
 
             return
 
+
         values = (
             [""]
             +
             MaterialLibrary.codes()
         )
 
+
         obj.MaterialCode = values
+
 
     def updateMaterial(
         self,
@@ -415,14 +433,19 @@ class BosqoPart:
     ):
 
         if not obj.MaterialCode:
+
             return
+
 
         material = MaterialLibrary.get(
             obj.MaterialCode
         )
 
+
         if material is None:
+
             return
+
 
         if hasattr(
             material,
@@ -433,6 +456,7 @@ class BosqoPart:
                 material.MaterialName
             )
 
+
         if hasattr(
             material,
             "Thickness"
@@ -442,9 +466,20 @@ class BosqoPart:
                 material.Thickness
             )
 
-            obj.Thickness = (
-                material.Thickness
-            )
+
+            #
+            # Do not overwrite the real thickness
+            # of an imported part.
+            #
+
+            if str(
+                obj.Source
+            ) != "Imported":
+
+                obj.Thickness = (
+                    material.Thickness
+                )
+
 
         if hasattr(
             material,
@@ -455,6 +490,7 @@ class BosqoPart:
                 material.Supplier
             )
 
+
         if hasattr(
             material,
             "Price"
@@ -464,6 +500,7 @@ class BosqoPart:
                 material.Price
             )
 
+
         if hasattr(
             material,
             "GrainDirection"
@@ -472,6 +509,7 @@ class BosqoPart:
             obj.GrainDirection = (
                 material.GrainDirection
             )
+
 
     # =========================================================
     # DATA
@@ -492,6 +530,7 @@ class BosqoPart:
 
                 continue
 
+
             if key in (
                 "Length",
                 "Width",
@@ -500,11 +539,15 @@ class BosqoPart:
             ):
 
                 try:
+
                     value = abs(
                         float(value)
                     )
+
                 except Exception:
+
                     pass
+
 
             try:
 
@@ -518,7 +561,9 @@ class BosqoPart:
 
                 pass
 
+
         obj.touch()
+
 
     def getPartData(
         self,
@@ -527,11 +572,181 @@ class BosqoPart:
 
         from core.data.part_data import PartData
 
+
         data = PartData()
+
 
         return data.fromObject(
             obj
         )
+
+
+    # =========================================================
+    # IMPORTED GEOMETRY
+    # =========================================================
+
+    def setImportedShape(
+        self,
+        obj,
+        original
+    ):
+        """
+        Assign an imported FreeCAD object as the
+        geometry source of this BosqoPart.
+        """
+
+        if original is None:
+
+            return False
+
+
+        try:
+
+            shape = original.Shape
+
+        except Exception:
+
+            return False
+
+
+        if shape is None:
+
+            return False
+
+
+        try:
+
+            if shape.isNull():
+
+                return False
+
+        except Exception:
+
+            pass
+
+
+        #
+        # Keep reference to original object.
+        #
+
+        try:
+
+            obj.OriginalObject = original
+
+        except Exception:
+
+            pass
+
+
+        #
+        # Mark as imported.
+        #
+
+        try:
+
+            obj.Source = "Imported"
+
+        except Exception:
+
+            pass
+
+
+        #
+        # Copy real imported geometry.
+        #
+
+        try:
+
+            obj.Shape = shape.copy()
+
+        except Exception:
+
+            return False
+
+
+        #
+        # Keep visibility explicitly enabled.
+        #
+
+        try:
+
+            obj.ViewObject.Visibility = True
+
+        except Exception:
+
+            pass
+
+
+        #
+        # Copy label.
+        #
+
+        try:
+
+            if original.Label:
+
+                obj.Label = original.Label
+
+        except Exception:
+
+            pass
+
+
+        #
+        # Get real dimensions from shape.
+        #
+
+        try:
+
+            box = shape.BoundBox
+
+            x = abs(
+                float(
+                    box.XLength
+                )
+            )
+
+            y = abs(
+                float(
+                    box.YLength
+                )
+            )
+
+            z = abs(
+                float(
+                    box.ZLength
+                )
+            )
+
+
+            obj.Width = x
+            obj.Thickness = y
+            obj.Length = z
+
+        except Exception:
+
+            pass
+
+
+        #
+        # Mark geometry.
+        #
+
+        try:
+
+            obj.GeometryStatus = (
+                "Imported"
+            )
+
+        except Exception:
+
+            pass
+
+
+        obj.touch()
+
+        return True
+
 
     # =========================================================
     # FREECAD
@@ -549,23 +764,97 @@ class BosqoPart:
                 obj
             )
 
+
     def execute(
         self,
         obj
     ):
 
+        #
+        # IMPORTED PART
+        #
+        # The imported Shape already exists.
+        # NEVER replace it with createBox().
+        #
+
+        try:
+
+            if str(
+                obj.Source
+            ) == "Imported":
+
+                #
+                # Keep the current imported Shape.
+                #
+
+                if (
+                    obj.Shape is not None
+                    and
+                    not obj.Shape.isNull()
+                ):
+
+                    return
+
+
+                #
+                # If Shape was lost, recover it
+                # from OriginalObject.
+                #
+
+                original = (
+                    obj.OriginalObject
+                )
+
+
+                if original is None:
+
+                    return
+
+
+                shape = (
+                    original.Shape
+                )
+
+
+                if (
+                    shape is None
+                    or
+                    shape.isNull()
+                ):
+
+                    return
+
+
+                obj.Shape = shape.copy()
+
+                return
+
+        except Exception:
+
+            pass
+
+
+        #
+        # CREATED PART
+        #
+
         shape = GeometryBuilder.createBox(
             obj
         )
 
+
         if shape is None:
+
             return
 
+
         obj.Shape = shape
+
 
         PlacementBuilder.update(
             obj
         )
+
 
     # =========================================================
     # SERIALIZATION
@@ -577,12 +866,14 @@ class BosqoPart:
 
         return None
 
+
     def __setstate__(
         self,
         state
     ):
 
         return None
+
 
 
 class ViewProviderBosqoPart:
@@ -593,6 +884,7 @@ class ViewProviderBosqoPart:
     ):
 
         view_object.Proxy = self
+
 
     def getIcon(
         self
@@ -617,8 +909,17 @@ def create_part(
         "BosqoPart"
     )
 
+
     BosqoPart(
         part
     )
+
+
+    #
+    # A normal new piece is created geometry.
+    #
+
+    part.Source = "Created"
+
 
     return part

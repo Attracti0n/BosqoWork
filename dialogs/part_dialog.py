@@ -54,31 +54,6 @@ class PartDialog(QtWidgets.QDialog):
 
 
         #
-        # Type
-        #
-
-        self.typeCombo = QtWidgets.QComboBox()
-
-        self.typeCombo.addItems(
-            [
-                "Panel lateral",
-                "Balda",
-                "Fondo",
-                "Base",
-                "Travesaño",
-                "Puerta",
-                "Frente cajón",
-                "Personalizado"
-            ]
-        )
-
-        layout.addRow(
-            "Tipo:",
-            self.typeCombo
-        )
-
-
-        #
         # Dimensions
         #
 
@@ -396,9 +371,6 @@ class PartDialog(QtWidgets.QDialog):
 
             "Label":
                 self.nameEdit.text(),
-
-            "PartType":
-                self.typeCombo.currentText(),
 
             "Length":
                 self.lengthSpin.value(),

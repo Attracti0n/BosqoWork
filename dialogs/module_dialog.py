@@ -74,6 +74,7 @@ class ModuleDialog(QtWidgets.QDialog):
 
         self.loadData()
 
+
     # =========================================================
     # UI
     # =========================================================
@@ -183,6 +184,7 @@ class ModuleDialog(QtWidgets.QDialog):
             buttons
         )
 
+
     # =========================================================
     # LOAD DATA
     # =========================================================
@@ -196,8 +198,6 @@ class ModuleDialog(QtWidgets.QDialog):
         # -----------------------------------------------------
 
         name = ""
-
-        # First try real module object.
 
         if self.module is not None:
 
@@ -214,8 +214,6 @@ class ModuleDialog(QtWidgets.QDialog):
             except Exception:
 
                 name = ""
-
-        # Fallback to Label from data.
 
         if not name:
 
@@ -235,6 +233,7 @@ class ModuleDialog(QtWidgets.QDialog):
         # -----------------------------------------------------
 
         self.loadParts()
+
 
     # =========================================================
     # LOAD PARTS
@@ -270,9 +269,9 @@ class ModuleDialog(QtWidgets.QDialog):
                 part
             )
 
-            # =================================================
+            # -------------------------------------------------
             # NAME
-            # =================================================
+            # -------------------------------------------------
 
             name = self.getPartName(
                 part
@@ -284,18 +283,18 @@ class ModuleDialog(QtWidgets.QDialog):
                 name
             )
 
-            # =================================================
+            # -------------------------------------------------
             # TYPE
-            # =================================================
+            # -------------------------------------------------
 
             self.createTypeCombo(
                 row,
                 part
             )
 
-            # =================================================
+            # -------------------------------------------------
             # LENGTH
-            # =================================================
+            # -------------------------------------------------
 
             length = self.getDimension(
                 part,
@@ -314,9 +313,9 @@ class ModuleDialog(QtWidgets.QDialog):
                 )
             )
 
-            # =================================================
+            # -------------------------------------------------
             # WIDTH
-            # =================================================
+            # -------------------------------------------------
 
             width = self.getDimension(
                 part,
@@ -335,9 +334,9 @@ class ModuleDialog(QtWidgets.QDialog):
                 )
             )
 
-            # =================================================
+            # -------------------------------------------------
             # THICKNESS
-            # =================================================
+            # -------------------------------------------------
 
             thickness = self.getDimension(
                 part,
@@ -356,9 +355,9 @@ class ModuleDialog(QtWidgets.QDialog):
                 )
             )
 
-            # =================================================
+            # -------------------------------------------------
             # QUANTITY
-            # =================================================
+            # -------------------------------------------------
 
             self.setReadOnlyItem(
                 row,
@@ -366,9 +365,9 @@ class ModuleDialog(QtWidgets.QDialog):
                 "1"
             )
 
-            # =================================================
+            # -------------------------------------------------
             # MATERIAL
-            # =================================================
+            # -------------------------------------------------
 
             self.createMaterialCombo(
                 row,
@@ -376,6 +375,7 @@ class ModuleDialog(QtWidgets.QDialog):
             )
 
         self.partsTable.resizeColumnsToContents()
+
 
     # =========================================================
     # SAVE CHANGES
@@ -388,7 +388,7 @@ class ModuleDialog(QtWidgets.QDialog):
         try:
 
             # -------------------------------------------------
-            # COLLECT DATA FROM TABLE
+            # COLLECT DATA
             # -------------------------------------------------
 
             result = self.getData()
@@ -432,6 +432,7 @@ class ModuleDialog(QtWidgets.QDialog):
                 +
                 str(error)
             )
+
 
     # =========================================================
     # SAVE TO FREECAD MODULE
@@ -486,6 +487,10 @@ class ModuleDialog(QtWidgets.QDialog):
 
         # =====================================================
         # PARTS JSON
+        #
+        # IMPORTANT:
+        # Everything sent to JSON must already be a native
+        # Python value.
         # =====================================================
 
         try:
@@ -495,8 +500,14 @@ class ModuleDialog(QtWidgets.QDialog):
                 []
             )
 
+            cleanPartsData = (
+                self.makeJSONSafe(
+                    partsData
+                )
+            )
+
             jsonData = json.dumps(
-                partsData,
+                cleanPartsData,
                 ensure_ascii=False
             )
 
@@ -664,6 +675,161 @@ class ModuleDialog(QtWidgets.QDialog):
                 "\n"
             )
 
+
+    # =========================================================
+    # JSON SAFE CONVERSION
+    # =========================================================
+
+    def makeJSONSafe(
+        self,
+        value
+    ):
+
+        """
+        Converts FreeCAD values and other non-JSON-native
+        objects into normal Python values.
+
+        In particular:
+
+            FreeCAD.Units.Quantity
+            -> float
+
+        This prevents:
+
+            Object of type Quantity is not JSON serializable
+        """
+
+        if value is None:
+
+            return None
+
+        # -----------------------------------------------------
+        # NATIVE TYPES
+        # -----------------------------------------------------
+
+        if isinstance(
+            value,
+            (
+                str,
+                int,
+                float,
+                bool
+            )
+        ):
+
+            return value
+
+        # -----------------------------------------------------
+        # DICTIONARY
+        # -----------------------------------------------------
+
+        if isinstance(
+            value,
+            dict
+        ):
+
+            result = {}
+
+            for key, item in value.items():
+
+                result[str(key)] = (
+                    self.makeJSONSafe(
+                        item
+                    )
+                )
+
+            return result
+
+        # -----------------------------------------------------
+        # LIST / TUPLE
+        # -----------------------------------------------------
+
+        if isinstance(
+            value,
+            (
+                list,
+                tuple
+            )
+        ):
+
+            return [
+
+                self.makeJSONSafe(
+                    item
+                )
+
+                for item in value
+
+            ]
+
+        # -----------------------------------------------------
+        # FREECAD QUANTITY
+        # -----------------------------------------------------
+
+        try:
+
+            if hasattr(
+                value,
+                "Value"
+            ):
+
+                return float(
+                    value.Value
+                )
+
+        except Exception:
+
+            pass
+
+        # -----------------------------------------------------
+        # FREECAD VECTOR
+        # -----------------------------------------------------
+
+        try:
+
+            if (
+                hasattr(value, "x")
+                and
+                hasattr(value, "y")
+                and
+                hasattr(value, "z")
+            ):
+
+                return {
+
+                    "x": float(
+                        value.x
+                    ),
+
+                    "y": float(
+                        value.y
+                    ),
+
+                    "z": float(
+                        value.z
+                    )
+
+                }
+
+        except Exception:
+
+            pass
+
+        # -----------------------------------------------------
+        # FALLBACK
+        # -----------------------------------------------------
+
+        try:
+
+            return str(
+                value
+            )
+
+        except Exception:
+
+            return ""
+
+
     # =========================================================
     # SET PART PROPERTY
     # =========================================================
@@ -683,15 +849,6 @@ class ModuleDialog(QtWidgets.QDialog):
             ):
 
                 return False
-
-            current = getattr(
-                part,
-                propertyName
-            )
-
-            # -------------------------------------------------
-            # ENUMERATION
-            # -------------------------------------------------
 
             try:
 
@@ -716,10 +873,6 @@ class ModuleDialog(QtWidgets.QDialog):
             except Exception:
 
                 pass
-
-            # -------------------------------------------------
-            # STRING / NORMAL PROPERTY
-            # -------------------------------------------------
 
             setattr(
                 part,
@@ -755,6 +908,7 @@ class ModuleDialog(QtWidgets.QDialog):
 
             return False
 
+
     # =========================================================
     # HAS PROPERTY
     # =========================================================
@@ -781,6 +935,7 @@ class ModuleDialog(QtWidgets.QDialog):
             except Exception:
 
                 return False
+
 
     # =========================================================
     # PART NAME
@@ -828,6 +983,7 @@ class ModuleDialog(QtWidgets.QDialog):
                 pass
 
         return "Pieza"
+
 
     # =========================================================
     # TYPE COMBO
@@ -923,6 +1079,7 @@ class ModuleDialog(QtWidgets.QDialog):
             1,
             combo
         )
+
 
     # =========================================================
     # GET EXISTING PART TYPE
@@ -1023,6 +1180,7 @@ class ModuleDialog(QtWidgets.QDialog):
             pass
 
         return ""
+
 
     # =========================================================
     # MATERIAL COMBO
@@ -1152,6 +1310,7 @@ class ModuleDialog(QtWidgets.QDialog):
             combo
         )
 
+
     # =========================================================
     # GET MATERIALS
     # =========================================================
@@ -1277,6 +1436,7 @@ class ModuleDialog(QtWidgets.QDialog):
 
         return clean
 
+
     # =========================================================
     # EXTRACT MATERIAL NAME
     # =========================================================
@@ -1395,6 +1555,7 @@ class ModuleDialog(QtWidgets.QDialog):
 
         return ""
 
+
     # =========================================================
     # GET MATERIAL FROM PART
     # =========================================================
@@ -1480,6 +1641,7 @@ class ModuleDialog(QtWidgets.QDialog):
 
         return ""
 
+
     # =========================================================
     # DIMENSION
     # =========================================================
@@ -1559,6 +1721,7 @@ class ModuleDialog(QtWidgets.QDialog):
 
         return ""
 
+
     # =========================================================
     # READ ONLY ITEM
     # =========================================================
@@ -1586,6 +1749,7 @@ class ModuleDialog(QtWidgets.QDialog):
             item
         )
 
+
     # =========================================================
     # FORMAT VALUE
     # =========================================================
@@ -1598,6 +1762,10 @@ class ModuleDialog(QtWidgets.QDialog):
         if value is None:
 
             return ""
+
+        # -----------------------------------------------------
+        # FREECAD QUANTITY
+        # -----------------------------------------------------
 
         try:
 
@@ -1614,6 +1782,10 @@ class ModuleDialog(QtWidgets.QDialog):
 
             pass
 
+        # -----------------------------------------------------
+        # NORMAL NUMBER
+        # -----------------------------------------------------
+
         try:
 
             return "%.2f" % float(
@@ -1627,6 +1799,7 @@ class ModuleDialog(QtWidgets.QDialog):
         return str(
             value
         )
+
 
     # =========================================================
     # GET DATA
@@ -1677,9 +1850,11 @@ class ModuleDialog(QtWidgets.QDialog):
 
             try:
 
-                objectName = str(
-                    part.Name
-                )
+                if part is not None:
+
+                    objectName = str(
+                        part.Name
+                    )
 
             except Exception:
 
@@ -1709,6 +1884,9 @@ class ModuleDialog(QtWidgets.QDialog):
 
             # -------------------------------------------------
             # DIMENSIONS
+            #
+            # These are deliberately taken from the table as
+            # plain strings.
             # -------------------------------------------------
 
             lengthItem = self.partsTable.item(
@@ -1759,6 +1937,7 @@ class ModuleDialog(QtWidgets.QDialog):
 
             partsData.append(
                 {
+
                     "ObjectName":
                         objectName,
 
@@ -1798,13 +1977,16 @@ class ModuleDialog(QtWidgets.QDialog):
 
                     "Material":
                         material
+
                 }
             )
 
         return {
+
             "Label":
                 self.nameEdit.text(),
 
             "Parts":
                 partsData
+
         }

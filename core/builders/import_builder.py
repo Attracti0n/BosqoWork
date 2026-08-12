@@ -6,6 +6,144 @@ from core.recognizers.panel_recognizer import PanelRecognizer
 
 class ImportBuilder:
 
+    # =========================================================
+    # BOUND BOX
+    # =========================================================
+
+    @staticmethod
+    def _get_bound_box(obj):
+
+        #
+        # Preferimos Shape porque contiene la geometría
+        # principal de los objetos Part.
+        #
+
+        if hasattr(obj, "Shape"):
+
+            try:
+
+                shape = obj.Shape
+
+                if shape is not None and not shape.isNull():
+
+                    return shape.BoundBox
+
+            except Exception:
+                pass
+
+        #
+        # Si no hay Shape válido, intentamos Mesh.
+        #
+
+        if hasattr(obj, "Mesh"):
+
+            try:
+
+                mesh = obj.Mesh
+
+                if mesh is not None:
+
+                    return mesh.BoundBox
+
+            except Exception:
+                pass
+
+        return None
+
+    # =========================================================
+    # ROTATION
+    # =========================================================
+
+    @staticmethod
+    def _get_rotation(obj):
+
+        #
+        # Primero intentamos Placement del objeto.
+        #
+
+        if hasattr(obj, "Placement"):
+
+            try:
+
+                return obj.Placement.Rotation
+
+            except Exception:
+                pass
+
+        #
+        # Como alternativa, intentamos Shape.Placement.
+        #
+
+        if hasattr(obj, "Shape"):
+
+            try:
+
+                return obj.Shape.Placement.Rotation
+
+            except Exception:
+                pass
+
+        return FreeCAD.Rotation()
+
+    # =========================================================
+    # POSITION
+    # =========================================================
+
+    @staticmethod
+    def _apply_placement(part, obj):
+
+        #
+        # Recuperar la posición real de la geometría importada.
+        #
+
+        bound = ImportBuilder._get_bound_box(obj)
+
+        if bound is not None:
+
+            try:
+
+                part.Placement.Base = FreeCAD.Vector(
+                    float(bound.XMin),
+                    float(bound.YMin),
+                    float(bound.ZMin)
+                )
+
+            except Exception as error:
+
+                FreeCAD.Console.PrintWarning(
+                    "No se pudo recuperar la posición "
+                    f"de {obj.Label}: {error}\n"
+                )
+
+        else:
+
+            FreeCAD.Console.PrintWarning(
+                f"No se encontró BoundBox para {obj.Label}\n"
+            )
+
+        #
+        # Recuperar rotación original.
+        #
+
+        try:
+
+            rotation = ImportBuilder._get_rotation(
+                obj
+            )
+
+            part.Placement.Rotation = rotation
+
+        except Exception as error:
+
+            FreeCAD.Console.PrintWarning(
+                "No se pudo recuperar la rotación "
+                f"de {obj.Label}: {error}\n"
+            )
+
+    # =========================================================
+    # BUILD
+    # =========================================================
+
     @staticmethod
     def build(document, objects):
 
@@ -18,11 +156,53 @@ class ImportBuilder:
         for obj in objects:
 
             # =================================================
+            # DEBUG ORIGINAL OBJECT
+            # =================================================
+
+            FreeCAD.Console.PrintMessage(
+                "\n========================================\n"
+            )
+
+            FreeCAD.Console.PrintMessage(
+                "IMPORTANDO OBJETO\n"
+            )
+
+            FreeCAD.Console.PrintMessage(
+                f"Label: {obj.Label}\n"
+            )
+
+            try:
+
+                FreeCAD.Console.PrintMessage(
+                    f"Original Placement: "
+                    f"{obj.Placement}\n"
+                )
+
+                FreeCAD.Console.PrintMessage(
+                    f"Original Base: "
+                    f"{obj.Placement.Base}\n"
+                )
+
+                FreeCAD.Console.PrintMessage(
+                    f"Original Rotation: "
+                    f"{obj.Placement.Rotation}\n"
+                )
+
+            except Exception:
+
+                FreeCAD.Console.PrintMessage(
+                    "Original Placement: no disponible\n"
+                )
+
+            # =================================================
             # RECOGNIZE PANEL
             # =================================================
 
             try:
-                panel = PanelRecognizer.recognize(obj)
+
+                panel = PanelRecognizer.recognize(
+                    obj
+                )
 
             except Exception as error:
 
@@ -50,12 +230,14 @@ class ImportBuilder:
 
             try:
 
-                part = create_part(document)
+                part = create_part(
+                    document
+                )
 
             except Exception as error:
 
                 FreeCAD.Console.PrintError(
-                    f"No se pudo crear BosqoPart "
+                    "No se pudo crear BosqoPart "
                     f"para {obj.Label}: {error}\n"
                 )
 
@@ -73,23 +255,52 @@ class ImportBuilder:
 
             try:
 
-                part.Length = abs(panel.Length)
-                part.Width = abs(panel.Width)
-                part.Thickness = abs(panel.Thickness)
+                #
+                # IMPORTANTE:
+                #
+                # Las dimensiones vienen directamente del
+                # PanelRecognizer.
+                #
+                # No hacemos redondeos.
+                #
 
-                part.LengthAxis = panel.LengthAxis
-                part.WidthAxis = panel.WidthAxis
-                part.ThicknessAxis = panel.ThicknessAxis
+                part.Length = abs(
+                    float(panel.Length)
+                )
+
+                part.Width = abs(
+                    float(panel.Width)
+                )
+
+                part.Thickness = abs(
+                    float(panel.Thickness)
+                )
+
+                part.LengthAxis = (
+                    panel.LengthAxis
+                )
+
+                part.WidthAxis = (
+                    panel.WidthAxis
+                )
+
+                part.ThicknessAxis = (
+                    panel.ThicknessAxis
+                )
 
             except Exception as error:
 
                 FreeCAD.Console.PrintError(
-                    f"Error asignando datos geométricos "
+                    "Error asignando datos geométricos "
                     f"a {obj.Label}: {error}\n"
                 )
 
                 try:
-                    document.removeObject(part.Name)
+
+                    document.removeObject(
+                        part.Name
+                    )
+
                 except Exception:
                     pass
 
@@ -105,7 +316,10 @@ class ImportBuilder:
             # ORIGINAL OBJECT
             # =================================================
 
-            if hasattr(part, "OriginalObject"):
+            if hasattr(
+                part,
+                "OriginalObject"
+            ):
 
                 try:
 
@@ -114,87 +328,76 @@ class ImportBuilder:
                 except Exception as error:
 
                     FreeCAD.Console.PrintWarning(
-                        f"No se pudo guardar OriginalObject "
-                        f"de {obj.Label}: {error}\n"
+                        "No se pudo guardar "
+                        f"OriginalObject de {obj.Label}: "
+                        f"{error}\n"
                     )
 
             # =================================================
-            # RECOVER ORIGINAL POSITION
+            # PLACEMENT
             # =================================================
             #
-            # IMPORTANTE:
+            # La geometría del BosqoPart es LOCAL.
             #
-            # NO hacemos:
+            # GeometryBuilder crea:
             #
-            #     part.Placement = obj.Placement
+            #     Box(0,0,0)
             #
-            # La BosqoPart tiene su propia geometría local.
-            #
-            # Recuperamos la posición mediante BoundBox,
-            # igual que en la versión antigua que funcionaba.
+            # Por tanto necesitamos trasladar esa geometría
+            # a la posición original mediante Placement.
             #
 
-            bound = None
-
-            if hasattr(obj, "Mesh"):
-
-                try:
-                    bound = obj.Mesh.BoundBox
-                except Exception:
-                    bound = None
-
-            elif hasattr(obj, "Shape"):
-
-                try:
-                    bound = obj.Shape.BoundBox
-                except Exception:
-                    bound = None
+            ImportBuilder._apply_placement(
+                part,
+                obj
+            )
 
             # =================================================
-            # APPLY POSITION
+            # DEBUG BOUND BOX
             # =================================================
 
-            if bound:
+            bound = ImportBuilder._get_bound_box(
+                obj
+            )
 
-                try:
+            if bound is not None:
 
-                    part.Placement.Base = FreeCAD.Vector(
-                        bound.XMin,
-                        bound.YMin,
-                        bound.ZMin
-                    )
+                FreeCAD.Console.PrintMessage(
+                    "\n===== IMPORTED BOUND BOX =====\n"
+                )
 
-                except Exception as error:
+                FreeCAD.Console.PrintMessage(
+                    f"XMin: {bound.XMin}\n"
+                )
 
-                    FreeCAD.Console.PrintWarning(
-                        "No se pudo recuperar la posición "
-                        f"de {obj.Label}: {error}\n"
-                    )
+                FreeCAD.Console.PrintMessage(
+                    f"YMin: {bound.YMin}\n"
+                )
 
-            # =================================================
-            # RECOVER ORIGINAL ROTATION
-            # =================================================
+                FreeCAD.Console.PrintMessage(
+                    f"ZMin: {bound.ZMin}\n"
+                )
 
-            if hasattr(obj, "Placement"):
+                FreeCAD.Console.PrintMessage(
+                    f"XLength: {bound.XLength}\n"
+                )
 
-                try:
+                FreeCAD.Console.PrintMessage(
+                    f"YLength: {bound.YLength}\n"
+                )
 
-                    part.Placement.Rotation = (
-                        obj.Placement.Rotation
-                    )
-
-                except Exception as error:
-
-                    FreeCAD.Console.PrintWarning(
-                        "No se pudo recuperar la rotación "
-                        f"de {obj.Label}: {error}\n"
-                    )
+                FreeCAD.Console.PrintMessage(
+                    f"ZLength: {bound.ZLength}\n"
+                )
 
             # =================================================
             # HIDE ORIGINAL
             # =================================================
 
-            if hasattr(obj, "ViewObject"):
+            if hasattr(
+                obj,
+                "ViewObject"
+            ):
 
                 try:
 
@@ -203,22 +406,24 @@ class ImportBuilder:
                 except Exception as error:
 
                     FreeCAD.Console.PrintWarning(
-                        f"No se pudo ocultar {obj.Label}: "
-                        f"{error}\n"
+                        f"No se pudo ocultar "
+                        f"{obj.Label}: {error}\n"
                     )
 
             # =================================================
             # ADD PART
             # =================================================
 
-            parts.append(part)
+            parts.append(
+                part
+            )
 
             # =================================================
-            # DEBUG
+            # DEBUG IMPORTED PART
             # =================================================
 
             FreeCAD.Console.PrintMessage(
-                "\n===== IMPORTED PART =====\n"
+                "\n===== IMPORTED BOSQO PART =====\n"
             )
 
             FreeCAD.Console.PrintMessage(
@@ -250,6 +455,10 @@ class ImportBuilder:
             )
 
             FreeCAD.Console.PrintMessage(
+                f"Source: {part.Source}\n"
+            )
+
+            FreeCAD.Console.PrintMessage(
                 f"Placement: {part.Placement}\n"
             )
 
@@ -272,7 +481,8 @@ class ImportBuilder:
         except Exception as error:
 
             FreeCAD.Console.PrintWarning(
-                f"Error durante recompute: {error}\n"
+                f"Error durante recompute: "
+                f"{error}\n"
             )
 
         # =====================================================
@@ -292,6 +502,18 @@ class ImportBuilder:
                 )
 
                 FreeCAD.Console.PrintMessage(
+                    f"Length = {part.Length}\n"
+                )
+
+                FreeCAD.Console.PrintMessage(
+                    f"Width = {part.Width}\n"
+                )
+
+                FreeCAD.Console.PrintMessage(
+                    f"Thickness = {part.Thickness}\n"
+                )
+
+                FreeCAD.Console.PrintMessage(
                     f"Placement = {part.Placement}\n"
                 )
 
@@ -306,7 +528,7 @@ class ImportBuilder:
             except Exception as error:
 
                 FreeCAD.Console.PrintWarning(
-                    f"No se pudo mostrar Placement "
+                    "No se pudo mostrar información "
                     f"de {part.Label}: {error}\n"
                 )
 

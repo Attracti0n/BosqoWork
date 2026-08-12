@@ -109,9 +109,8 @@ class BosqoModule:
         #
         # Create our own ViewProvider.
         #
-        # This is important because the module is an
-        # App::DocumentObjectGroupPython and must be
-        # selectable by the FreeCAD GUI.
+        # The module is an
+        # App::DocumentObjectGroupPython.
         #
 
         try:
@@ -148,35 +147,6 @@ class BosqoModule:
         self,
         obj
     ):
-
-        # -----------------------------------------------------
-        # MODULE NAME
-        # -----------------------------------------------------
-
-        self.addString(
-            obj,
-            "ModuleName",
-            "Módulo",
-            "Nombre del módulo",
-            "Nuevo módulo"
-        )
-
-
-        # -----------------------------------------------------
-        # MODULE TYPE
-        # -----------------------------------------------------
-
-        self.addEnumeration(
-            obj,
-            "Type",
-            "Módulo",
-            "Tipo de módulo",
-            [
-                "Módulo bajo"
-            ],
-            "Módulo bajo"
-        )
-
 
         # -----------------------------------------------------
         # DIMENSIONS
@@ -262,10 +232,16 @@ class BosqoModule:
             ""
         )
 
-        obj.setEditorMode(
-            "AppliedModulePlacement",
-            2
-        )
+        try:
+
+            obj.setEditorMode(
+                "AppliedModulePlacement",
+                2
+            )
+
+        except Exception:
+
+            pass
 
 
         # -----------------------------------------------------
@@ -332,15 +308,25 @@ class BosqoModule:
         )
 
 
-        obj.setEditorMode(
-            "PartsJSON",
-            2
-        )
+        # -----------------------------------------------------
+        # HIDE INTERNAL PROPERTIES
+        # -----------------------------------------------------
 
-        obj.setEditorMode(
-            "StructuralPlacementsJSON",
-            2
-        )
+        try:
+
+            obj.setEditorMode(
+                "PartsJSON",
+                2
+            )
+
+            obj.setEditorMode(
+                "StructuralPlacementsJSON",
+                2
+            )
+
+        except Exception:
+
+            pass
 
 
     # =========================================================
@@ -404,11 +390,21 @@ class BosqoModule:
             label
         )
 
-        setattr(
-            obj,
-            name,
-            value
-        )
+        try:
+
+            setattr(
+                obj,
+                name,
+                float(value)
+            )
+
+        except Exception:
+
+            setattr(
+                obj,
+                name,
+                0.0
+            )
 
 
     # =========================================================
@@ -509,19 +505,29 @@ class BosqoModule:
 
         parts = []
 
-        for child in getattr(
-            obj,
-            "Group",
-            []
-        ):
+        try:
 
-            if child is obj:
+            for child in getattr(
+                obj,
+                "Group",
+                []
+            ):
 
-                continue
+                if child is None:
 
-            parts.append(
-                child
-            )
+                    continue
+
+                if child is obj:
+
+                    continue
+
+                parts.append(
+                    child
+                )
+
+        except Exception:
+
+            pass
 
         return parts
 
@@ -537,12 +543,14 @@ class BosqoModule:
 
         try:
 
+            raw = getattr(
+                obj,
+                "PartsJSON",
+                "[]"
+            )
+
             data = json.loads(
-                getattr(
-                    obj,
-                    "PartsJSON",
-                    "[]"
-                )
+                str(raw)
             )
 
             if isinstance(
@@ -552,9 +560,7 @@ class BosqoModule:
 
                 return [
 
-                    dict(
-                        item
-                    )
+                    dict(item)
 
                     for item in data
 
@@ -573,6 +579,185 @@ class BosqoModule:
 
 
     # =========================================================
+    # JSON SAFE CONVERSION
+    # =========================================================
+
+    def makeJSONSafe(
+        self,
+        value
+    ):
+
+        # -----------------------------------------------------
+        # BASIC TYPES
+        # -----------------------------------------------------
+
+        if value is None:
+
+            return None
+
+        if isinstance(
+            value,
+            (
+                str,
+                int,
+                float,
+                bool
+            )
+        ):
+
+            return value
+
+
+        # -----------------------------------------------------
+        # DICTIONARY
+        # -----------------------------------------------------
+
+        if isinstance(
+            value,
+            dict
+        ):
+
+            result = {}
+
+            for key, item in value.items():
+
+                result[
+                    str(key)
+                ] = self.makeJSONSafe(
+                    item
+                )
+
+            return result
+
+
+        # -----------------------------------------------------
+        # LIST / TUPLE
+        # -----------------------------------------------------
+
+        if isinstance(
+            value,
+            (
+                list,
+                tuple
+            )
+        ):
+
+            return [
+
+                self.makeJSONSafe(
+                    item
+                )
+
+                for item in value
+
+            ]
+
+
+        # -----------------------------------------------------
+        # FREECAD QUANTITY
+        #
+        # IMPORTANT:
+        # Quantity -> native float
+        # -----------------------------------------------------
+
+        try:
+
+            if hasattr(
+                value,
+                "Value"
+            ):
+
+                return float(
+                    value.Value
+                )
+
+        except Exception:
+
+            pass
+
+
+        # -----------------------------------------------------
+        # FREECAD VECTOR
+        # -----------------------------------------------------
+
+        try:
+
+            if (
+                hasattr(value, "x")
+                and
+                hasattr(value, "y")
+                and
+                hasattr(value, "z")
+            ):
+
+                return {
+
+                    "x":
+                        float(value.x),
+
+                    "y":
+                        float(value.y),
+
+                    "z":
+                        float(value.z)
+
+                }
+
+        except Exception:
+
+            pass
+
+
+        # -----------------------------------------------------
+        # FREECAD ROTATION
+        # -----------------------------------------------------
+
+        try:
+
+            if hasattr(
+                value,
+                "Q"
+            ):
+
+                q = value.Q
+
+                return {
+
+                    "qx":
+                        float(q[0]),
+
+                    "qy":
+                        float(q[1]),
+
+                    "qz":
+                        float(q[2]),
+
+                    "qw":
+                        float(q[3])
+
+                }
+
+        except Exception:
+
+            pass
+
+
+        # -----------------------------------------------------
+        # FALLBACK
+        # -----------------------------------------------------
+
+        try:
+
+            return str(
+                value
+            )
+
+        except Exception:
+
+            return ""
+
+
+    # =========================================================
     # SET USER PARTS
     # =========================================================
 
@@ -582,12 +767,27 @@ class BosqoModule:
         parts
     ):
 
+        if parts is None:
+
+            parts = []
+
+
         try:
 
+            safeParts = (
+                self.makeJSONSafe(
+                    parts
+                )
+            )
+
             obj.PartsJSON = json.dumps(
-                parts,
+                safeParts,
                 ensure_ascii=False
             )
+
+            obj.touch()
+
+            return True
 
         except Exception as error:
 
@@ -598,6 +798,8 @@ class BosqoModule:
                 +
                 "\n"
             )
+
+            return False
 
 
     # =========================================================
@@ -611,12 +813,14 @@ class BosqoModule:
 
         try:
 
+            raw = getattr(
+                obj,
+                "StructuralPlacementsJSON",
+                "{}"
+            )
+
             data = json.loads(
-                getattr(
-                    obj,
-                    "StructuralPlacementsJSON",
-                    "{}"
-                )
+                str(raw)
             )
 
             if isinstance(
@@ -645,10 +849,22 @@ class BosqoModule:
 
         try:
 
-            obj.StructuralPlacementsJSON = json.dumps(
-                data,
-                ensure_ascii=False
+            safeData = (
+                self.makeJSONSafe(
+                    data
+                )
             )
+
+            obj.StructuralPlacementsJSON = (
+                json.dumps(
+                    safeData,
+                    ensure_ascii=False
+                )
+            )
+
+            obj.touch()
+
+            return True
 
         except Exception as error:
 
@@ -659,6 +875,8 @@ class BosqoModule:
                 +
                 "\n"
             )
+
+            return False
 
 
     # =========================================================
@@ -678,39 +896,25 @@ class BosqoModule:
             return {
 
                 "x":
-                    float(
-                        base.x
-                    ),
+                    float(base.x),
 
                 "y":
-                    float(
-                        base.y
-                    ),
+                    float(base.y),
 
                 "z":
-                    float(
-                        base.z
-                    ),
+                    float(base.z),
 
                 "qx":
-                    float(
-                        rotation.Q[0]
-                    ),
+                    float(rotation.Q[0]),
 
                 "qy":
-                    float(
-                        rotation.Q[1]
-                    ),
+                    float(rotation.Q[1]),
 
                 "qz":
-                    float(
-                        rotation.Q[2]
-                    ),
+                    float(rotation.Q[2]),
 
                 "qw":
-                    float(
-                        rotation.Q[3]
-                    )
+                    float(rotation.Q[3])
 
             }
 
@@ -872,7 +1076,8 @@ class BosqoModule:
 
             obj.AppliedModulePlacement = (
                 json.dumps(
-                    data
+                    data,
+                    ensure_ascii=False
                 )
             )
 
@@ -920,7 +1125,7 @@ class BosqoModule:
 
 
             # -------------------------------------------------
-            # CASE 1: REBUILT
+            # REBUILT
             # -------------------------------------------------
 
             if rebuilt:
@@ -970,7 +1175,7 @@ class BosqoModule:
 
 
             # -------------------------------------------------
-            # CASE 2: EXISTING MODULE MOVED
+            # EXISTING MODULE MOVED
             # -------------------------------------------------
 
             else:
@@ -980,6 +1185,11 @@ class BosqoModule:
                         obj
                     )
                 )
+
+
+                # ---------------------------------------------
+                # FIRST APPLICATION
+                # ---------------------------------------------
 
                 if oldPlacement is None:
 
@@ -1010,6 +1220,10 @@ class BosqoModule:
 
                             pass
 
+
+                # ---------------------------------------------
+                # MODULE ALREADY POSITIONED
+                # ---------------------------------------------
 
                 else:
 
@@ -1105,6 +1319,10 @@ class BosqoModule:
         obj
     ):
 
+        #
+        # Geometry is generated by ModuleBuilder.
+        #
+
         return
 
 
@@ -1117,27 +1335,6 @@ class BosqoModule:
         obj,
         property
     ):
-
-        # -----------------------------------------------------
-        # MODULE NAME
-        # -----------------------------------------------------
-
-        if property == "ModuleName":
-
-            try:
-
-                name = str(
-                    obj.ModuleName
-                ).strip()
-
-                if name:
-
-                    obj.Label = name
-
-            except Exception:
-
-                pass
-
 
         # -----------------------------------------------------
         # MODULE PLACEMENT
@@ -1155,9 +1352,16 @@ class BosqoModule:
 
         # -----------------------------------------------------
         # MODULE DIMENSIONS / STRUCTURE
+        #
+        # There is NO ModuleName.
+        # There is NO Type.
+        #
+        # Label is the module name.
+        # Every BosqoModule uses the same module definition.
         # -----------------------------------------------------
 
         if property in (
+
             "Width",
             "Height",
             "Depth",
@@ -1166,6 +1370,7 @@ class BosqoModule:
             "BackInset",
             "TopType",
             "BackType"
+
         ):
 
             try:
@@ -1192,6 +1397,20 @@ class BosqoModule:
                     +
                     "\n"
                 )
+
+            return
+
+
+        # -----------------------------------------------------
+        # INTERNAL DATA
+        # -----------------------------------------------------
+
+        if property in (
+            "PartsJSON",
+            "StructuralPlacementsJSON"
+        ):
+
+            return
 
 
     # =========================================================
@@ -1222,13 +1441,235 @@ def create_module(
     data=None
 ):
 
+    if document is None:
+
+        raise RuntimeError(
+            "No hay documento activo."
+        )
+
+
+    # ---------------------------------------------------------
+    # CREATE OBJECT
+    # ---------------------------------------------------------
+
     module = document.addObject(
         "App::DocumentObjectGroupPython",
         "BosqoModule"
     )
 
+
+    # ---------------------------------------------------------
+    # CREATE PROXY
+    # ---------------------------------------------------------
+
     BosqoModule(
         module
     )
+
+
+    # ---------------------------------------------------------
+    # APPLY INITIAL DATA
+    # ---------------------------------------------------------
+
+    if isinstance(
+        data,
+        dict
+    ):
+
+        proxy = module.Proxy
+
+
+        # ---------------------------------------------
+        # NAME
+        #
+        # Label is the only official module name.
+        #
+        # ModuleName is accepted only for compatibility
+        # with old data.
+        # ---------------------------------------------
+
+        labelValue = None
+
+        if "Label" in data:
+
+            try:
+
+                labelValue = str(
+                    data["Label"]
+                ).strip()
+
+            except Exception:
+
+                labelValue = None
+
+
+        if not labelValue and "ModuleName" in data:
+
+            try:
+
+                labelValue = str(
+                    data["ModuleName"]
+                ).strip()
+
+            except Exception:
+
+                labelValue = None
+
+
+        if labelValue:
+
+            try:
+
+                module.Label = labelValue
+
+            except Exception:
+
+                pass
+
+
+        # ---------------------------------------------
+        # DIMENSIONS
+        # ---------------------------------------------
+
+        for propertyName in (
+
+            "Width",
+            "Height",
+            "Depth",
+            "PanelThickness",
+            "BackThickness",
+            "BackInset"
+
+        ):
+
+            if propertyName not in data:
+
+                continue
+
+            try:
+
+                value = float(
+                    data[propertyName]
+                )
+
+                setattr(
+                    module,
+                    propertyName,
+                    value
+                )
+
+            except Exception:
+
+                pass
+
+
+        # ---------------------------------------------
+        # STRUCTURE
+        # ---------------------------------------------
+
+        for propertyName in (
+            "TopType",
+            "BackType"
+        ):
+
+            if propertyName not in data:
+
+                continue
+
+            try:
+
+                setattr(
+                    module,
+                    propertyName,
+                    data[propertyName]
+                )
+
+            except Exception:
+
+                pass
+
+
+        # ---------------------------------------------
+        # PARTS
+        # ---------------------------------------------
+
+        if "Parts" in data:
+
+            try:
+
+                proxy.setUserParts(
+                    module,
+                    data["Parts"]
+                )
+
+            except Exception as error:
+
+                FreeCAD.Console.PrintError(
+                    "Error guardando piezas iniciales: "
+                    +
+                    str(error)
+                    +
+                    "\n"
+                )
+
+
+        # ---------------------------------------------
+        # STRUCTURAL PLACEMENTS
+        # ---------------------------------------------
+
+        if "StructuralPlacements" in data:
+
+            try:
+
+                proxy.setStructuralPlacements(
+                    module,
+                    data[
+                        "StructuralPlacements"
+                    ]
+                )
+
+            except Exception as error:
+
+                FreeCAD.Console.PrintError(
+                    "Error guardando posiciones estructurales: "
+                    +
+                    str(error)
+                    +
+                    "\n"
+                )
+
+
+    # ---------------------------------------------------------
+    # INITIAL PLACEMENT
+    # ---------------------------------------------------------
+
+    try:
+
+        module.Placement = (
+            FreeCAD.Placement()
+        )
+
+        module.Proxy.saveLastAppliedPlacement(
+            module,
+            module.Placement
+        )
+
+    except Exception:
+
+        pass
+
+
+    # ---------------------------------------------------------
+    # RECOMPUTE
+    # ---------------------------------------------------------
+
+    try:
+
+        document.recompute()
+
+    except Exception:
+
+        pass
+
 
     return module

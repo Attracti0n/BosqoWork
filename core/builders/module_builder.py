@@ -19,14 +19,28 @@ class ModuleBuilder:
         "TB3"
     }
 
+    USER_CODE_PREFIX = "USER_"
+
+    # =========================================================
+    # HELPERS
+    # =========================================================
 
     @staticmethod
-    def toFloat(value, default=0.0):
+    def toFloat(
+        value,
+        default=0.0
+    ):
 
         try:
 
-            if hasattr(value, "Value"):
-                return float(value.Value)
+            if hasattr(
+                value,
+                "Value"
+            ):
+
+                return float(
+                    value.Value
+                )
 
             return float(value)
 
@@ -36,7 +50,11 @@ class ModuleBuilder:
 
 
     @staticmethod
-    def rotation(rx, ry, rz):
+    def rotation(
+        rx,
+        ry,
+        rz
+    ):
 
         return (
             FreeCAD.Rotation(
@@ -106,30 +124,43 @@ class ModuleBuilder:
         return {
 
             "Code": code,
+
             "Label": label,
+
             "Role": role,
+
             "PartType": part_type,
 
             "Length": length,
+
             "Width": width,
+
             "Thickness": thickness,
 
             "Quantity": quantity,
+
             "MaterialCode": material_code,
 
             "LengthAxis": length_axis,
+
             "WidthAxis": width_axis,
+
             "ThicknessAxis": thickness_axis,
 
             "PositionX": x,
+
             "PositionY": y,
+
             "PositionZ": z,
 
             "RotationX": rx,
+
             "RotationY": ry,
+
             "RotationZ": rz,
 
             "PositionMode": position_mode,
+
             "PositionType": position_mode,
 
             "Placement": ModuleBuilder.makePlacement(
@@ -143,11 +174,89 @@ class ModuleBuilder:
         }
 
 
+    # =========================================================
+    # USER PART CODE
+    # =========================================================
+
     @staticmethod
-    def build(module, user_parts=None):
+    def makeUserCode(
+        index
+    ):
+
+        return (
+            ModuleBuilder.USER_CODE_PREFIX
+            +
+            str(index)
+        )
+
+
+    # =========================================================
+    # NORMALIZE USER ROLE
+    # =========================================================
+
+    @staticmethod
+    def getUserRole(
+        data
+    ):
+
+        role = str(
+            data.get(
+                "Role",
+                ""
+            )
+        ).strip()
+
+
+        if role:
+
+            return role
+
+
+        part_type = str(
+            data.get(
+                "PartType",
+                ""
+            )
+        ).strip()
+
+
+        mapping = {
+
+            "Balda": "Shelf",
+
+            "Estante": "Shelf",
+
+            "Shelf": "Shelf",
+
+            "Separador": "Divider",
+
+            "Divisor": "Divider",
+
+            "Divider": "Divider"
+
+        }
+
+
+        return mapping.get(
+            part_type,
+            "Custom"
+        )
+
+
+    # =========================================================
+    # BUILD
+    # =========================================================
+
+    @staticmethod
+    def build(
+        module,
+        user_parts=None
+    ):
 
         if module is None:
+
             return
+
 
         proxy = getattr(
             module,
@@ -156,25 +265,38 @@ class ModuleBuilder:
         )
 
         if proxy is None:
+
             return
 
-        #
-        # User parts
-        #
+
+        # =====================================================
+        # USER PARTS
+        # =====================================================
 
         if user_parts is None:
 
             try:
+
                 user_parts = proxy.getUserParts(
                     module
                 )
 
             except Exception:
+
                 user_parts = []
 
-        #
-        # Structural manual placements
-        #
+
+        if not isinstance(
+            user_parts,
+            list
+        ):
+
+            user_parts = []
+
+
+        # =====================================================
+        # STRUCTURAL MANUAL PLACEMENTS
+        # =====================================================
 
         try:
 
@@ -188,9 +310,10 @@ class ModuleBuilder:
 
             structural_placements = {}
 
-        #
-        # Module dimensions
-        #
+
+        # =====================================================
+        # MODULE DIMENSIONS
+        # =====================================================
 
         width = ModuleBuilder.toFloat(
             getattr(
@@ -232,9 +355,9 @@ class ModuleBuilder:
             getattr(
                 module,
                 "BackThickness",
-                3
+                10
             ),
-            3
+            10
         )
 
         back_inset = ModuleBuilder.toFloat(
@@ -246,6 +369,7 @@ class ModuleBuilder:
             0
         )
 
+
         top_type = str(
             getattr(
                 module,
@@ -254,6 +378,7 @@ class ModuleBuilder:
             )
         )
 
+
         back_type = str(
             getattr(
                 module,
@@ -261,6 +386,7 @@ class ModuleBuilder:
                 "Trasera sobrepuesta"
             )
         )
+
 
         definitions = []
 
@@ -366,21 +492,27 @@ class ModuleBuilder:
             count = 2
 
             if top_type == "3 travesaños":
+
                 count = 3
 
+
             beam_size = 80.0
+
 
             interior_width = max(
                 0,
                 width - thickness * 2
             )
 
+
             available_depth = max(
                 0,
                 depth - beam_size
             )
 
+
             spacing = 0
+
 
             if count > 1:
 
@@ -390,6 +522,7 @@ class ModuleBuilder:
                     (count - 1)
                 )
 
+
             for index in range(count):
 
                 code = (
@@ -398,7 +531,13 @@ class ModuleBuilder:
                     str(index + 1)
                 )
 
-                y = spacing * index
+
+                y = (
+                    spacing
+                    *
+                    index
+                )
+
 
                 definitions.append(
                     ModuleBuilder.makeData(
@@ -427,22 +566,12 @@ class ModuleBuilder:
 
         if back_type == "Trasera sobrepuesta":
 
-            #
-            # La trasera sobrepuesta mantiene sus dimensiones:
-            #
-            # Length     = Height
-            # Width      = Module Width
-            # Thickness  = BackThickness
-            #
-            # Solo se coloca 10 mm más atrás para que no
-            # cruce con las piezas que llegan hasta el fondo.
-            #
-
             y = (
                 depth
                 -
                 back_inset
             )
+
 
             definitions.append(
                 ModuleBuilder.makeData(
@@ -462,6 +591,7 @@ class ModuleBuilder:
                 )
             )
 
+
         elif back_type == "Trasera oculta":
 
             internal_width = max(
@@ -469,10 +599,12 @@ class ModuleBuilder:
                 width - thickness * 2
             )
 
+
             internal_height = max(
                 0,
                 height - thickness * 2
             )
+
 
             y = (
                 depth
@@ -481,6 +613,7 @@ class ModuleBuilder:
                 -
                 back_thickness
             )
+
 
             definitions.append(
                 ModuleBuilder.makeData(
@@ -500,6 +633,7 @@ class ModuleBuilder:
                 )
             )
 
+
         elif back_type in (
             "2 travesaños",
             "3 travesaños"
@@ -507,15 +641,20 @@ class ModuleBuilder:
 
             count = 2
 
+
             if back_type == "3 travesaños":
+
                 count = 3
 
+
             beam_size = 80.0
+
 
             interior_width = max(
                 0,
                 width - thickness * 2
             )
+
 
             available_height = max(
                 0,
@@ -526,7 +665,9 @@ class ModuleBuilder:
                 beam_size
             )
 
+
             spacing = 0
+
 
             if count > 1:
 
@@ -536,6 +677,7 @@ class ModuleBuilder:
                     (count - 1)
                 )
 
+
             y = (
                 depth
                 -
@@ -543,6 +685,7 @@ class ModuleBuilder:
                 -
                 back_thickness
             )
+
 
             for index in range(count):
 
@@ -552,11 +695,13 @@ class ModuleBuilder:
                     str(index + 1)
                 )
 
+
                 z = (
                     thickness
                     +
                     spacing * index
                 )
+
 
                 definitions.append(
                     ModuleBuilder.makeData(
@@ -583,30 +728,92 @@ class ModuleBuilder:
         # USER PARTS
         # =====================================================
 
+        user_index = 0
+
+
         for part in user_parts:
 
             if not isinstance(
                 part,
                 dict
             ):
+
                 continue
+
 
             data = dict(part)
 
-            role = data.get(
-                "Role",
-                "Custom"
+
+            user_index += 1
+
+
+            # -------------------------------------------------
+            # CODE
+            # -------------------------------------------------
+
+            code = str(
+                data.get(
+                    "Code",
+                    ""
+                )
+            ).strip()
+
+
+            if not code:
+
+                code = ModuleBuilder.makeUserCode(
+                    user_index
+                )
+
+
+            data["Code"] = code
+
+
+            # -------------------------------------------------
+            # ROLE
+            # -------------------------------------------------
+
+            role = ModuleBuilder.getUserRole(
+                data
             )
 
-            mode = data.get(
-                "PositionMode",
-                "Manual"
+
+            data["Role"] = role
+
+
+            # -------------------------------------------------
+            # PART TYPE
+            # -------------------------------------------------
+
+            if not data.get(
+                "PartType"
+            ):
+
+                data["PartType"] = (
+                    "Personalizada"
+                )
+
+
+            # -------------------------------------------------
+            # POSITION MODE
+            # -------------------------------------------------
+
+            mode = str(
+                data.get(
+                    "PositionMode",
+                    "Manual"
+                )
             )
 
 
-            #
-            # Automatic shelf
-            #
+            data["PositionMode"] = mode
+
+            data["PositionType"] = mode
+
+
+            # -------------------------------------------------
+            # AUTOMATIC SHELF
+            # -------------------------------------------------
 
             if (
                 role == "Shelf"
@@ -616,8 +823,11 @@ class ModuleBuilder:
 
                 data["Length"] = max(
                     0,
-                    width - thickness * 2
+                    width
+                    -
+                    thickness * 2
                 )
+
 
                 data["Width"] = max(
                     0,
@@ -628,16 +838,20 @@ class ModuleBuilder:
                     back_thickness
                 )
 
+
                 data["Thickness"] = thickness
 
+
                 data["LengthAxis"] = "X"
+
                 data["WidthAxis"] = "Y"
+
                 data["ThicknessAxis"] = "Z"
 
 
-            #
-            # Automatic divider
-            #
+            # -------------------------------------------------
+            # AUTOMATIC DIVIDER
+            # -------------------------------------------------
 
             elif (
                 role == "Divider"
@@ -647,8 +861,11 @@ class ModuleBuilder:
 
                 data["Length"] = max(
                     0,
-                    height - thickness * 2
+                    height
+                    -
+                    thickness * 2
                 )
+
 
                 data["Width"] = max(
                     0,
@@ -659,16 +876,46 @@ class ModuleBuilder:
                     back_thickness
                 )
 
+
                 data["Thickness"] = thickness
 
+
                 data["LengthAxis"] = "Z"
+
                 data["WidthAxis"] = "Y"
+
                 data["ThicknessAxis"] = "X"
 
 
-            #
-            # Defaults
-            #
+            # -------------------------------------------------
+            # DEFAULTS
+            # -------------------------------------------------
+
+            data.setdefault(
+                "Length",
+                0
+            )
+
+            data.setdefault(
+                "Width",
+                0
+            )
+
+            data.setdefault(
+                "Thickness",
+                thickness
+            )
+
+            data.setdefault(
+                "Quantity",
+                1
+            )
+
+            data.setdefault(
+                "MaterialCode",
+                ""
+            )
+
 
             data.setdefault(
                 "PositionX",
@@ -685,6 +932,7 @@ class ModuleBuilder:
                 0
             )
 
+
             data.setdefault(
                 "RotationX",
                 0
@@ -700,22 +948,26 @@ class ModuleBuilder:
                 0
             )
 
+
             data.setdefault(
-                "PositionMode",
-                "Manual"
+                "LengthAxis",
+                "X"
             )
 
             data.setdefault(
-                "PositionType",
-                data["PositionMode"]
+                "WidthAxis",
+                "Y"
             )
 
-            #
-            # IMPORTANT:
-            #
-            # Build the placement here explicitly.
-            # Do not leave this to onChanged().
-            #
+            data.setdefault(
+                "ThicknessAxis",
+                "Z"
+            )
+
+
+            # -------------------------------------------------
+            # PLACEMENT
+            # -------------------------------------------------
 
             data["Placement"] = (
                 ModuleBuilder.makePlacement(
@@ -727,6 +979,7 @@ class ModuleBuilder:
                     data["RotationZ"]
                 )
             )
+
 
             definitions.append(
                 data
@@ -746,8 +999,11 @@ class ModuleBuilder:
                 )
             )
 
+
             if code not in structural_placements:
+
                 continue
+
 
             override = (
                 structural_placements.get(
@@ -755,14 +1011,19 @@ class ModuleBuilder:
                 )
             )
 
+
             if not isinstance(
                 override,
                 dict
             ):
+
                 continue
 
+
             data["PositionMode"] = "Manual"
+
             data["PositionType"] = "Manual"
+
 
             for key in (
                 "PositionX",
@@ -775,9 +1036,8 @@ class ModuleBuilder:
 
                 if key in override:
 
-                    data[key] = (
-                        override[key]
-                    )
+                    data[key] = override[key]
+
 
             data["Placement"] = (
                 ModuleBuilder.makePlacement(
@@ -815,6 +1075,7 @@ class ModuleBuilder:
 
         existing = {}
 
+
         for child in list(
             getattr(
                 module,
@@ -831,19 +1092,23 @@ class ModuleBuilder:
                 )
             )
 
+
             if code:
 
                 existing[code] = child
 
 
         wanted_codes = {
+
             str(
                 data.get(
                     "Code",
                     ""
                 )
             )
+
             for data in definitions
+
         }
 
 
@@ -854,11 +1119,14 @@ class ModuleBuilder:
         for code in ModuleBuilder.STRUCTURAL_CODES:
 
             if code in wanted_codes:
+
                 continue
+
 
             old = existing.get(
                 code
             )
+
 
             if old is not None:
 
@@ -878,6 +1146,41 @@ class ModuleBuilder:
 
 
         # =====================================================
+        # REMOVE OLD USER PIECES
+        # =====================================================
+
+        for code, old in list(
+            existing.items()
+        ):
+
+            if not code.startswith(
+                ModuleBuilder.USER_CODE_PREFIX
+            ):
+
+                continue
+
+
+            if code in wanted_codes:
+
+                continue
+
+
+            try:
+
+                module.removeObject(
+                    old
+                )
+
+                module.Document.removeObject(
+                    old.Name
+                )
+
+            except Exception:
+
+                pass
+
+
+        # =====================================================
         # CREATE / UPDATE PIECES
         # =====================================================
 
@@ -890,12 +1193,16 @@ class ModuleBuilder:
                 )
             )
 
+
             if not code:
+
                 continue
+
 
             part = existing.get(
                 code
             )
+
 
             if part is None:
 
@@ -905,9 +1212,11 @@ class ModuleBuilder:
                         module.Document
                     )
 
+
                     module.addObject(
                         part
                     )
+
 
                 except Exception as error:
 
@@ -923,6 +1232,7 @@ class ModuleBuilder:
                         "\n"
                     )
 
+
                     continue
 
 
@@ -932,17 +1242,27 @@ class ModuleBuilder:
                 None
             )
 
+
             try:
 
                 set_data = (
+
                     getattr(
                         proxy,
                         "setData",
                         None
                     )
+
                     if proxy is not None
+
                     else None
+
                 )
+
+
+                # -------------------------------------------------
+                # SET DATA
+                # -------------------------------------------------
 
                 if callable(
                     set_data
@@ -953,12 +1273,15 @@ class ModuleBuilder:
                         data
                     )
 
+
                 else:
 
                     for key, value in data.items():
 
                         if key == "Placement":
+
                             continue
+
 
                         if hasattr(
                             part,
@@ -972,16 +1295,14 @@ class ModuleBuilder:
                             )
 
 
-                #
+                # -------------------------------------------------
                 # FINAL PLACEMENT
-                #
-                # This is deliberate. It is the final authority
-                # for manually positioned user pieces.
-                #
+                # -------------------------------------------------
 
                 placement = data.get(
                     "Placement"
                 )
+
 
                 if placement is not None:
 
@@ -995,7 +1316,9 @@ class ModuleBuilder:
                     part.Label
                 )
 
+
                 part.touch()
+
 
             except Exception as error:
 
@@ -1010,6 +1333,3 @@ class ModuleBuilder:
                     +
                     "\n"
                 )
-
-
-        module.Document.recompute()

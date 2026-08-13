@@ -107,22 +107,16 @@ class BosqoModule:
         )
 
         #
-        # Create our own ViewProvider.
-        #
-        # The module is an
-        # App::DocumentObjectGroupPython.
+        # Create our ViewProvider.
         #
 
         try:
 
-            if (
-                getattr(
-                    obj,
-                    "ViewObject",
-                    None
-                )
-                is not None
-            ):
+            if getattr(
+                obj,
+                "ViewObject",
+                None
+            ) is not None:
 
                 ViewProviderBosqoModule(
                     obj.ViewObject
@@ -306,6 +300,23 @@ class BosqoModule:
             "Posiciones manuales de estructura",
             "{}"
         )
+
+
+        # -----------------------------------------------------
+        # PARAMETER SPREADSHEET
+        # -----------------------------------------------------
+
+        if not hasattr(
+            obj,
+            "ParameterSheet"
+        ):
+
+            obj.addProperty(
+                "App::PropertyLink",
+                "ParameterSheet",
+                "Parámetros",
+                "Hoja de parámetros del módulo"
+            )
 
 
         # -----------------------------------------------------
@@ -514,12 +525,33 @@ class BosqoModule:
             ):
 
                 if child is None:
-
                     continue
 
                 if child is obj:
-
                     continue
+
+                #
+                # Spreadsheet is also physically inside Group.
+                # It is NOT a BosqoPart.
+                #
+
+                try:
+
+                    if (
+                        getattr(
+                            child,
+                            "TypeId",
+                            ""
+                        )
+                        ==
+                        "Spreadsheet::Sheet"
+                    ):
+
+                        continue
+
+                except Exception:
+
+                    pass
 
                 parts.append(
                     child
@@ -587,13 +619,10 @@ class BosqoModule:
         value
     ):
 
-        # -----------------------------------------------------
-        # BASIC TYPES
-        # -----------------------------------------------------
-
         if value is None:
 
             return None
+
 
         if isinstance(
             value,
@@ -607,10 +636,6 @@ class BosqoModule:
 
             return value
 
-
-        # -----------------------------------------------------
-        # DICTIONARY
-        # -----------------------------------------------------
 
         if isinstance(
             value,
@@ -629,10 +654,6 @@ class BosqoModule:
 
             return result
 
-
-        # -----------------------------------------------------
-        # LIST / TUPLE
-        # -----------------------------------------------------
 
         if isinstance(
             value,
@@ -653,12 +674,9 @@ class BosqoModule:
             ]
 
 
-        # -----------------------------------------------------
-        # FREECAD QUANTITY
         #
-        # IMPORTANT:
-        # Quantity -> native float
-        # -----------------------------------------------------
+        # FreeCAD Quantity
+        #
 
         try:
 
@@ -676,9 +694,9 @@ class BosqoModule:
             pass
 
 
-        # -----------------------------------------------------
-        # FREECAD VECTOR
-        # -----------------------------------------------------
+        #
+        # FreeCAD Vector
+        #
 
         try:
 
@@ -692,14 +710,9 @@ class BosqoModule:
 
                 return {
 
-                    "x":
-                        float(value.x),
-
-                    "y":
-                        float(value.y),
-
-                    "z":
-                        float(value.z)
+                    "x": float(value.x),
+                    "y": float(value.y),
+                    "z": float(value.z)
 
                 }
 
@@ -708,9 +721,9 @@ class BosqoModule:
             pass
 
 
-        # -----------------------------------------------------
-        # FREECAD ROTATION
-        # -----------------------------------------------------
+        #
+        # FreeCAD Rotation
+        #
 
         try:
 
@@ -723,17 +736,10 @@ class BosqoModule:
 
                 return {
 
-                    "qx":
-                        float(q[0]),
-
-                    "qy":
-                        float(q[1]),
-
-                    "qz":
-                        float(q[2]),
-
-                    "qw":
-                        float(q[3])
+                    "qx": float(q[0]),
+                    "qy": float(q[1]),
+                    "qz": float(q[2]),
+                    "qw": float(q[3])
 
                 }
 
@@ -741,10 +747,6 @@ class BosqoModule:
 
             pass
 
-
-        # -----------------------------------------------------
-        # FALLBACK
-        # -----------------------------------------------------
 
         try:
 
@@ -895,26 +897,14 @@ class BosqoModule:
 
             return {
 
-                "x":
-                    float(base.x),
+                "x": float(base.x),
+                "y": float(base.y),
+                "z": float(base.z),
 
-                "y":
-                    float(base.y),
-
-                "z":
-                    float(base.z),
-
-                "qx":
-                    float(rotation.Q[0]),
-
-                "qy":
-                    float(rotation.Q[1]),
-
-                "qz":
-                    float(rotation.Q[2]),
-
-                "qw":
-                    float(rotation.Q[3])
+                "qx": float(rotation.Q[0]),
+                "qy": float(rotation.Q[1]),
+                "qz": float(rotation.Q[2]),
+                "qw": float(rotation.Q[3])
 
             }
 
@@ -925,6 +915,7 @@ class BosqoModule:
                 "x": 0.0,
                 "y": 0.0,
                 "z": 0.0,
+
                 "qx": 0.0,
                 "qy": 0.0,
                 "qz": 0.0,
@@ -1352,12 +1343,6 @@ class BosqoModule:
 
         # -----------------------------------------------------
         # MODULE DIMENSIONS / STRUCTURE
-        #
-        # There is NO ModuleName.
-        # There is NO Type.
-        #
-        # Label is the module name.
-        # Every BosqoModule uses the same module definition.
         # -----------------------------------------------------
 
         if property in (
@@ -1407,7 +1392,9 @@ class BosqoModule:
 
         if property in (
             "PartsJSON",
-            "StructuralPlacementsJSON"
+            "StructuralPlacementsJSON",
+            "ParameterSheet",
+            "AppliedModulePlacement"
         ):
 
             return
@@ -1430,6 +1417,321 @@ class BosqoModule:
     ):
 
         return None
+
+
+# =============================================================
+# CREATE MODULE PARAMETER SHEET
+# =============================================================
+
+from objects.bosqo_sheet import create_sheet
+
+
+def create_parameter_sheet(
+    document,
+    module
+):
+
+    return create_sheet(
+        document,
+        module
+    )
+
+
+    # ---------------------------------------------------------
+    # EXISTING LINK
+    # ---------------------------------------------------------
+
+    try:
+
+        existing = getattr(
+            module,
+            "ParameterSheet",
+            None
+        )
+
+        if existing is not None:
+
+            #
+            # If it already exists but is not physically inside
+            # the module group, repair that situation.
+            #
+
+            try:
+
+                group = list(
+                    getattr(
+                        module,
+                        "Group",
+                        []
+                    )
+                )
+
+                if existing not in group:
+
+                    module.addObject(
+                        existing
+                    )
+
+            except Exception:
+
+                pass
+
+            return existing
+
+    except Exception:
+
+        pass
+
+
+    # ---------------------------------------------------------
+    # LOOK FOR EXISTING SHEET IN DOCUMENT
+    # ---------------------------------------------------------
+
+    sheet = None
+
+    try:
+
+        sheet = document.getObject(
+            "ModuleParameters"
+        )
+
+    except Exception:
+
+        sheet = None
+
+
+    # ---------------------------------------------------------
+    # CREATE SPREADSHEET
+    # ---------------------------------------------------------
+
+    if sheet is None:
+
+        try:
+
+            sheet = document.addObject(
+                "Spreadsheet::Sheet",
+                "ModuleParameters"
+            )
+
+        except Exception as error:
+
+            FreeCAD.Console.PrintError(
+                "Error creando Spreadsheet del módulo: "
+                +
+                str(error)
+                +
+                "\n"
+            )
+
+            return None
+
+
+    # ---------------------------------------------------------
+    # LABEL
+    # ---------------------------------------------------------
+
+    try:
+
+        sheet.Label = (
+            "Parámetros - "
+            +
+            str(
+                getattr(
+                    module,
+                    "Label",
+                    "Módulo"
+                )
+            )
+        )
+
+    except Exception:
+
+        try:
+
+            sheet.Label = "Parámetros"
+
+        except Exception:
+
+            pass
+
+
+    # ---------------------------------------------------------
+    # LAYOUT
+    # ---------------------------------------------------------
+
+    for cell, value in (
+
+        ("A1", "Parámetro"),
+        ("B1", "Valor"),
+
+        ("A2", "Width"),
+        ("A3", "Height"),
+        ("A4", "Depth"),
+        ("A5", "PanelThickness"),
+        ("A6", "BackThickness"),
+        ("A7", "BackInset")
+
+    ):
+
+        try:
+
+            sheet.set(
+                cell,
+                value
+            )
+
+        except Exception:
+
+            pass
+
+
+    # ---------------------------------------------------------
+    # PARAMETERS
+    # ---------------------------------------------------------
+
+    parameters = (
+
+        ("B2", "Width"),
+        ("B3", "Height"),
+        ("B4", "Depth"),
+        ("B5", "PanelThickness"),
+        ("B6", "BackThickness"),
+        ("B7", "BackInset")
+
+    )
+
+
+    for cell, propertyName in parameters:
+
+        try:
+
+            value = getattr(
+                module,
+                propertyName
+            )
+
+            if hasattr(
+                value,
+                "Value"
+            ):
+
+                value = value.Value
+
+            sheet.set(
+                cell,
+                str(
+                    float(value)
+                )
+                +
+                " mm"
+            )
+
+            sheet.setAlias(
+                cell,
+                propertyName
+            )
+
+        except Exception as error:
+
+            FreeCAD.Console.PrintError(
+                "Error escribiendo "
+                +
+                propertyName
+                +
+                " en Spreadsheet: "
+                +
+                str(error)
+                +
+                "\n"
+            )
+
+
+    # ---------------------------------------------------------
+    # LINK
+    # ---------------------------------------------------------
+
+    try:
+
+        module.ParameterSheet = sheet
+
+    except Exception as error:
+
+        FreeCAD.Console.PrintError(
+            "Error vinculando Spreadsheet: "
+            +
+            str(error)
+            +
+            "\n"
+        )
+
+
+    # ---------------------------------------------------------
+    # IMPORTANT:
+    #
+    # The Spreadsheet must ALSO be a real member of the
+    # module Group.
+    #
+    # ParameterSheet alone is only a PropertyLink.
+    # ---------------------------------------------------------
+
+    try:
+
+        group = list(
+            getattr(
+                module,
+                "Group",
+                []
+            )
+        )
+
+        if sheet not in group:
+
+            module.addObject(
+                sheet
+            )
+
+    except Exception as error:
+
+        FreeCAD.Console.PrintError(
+            "Error añadiendo Spreadsheet al Group del módulo: "
+            +
+            str(error)
+            +
+            "\n"
+        )
+
+
+    # ---------------------------------------------------------
+    # COLUMN WIDTHS
+    # ---------------------------------------------------------
+
+    try:
+
+        sheet.setColumnWidth(
+            "A",
+            180
+        )
+
+        sheet.setColumnWidth(
+            "B",
+            120
+        )
+
+    except Exception:
+
+        pass
+
+
+    try:
+
+        sheet.touch()
+
+    except Exception:
+
+        pass
+
+
+    return sheet
 
 
 # =============================================================
@@ -1481,11 +1783,6 @@ def create_module(
 
         # ---------------------------------------------
         # NAME
-        #
-        # Label is the only official module name.
-        #
-        # ModuleName is accepted only for compatibility
-        # with old data.
         # ---------------------------------------------
 
         labelValue = None
@@ -1503,7 +1800,11 @@ def create_module(
                 labelValue = None
 
 
-        if not labelValue and "ModuleName" in data:
+        if (
+            not labelValue
+            and
+            "ModuleName" in data
+        ):
 
             try:
 
@@ -1637,6 +1938,28 @@ def create_module(
                     +
                     "\n"
                 )
+
+
+    # ---------------------------------------------------------
+    # PARAMETER SPREADSHEET
+    # ---------------------------------------------------------
+
+    try:
+
+        create_parameter_sheet(
+            document,
+            module
+        )
+
+    except Exception as error:
+
+        FreeCAD.Console.PrintError(
+            "Error creando hoja de parámetros: "
+            +
+            str(error)
+            +
+            "\n"
+        )
 
 
     # ---------------------------------------------------------

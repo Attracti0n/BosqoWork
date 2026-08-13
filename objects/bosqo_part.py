@@ -593,12 +593,39 @@ class BosqoPart:
         """
         Assign an imported FreeCAD object as the
         geometry source of this BosqoPart.
+
+        IMPORTANT:
+        
+        The imported object's Shape is kept in LOCAL
+        coordinates and its Placement is copied to
+        the BosqoPart object.
+
+        Therefore:
+
+            original.Shape
+                -> local geometry
+
+            original.Placement
+                -> real position/orientation
+
+            obj.Shape
+                -> local geometry
+
+            obj.Placement
+                -> real position/orientation
+
+        This is essential because the rest of Bosqo
+        works with obj.Placement.
         """
 
         if original is None:
 
             return False
 
+
+        # =====================================================
+        # GET ORIGINAL SHAPE
+        # =====================================================
 
         try:
 
@@ -625,9 +652,41 @@ class BosqoPart:
             pass
 
 
+        # =====================================================
+        # GET ORIGINAL PLACEMENT
         #
-        # Keep reference to original object.
+        # THIS IS THE IMPORTANT PART.
         #
+        # The original object's Placement must be preserved
+        # separately from its Shape.
+        # =====================================================
+
+        try:
+
+            originalPlacement = (
+                original.Placement.copy()
+            )
+
+        except Exception:
+
+            try:
+
+                originalPlacement = (
+                    FreeCAD.Placement(
+                        original.Placement
+                    )
+                )
+
+            except Exception:
+
+                originalPlacement = (
+                    FreeCAD.Placement()
+                )
+
+
+        # =====================================================
+        # KEEP REFERENCE TO ORIGINAL OBJECT
+        # =====================================================
 
         try:
 
@@ -638,9 +697,9 @@ class BosqoPart:
             pass
 
 
-        #
-        # Mark as imported.
-        #
+        # =====================================================
+        # MARK AS IMPORTED
+        # =====================================================
 
         try:
 
@@ -651,22 +710,138 @@ class BosqoPart:
             pass
 
 
+        # =====================================================
+        # COPY GEOMETRY AS LOCAL SHAPE
         #
-        # Copy real imported geometry.
+        # DO NOT COPY THE OBJECT PLACEMENT INTO THE SHAPE.
         #
+        # The Shape must remain local.
+        # The Placement belongs to obj.Placement.
+        # =====================================================
 
         try:
 
-            obj.Shape = shape.copy()
+            localShape = (
+                shape.copy()
+            )
 
         except Exception:
 
             return False
 
 
+        # =====================================================
+        # RESET SHAPE PLACEMENT
         #
-        # Keep visibility explicitly enabled.
+        # In case the source Shape itself contains a
+        # Placement, remove it so that the position is not
+        # applied twice.
+        # =====================================================
+
+        try:
+
+            localShape.Placement = (
+                FreeCAD.Placement()
+            )
+
+        except Exception:
+
+            pass
+
+
+        # =====================================================
+        # ASSIGN LOCAL SHAPE
+        # =====================================================
+
+        try:
+
+            obj.Shape = localShape
+
+        except Exception:
+
+            return False
+
+
+        # =====================================================
+        # ASSIGN ORIGINAL OBJECT PLACEMENT
         #
+        # THIS IS THE ACTUAL FIX.
+        # =====================================================
+
+        try:
+
+            obj.Placement = (
+                originalPlacement
+            )
+
+        except Exception as error:
+
+            FreeCAD.Console.PrintWarning(
+                "No se pudo conservar el Placement "
+                "de la pieza importada: "
+                +
+                str(error)
+                +
+                "\n"
+            )
+
+            try:
+
+                obj.Placement = (
+                    FreeCAD.Placement()
+                )
+
+            except Exception:
+
+                pass
+
+
+        # =====================================================
+        # DEBUG PLACEMENT
+        # =====================================================
+
+        try:
+
+            base = (
+                obj.Placement.Base
+            )
+
+            FreeCAD.Console.PrintMessage(
+                "BOSQO PART IMPORTADA | "
+                +
+                str(
+                    getattr(
+                        obj,
+                        "Name",
+                        "?"
+                    )
+                )
+                +
+                " | Placement = "
+                +
+                "X:"
+                +
+                "%.2f" % float(base.x)
+                +
+                " Y:"
+                +
+                "%.2f" % float(base.y)
+                +
+                " Z:"
+                +
+                "%.2f" % float(base.z)
+                +
+                "\n"
+            )
+
+        except Exception:
+
+            pass
+
+
+        # =====================================================
+        # KEEP VISIBILITY EXPLICITLY ENABLED
+        # =====================================================
 
         try:
 
@@ -677,9 +852,9 @@ class BosqoPart:
             pass
 
 
-        #
-        # Copy label.
-        #
+        # =====================================================
+        # COPY LABEL
+        # =====================================================
 
         try:
 
@@ -692,13 +867,18 @@ class BosqoPart:
             pass
 
 
+        # =====================================================
+        # GET REAL DIMENSIONS FROM LOCAL SHAPE
         #
-        # Get real dimensions from shape.
-        #
+        # The dimensions are taken from the local geometry,
+        # not from the object's Placement.
+        # =====================================================
 
         try:
 
-            box = shape.BoundBox
+            box = (
+                localShape.BoundBox
+            )
 
             x = abs(
                 float(
@@ -728,9 +908,9 @@ class BosqoPart:
             pass
 
 
-        #
-        # Mark geometry.
-        #
+        # =====================================================
+        # MARK GEOMETRY
+        # =====================================================
 
         try:
 
@@ -770,12 +950,19 @@ class BosqoPart:
         obj
     ):
 
-        #
+        # =====================================================
         # IMPORTED PART
+        # =====================================================
         #
         # The imported Shape already exists.
+        #
         # NEVER replace it with createBox().
         #
+        # IMPORTANT:
+        #
+        # If the Shape has to be recovered, the original
+        # Placement must also be copied.
+        # =====================================================
 
         try:
 
@@ -783,9 +970,9 @@ class BosqoPart:
                 obj.Source
             ) == "Imported":
 
-                #
-                # Keep the current imported Shape.
-                #
+                # -------------------------------------------------
+                # CURRENT IMPORTED SHAPE
+                # -------------------------------------------------
 
                 if (
                     obj.Shape is not None
@@ -796,10 +983,9 @@ class BosqoPart:
                     return
 
 
-                #
-                # If Shape was lost, recover it
-                # from OriginalObject.
-                #
+                # -------------------------------------------------
+                # RECOVER FROM ORIGINAL OBJECT
+                # -------------------------------------------------
 
                 original = (
                     obj.OriginalObject
@@ -825,7 +1011,93 @@ class BosqoPart:
                     return
 
 
-                obj.Shape = shape.copy()
+                # -------------------------------------------------
+                # RECOVER ORIGINAL PLACEMENT
+                # -------------------------------------------------
+
+                try:
+
+                    originalPlacement = (
+                        original.Placement.copy()
+                    )
+
+                except Exception:
+
+                    try:
+
+                        originalPlacement = (
+                            FreeCAD.Placement(
+                                original.Placement
+                            )
+                        )
+
+                    except Exception:
+
+                        originalPlacement = (
+                            FreeCAD.Placement()
+                        )
+
+
+                # -------------------------------------------------
+                # COPY SHAPE
+                # -------------------------------------------------
+
+                localShape = (
+                    shape.copy()
+                )
+
+
+                # -------------------------------------------------
+                # ENSURE LOCAL SHAPE
+                # -------------------------------------------------
+
+                try:
+
+                    localShape.Placement = (
+                        FreeCAD.Placement()
+                    )
+
+                except Exception:
+
+                    pass
+
+
+                # -------------------------------------------------
+                # ASSIGN GEOMETRY
+                # -------------------------------------------------
+
+                obj.Shape = (
+                    localShape
+                )
+
+
+                # -------------------------------------------------
+                # RESTORE PLACEMENT
+                # -------------------------------------------------
+
+                try:
+
+                    obj.Placement = (
+                        originalPlacement
+                    )
+
+                except Exception:
+
+                    pass
+
+
+                # -------------------------------------------------
+                # VISIBILITY
+                # -------------------------------------------------
+
+                try:
+
+                    obj.ViewObject.Visibility = True
+
+                except Exception:
+
+                    pass
+
 
                 return
 
@@ -834,9 +1106,9 @@ class BosqoPart:
             pass
 
 
-        #
+        # =====================================================
         # CREATED PART
-        #
+        # =====================================================
 
         shape = GeometryBuilder.createBox(
             obj
@@ -875,6 +1147,9 @@ class BosqoPart:
         return None
 
 
+# =============================================================
+# VIEW PROVIDER
+# =============================================================
 
 class ViewProviderBosqoPart:
 
@@ -896,9 +1171,9 @@ class ViewProviderBosqoPart:
         )
 
 
-# =========================================================
+# =============================================================
 # FACTORY
-# =========================================================
+# =============================================================
 
 def create_part(
     doc

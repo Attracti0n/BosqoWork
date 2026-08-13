@@ -111,21 +111,6 @@ class ProjectManufacturingData:
 
 
     #
-    # Add module
-    #
-
-    def addModule(
-        self,
-        module
-    ):
-
-        self.Modules.append(
-            module
-        )
-
-
-
-    #
     # Add loose part
     #
 

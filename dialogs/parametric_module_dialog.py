@@ -1,6 +1,7 @@
 import FreeCAD
 
 from PySide import QtWidgets, QtCore
+from objects.bosqo_module import create_module
 
 
 # =============================================================
@@ -1080,6 +1081,121 @@ class ParametricModuleDialog(
         else:
 
             self.structuralPlacements = {}
+
+
+    # =========================================================
+    # CREATE NEW MODULE
+    # =========================================================
+
+    def createNewModule(
+        self
+    ):
+
+        #
+        # If the command already supplied a module,
+        # nothing has to be created here.
+        #
+
+        if self.module is not None:
+            return True
+
+        document = FreeCAD.ActiveDocument
+
+        if document is None:
+
+            QtWidgets.QMessageBox.warning(
+                self,
+                "Módulo",
+                "No hay ningún documento activo."
+            )
+
+            return False
+
+        name = (
+            self.nameEdit.text().strip()
+            or
+            "Nuevo módulo"
+        )
+
+        data = {
+
+            "Label":
+                name,
+
+            "Width":
+                self.widthSpin.value(),
+
+            "Height":
+                self.heightSpin.value(),
+
+            "Depth":
+                self.depthSpin.value(),
+
+            "PanelThickness":
+                self.thicknessSpin.value(),
+
+            "BackThickness":
+                self.backThicknessSpin.value(),
+
+            "BackInset":
+                self.backInsetSpin.value(),
+
+            "TopType":
+                self.topTypeCombo.currentText(),
+
+            "BackType":
+                self.backTypeCombo.currentText(),
+
+            "Parts":
+                list(
+                    self.userParts
+                ),
+
+            "StructuralPlacements":
+                dict(
+                    self.structuralPlacements
+                )
+
+        }
+
+        #
+        # Central module creation function.
+        # Its Spreadsheet creation is handled by
+        # objects.bosqo_module.create_module().
+        #
+
+        try:
+
+            self.module = create_module(
+                document,
+                data
+            )
+
+        except Exception as error:
+
+            QtWidgets.QMessageBox.warning(
+                self,
+                "Módulo",
+                "Error creando el módulo:\n\n"
+                +
+                str(error)
+            )
+
+            self.module = None
+
+            return False
+
+        try:
+
+            document.recompute()
+
+        except Exception:
+
+            pass
+
+        return (
+            self.module is not None
+        )
 
 
     # =========================================================
@@ -3562,6 +3678,22 @@ class ParametricModuleDialog(
     ):
 
         try:
+
+            #
+            # NEW MODULE
+            #
+            # If the dialog was opened without an existing
+            # BosqoModule, create it now.
+            #
+            # create_module() is also responsible for creating
+            # the parameter Spreadsheet.
+            #
+
+            if self.module is None:
+
+                if not self.createNewModule():
+
+                    return
 
             #
             # Preserve current table information.

@@ -4,7 +4,6 @@ import FreeCADGui
 
 import commands.add_part
 import commands.project_properties
-import commands.import_parts
 
 
 ICON_PATH = os.path.join(
@@ -49,13 +48,7 @@ class BosqoWorkbench(FreeCADGui.Workbench):
                 "Bosqo_Materials",
             ]
         )
-        self.appendToolbar(
-            "Import",
-            [
-                "Bosqo_ImportParts",
-                "Bosqo_CreateModuleFromSelection",
-            ]
-        )
+
         self.appendToolbar(
             "Fabricación",
             [
@@ -81,13 +74,7 @@ class BosqoWorkbench(FreeCADGui.Workbench):
                 "Bosqo_Materials"
             ]
         )
-        self.appendMenu(
-            "Import",
-            [
-                "Bosqo_ImportParts",
-                "Bosqo_CreateModuleFromSelection",
-            ]
-        )
+
         self.appendMenu(
             "Fabricación",
             [

@@ -31,6 +31,10 @@ class ManualPlacementDialog(QtWidgets.QDialog):
             self
         )
 
+        # -----------------------------------------------------
+        # POSITION
+        # -----------------------------------------------------
+
         position_group = QtWidgets.QGroupBox(
             "Posición"
         )
@@ -66,6 +70,10 @@ class ManualPlacementDialog(QtWidgets.QDialog):
         layout.addWidget(
             position_group
         )
+
+        # -----------------------------------------------------
+        # ROTATION
+        # -----------------------------------------------------
 
         rotation_group = QtWidgets.QGroupBox(
             "Giro"
@@ -103,6 +111,10 @@ class ManualPlacementDialog(QtWidgets.QDialog):
             rotation_group
         )
 
+        # -----------------------------------------------------
+        # BUTTONS
+        # -----------------------------------------------------
+
         buttons = QtWidgets.QHBoxLayout()
 
         buttons.addStretch()
@@ -136,6 +148,10 @@ class ManualPlacementDialog(QtWidgets.QDialog):
         )
 
         self.loadData()
+
+    # ---------------------------------------------------------
+    # SPINBOX
+    # ---------------------------------------------------------
 
     def createSpinBox(
         self
@@ -178,6 +194,10 @@ class ManualPlacementDialog(QtWidgets.QDialog):
         )
 
         return spin
+
+    # ---------------------------------------------------------
+    # DATA
+    # ---------------------------------------------------------
 
     def loadData(
         self
@@ -318,11 +338,18 @@ class PartTableDialog(QtWidgets.QDialog):
             parts or []
         )
 
+        # -----------------------------------------------------
+        # STATE GUARDS
+        # -----------------------------------------------------
+
         self._loading_table = False
         self._updating_imported = False
         self._changing_type = False
         self._changing_material = False
+        self._changing_mode = False
         self._recalculating_imported = False
+        self._updating_module = False
+        self._building = False
 
         self.setWindowTitle(
             "Tabla de piezas"
@@ -392,6 +419,10 @@ class PartTableDialog(QtWidgets.QDialog):
         main_layout = QtWidgets.QVBoxLayout(
             self
         )
+
+        # -----------------------------------------------------
+        # MODULE
+        # -----------------------------------------------------
 
         module_group = QtWidgets.QGroupBox(
             "Datos del módulo"
@@ -477,6 +508,10 @@ class PartTableDialog(QtWidgets.QDialog):
                 column + 1
             )
 
+        # -----------------------------------------------------
+        # TOP TYPE
+        # -----------------------------------------------------
+
         self.topTypeCombo = QtWidgets.QComboBox()
 
         self.topTypeCombo.addItems(
@@ -486,6 +521,10 @@ class PartTableDialog(QtWidgets.QDialog):
                 "3 travesaños"
             ]
         )
+
+        # -----------------------------------------------------
+        # BACK TYPE
+        # -----------------------------------------------------
 
         self.backTypeCombo = QtWidgets.QComboBox()
 
@@ -535,6 +574,10 @@ class PartTableDialog(QtWidgets.QDialog):
             module_group
         )
 
+        # -----------------------------------------------------
+        # PART TABLE
+        # -----------------------------------------------------
+
         parts_group = QtWidgets.QGroupBox(
             "Tabla de piezas"
         )
@@ -581,6 +624,10 @@ class PartTableDialog(QtWidgets.QDialog):
         parts_layout.addWidget(
             self.table
         )
+
+        # -----------------------------------------------------
+        # PART BUTTONS
+        # -----------------------------------------------------
 
         buttons_layout = QtWidgets.QHBoxLayout()
 
@@ -630,6 +677,10 @@ class PartTableDialog(QtWidgets.QDialog):
             parts_group
         )
 
+        # -----------------------------------------------------
+        # BOTTOM
+        # -----------------------------------------------------
+
         bottom_layout = QtWidgets.QHBoxLayout()
 
         self.recalculateButton = QtWidgets.QPushButton(
@@ -661,6 +712,10 @@ class PartTableDialog(QtWidgets.QDialog):
         main_layout.addLayout(
             bottom_layout
         )
+
+        # -----------------------------------------------------
+        # CONNECTIONS
+        # -----------------------------------------------------
 
         self.addButton.clicked.connect(
             self.addCustomPart
@@ -851,125 +906,8 @@ class PartTableDialog(QtWidgets.QDialog):
             )
         )
 
-        if not self.isImported():
-
-            proxy = getattr(
-                self.module,
-                "Proxy",
-                None
-            )
-
-            if proxy is not None:
-
-                if hasattr(
-                    proxy,
-                    "getUserParts"
-                ):
-
-                    try:
-
-                        self.userParts = [
-                            dict(item)
-                            for item in proxy.getUserParts(
-                                self.module
-                            )
-                        ]
-
-                    except Exception:
-
-                        self.userParts = []
-
-                if hasattr(
-                    proxy,
-                    "getStructuralPlacements"
-                ):
-
-                    try:
-
-                        self.structuralPlacements = dict(
-                            proxy.getStructuralPlacements(
-                                self.module
-                            )
-                        )
-
-                    except Exception:
-
-                        self.structuralPlacements = {}
-
-    def updateModule(
-        self
-    ):
-
-        if self.module is None:
+        if self.isImported():
             return
-
-        try:
-
-            self.module.ModuleName = (
-                self.nameEdit.text().strip()
-                or
-                "Nuevo módulo"
-            )
-
-            self.module.Label = (
-                self.module.ModuleName
-            )
-
-        except Exception:
-            pass
-
-        for name, widget in (
-            ("Width", self.widthSpin),
-            ("Height", self.heightSpin),
-            ("Depth", self.depthSpin),
-            ("PanelThickness", self.thicknessSpin),
-            ("BackThickness", self.backThicknessSpin),
-            ("BackInset", self.backInsetSpin)
-        ):
-
-            if hasattr(
-                self.module,
-                name
-            ):
-
-                try:
-
-                    setattr(
-                        self.module,
-                        name,
-                        widget.value()
-                    )
-
-                except Exception:
-                    pass
-
-        if hasattr(
-            self.module,
-            "TopType"
-        ):
-
-            try:
-
-                self.module.TopType = (
-                    self.topTypeCombo.currentText()
-                )
-
-            except Exception:
-                pass
-
-        if hasattr(
-            self.module,
-            "BackType"
-        ):
-
-            try:
-
-                self.module.BackType = (
-                    self.backTypeCombo.currentText()
-                )
-
-            except Exception:
-                pass
 
         proxy = getattr(
             self.module,
@@ -982,33 +920,227 @@ class PartTableDialog(QtWidgets.QDialog):
 
         if hasattr(
             proxy,
-            "setUserParts"
+            "getUserParts"
         ):
 
             try:
 
-                proxy.setUserParts(
-                    self.module,
-                    self.userParts
+                self.userParts = [
+                    dict(item)
+                    for item in proxy.getUserParts(
+                        self.module
+                    )
+                    if isinstance(
+                        item,
+                        dict
+                    )
+                ]
+
+            except Exception:
+
+                self.userParts = []
+
+        if hasattr(
+            proxy,
+            "getStructuralPlacements"
+        ):
+
+            try:
+
+                self.structuralPlacements = dict(
+                    proxy.getStructuralPlacements(
+                        self.module
+                    )
                 )
 
             except Exception:
-                pass
 
-        if hasattr(
+                self.structuralPlacements = {}
+
+    # =========================================================
+    # UPDATE MODULE
+    # =========================================================
+
+    def updateModule(
+        self
+    ):
+
+        if self.module is None:
+            return
+
+        if self._updating_module:
+            return
+
+        self._updating_module = True
+
+        try:
+
+            name = (
+                self.nameEdit.text().strip()
+                or
+                "Nuevo módulo"
+            )
+
+            if hasattr(
+                self.module,
+                "ModuleName"
+            ):
+
+                try:
+                    self.module.ModuleName = name
+                except Exception:
+                    pass
+
+            if hasattr(
+                self.module,
+                "Label"
+            ):
+
+                try:
+                    self.module.Label = name
+                except Exception:
+                    pass
+
+            for name, widget in (
+                ("Width", self.widthSpin),
+                ("Height", self.heightSpin),
+                ("Depth", self.depthSpin),
+                ("PanelThickness", self.thicknessSpin),
+                ("BackThickness", self.backThicknessSpin),
+                ("BackInset", self.backInsetSpin)
+            ):
+
+                if not hasattr(
+                    self.module,
+                    name
+                ):
+                    continue
+
+                try:
+
+                    setattr(
+                        self.module,
+                        name,
+                        widget.value()
+                    )
+
+                except Exception:
+                    pass
+
+            if hasattr(
+                self.module,
+                "TopType"
+            ):
+
+                try:
+
+                    self.module.TopType = (
+                        self.topTypeCombo.currentText()
+                    )
+
+                except Exception:
+                    pass
+
+            if hasattr(
+                self.module,
+                "BackType"
+            ):
+
+                try:
+
+                    self.module.BackType = (
+                        self.backTypeCombo.currentText()
+                    )
+
+                except Exception:
+                    pass
+
+        finally:
+
+            self._updating_module = False
+
+    # =========================================================
+    # SAVE USER PART DATA
+    # =========================================================
+
+    def persistUserParts(
+        self
+    ):
+
+        if self.module is None:
+            return
+
+        proxy = getattr(
+            self.module,
+            "Proxy",
+            None
+        )
+
+        if proxy is None:
+            return
+
+        if not hasattr(
+            proxy,
+            "setUserParts"
+        ):
+
+            return
+
+        try:
+
+            proxy.setUserParts(
+                self.module,
+                [
+                    dict(item)
+                    for item in self.userParts
+                ]
+            )
+
+        except Exception:
+            pass
+
+    # =========================================================
+    # SAVE STRUCTURAL PLACEMENTS
+    # =========================================================
+
+    def persistStructuralPlacements(
+        self
+    ):
+
+        if self.module is None:
+            return
+
+        proxy = getattr(
+            self.module,
+            "Proxy",
+            None
+        )
+
+        if proxy is None:
+            return
+
+        if not hasattr(
             proxy,
             "setStructuralPlacements"
         ):
 
-            try:
+            return
 
-                proxy.setStructuralPlacements(
-                    self.module,
+        try:
+
+            proxy.setStructuralPlacements(
+                self.module,
+                dict(
                     self.structuralPlacements
                 )
+            )
 
-            except Exception:
-                pass
+        except Exception:
+            pass
+
+    # =========================================================
+    # STRUCTURE
+    # =========================================================
 
     def onStructureChanged(
         self,
@@ -1016,6 +1148,9 @@ class PartTableDialog(QtWidgets.QDialog):
     ):
 
         if self._loading_table:
+            return
+
+        if self._building:
             return
 
         if self.isImported():
@@ -1030,6 +1165,9 @@ class PartTableDialog(QtWidgets.QDialog):
     def loadImportedParts(
         self
     ):
+
+        if self._loading_table:
+            return
 
         if self.module is None:
 
@@ -1067,6 +1205,10 @@ class PartTableDialog(QtWidgets.QDialog):
 
         self.loadTable()
 
+    # =========================================================
+    # SAVED IMPORTED DATA
+    # =========================================================
+
     def getSavedImportedPartData(
         self,
         part
@@ -1084,89 +1226,91 @@ class PartTableDialog(QtWidgets.QDialog):
         if proxy is None:
             return {}
 
-        try:
+        if not hasattr(
+            proxy,
+            "getUserParts"
+        ):
 
-            if not hasattr(
-                proxy,
-                "getUserParts"
-            ):
-                return {}
+            return {}
+
+        try:
 
             saved = proxy.getUserParts(
                 self.module
             )
 
-            object_name = str(
-                getattr(
-                    part,
+        except Exception:
+
+            return {}
+
+        object_name = str(
+            getattr(
+                part,
+                "Name",
+                ""
+            )
+        )
+
+        label = str(
+            getattr(
+                part,
+                "Label",
+                ""
+            )
+        )
+
+        for item in saved:
+
+            if not isinstance(
+                item,
+                dict
+            ):
+                continue
+
+            stored_name = str(
+                item.get(
+                    "ObjectName",
+                    ""
+                )
+            )
+
+            if (
+                stored_name
+                and
+                stored_name == object_name
+            ):
+
+                return dict(item)
+
+            stored_code = str(
+                item.get(
+                    "Code",
+                    ""
+                )
+            )
+
+            if (
+                stored_code
+                and
+                stored_code == object_name
+            ):
+
+                return dict(item)
+
+            stored_label = str(
+                item.get(
                     "Name",
                     ""
                 )
             )
 
-            label = str(
-                getattr(
-                    part,
-                    "Label",
-                    ""
-                )
-            )
+            if (
+                stored_label
+                and
+                stored_label == label
+            ):
 
-            for item in saved:
-
-                if not isinstance(
-                    item,
-                    dict
-                ):
-                    continue
-
-                stored_name = str(
-                    item.get(
-                        "ObjectName",
-                        ""
-                    )
-                )
-
-                if (
-                    stored_name
-                    and
-                    stored_name == object_name
-                ):
-
-                    return dict(item)
-
-                stored_code = str(
-                    item.get(
-                        "Code",
-                        ""
-                    )
-                )
-
-                if (
-                    stored_code
-                    and
-                    stored_code == object_name
-                ):
-
-                    return dict(item)
-
-                stored_label = str(
-                    item.get(
-                        "Name",
-                        ""
-                    )
-                )
-
-                if (
-                    stored_label
-                    and
-                    stored_label == label
-                ):
-
-                    return dict(item)
-
-        except Exception:
-            pass
+                return dict(item)
 
         return {}
 
@@ -1178,9 +1322,16 @@ class PartTableDialog(QtWidgets.QDialog):
         self
     ):
 
+        if self._loading_table:
+            return
+
         self._loading_table = True
 
         try:
+
+            self.table.blockSignals(
+                True
+            )
 
             self.table.setRowCount(
                 0
@@ -1198,6 +1349,10 @@ class PartTableDialog(QtWidgets.QDialog):
                     part
                 )
 
+                # ---------------------------------------------
+                # LABEL
+                # ---------------------------------------------
+
                 self.setItem(
                     row,
                     0,
@@ -1206,6 +1361,10 @@ class PartTableDialog(QtWidgets.QDialog):
                         ""
                     )
                 )
+
+                # ---------------------------------------------
+                # TYPE
+                # ---------------------------------------------
 
                 type_combo = QtWidgets.QComboBox()
 
@@ -1271,16 +1430,15 @@ class PartTableDialog(QtWidgets.QDialog):
                     not structural
                 )
 
-                type_combo.currentIndexChanged.connect(
-                    lambda index, r=row:
-                    self.typeChanged(r)
-                )
-
                 self.table.setCellWidget(
                     row,
                     1,
                     type_combo
                 )
+
+                # ---------------------------------------------
+                # DIMENSIONS
+                # ---------------------------------------------
 
                 self.setItem(
                     row,
@@ -1326,6 +1484,10 @@ class PartTableDialog(QtWidgets.QDialog):
                     )
                 )
 
+                # ---------------------------------------------
+                # MATERIAL
+                # ---------------------------------------------
+
                 material_combo = (
                     self.createMaterialCombo(
                         data.get(
@@ -1335,20 +1497,15 @@ class PartTableDialog(QtWidgets.QDialog):
                     )
                 )
 
-                material_combo.setEnabled(
-                    True
-                )
-
-                material_combo.currentIndexChanged.connect(
-                    lambda index, r=row:
-                    self.materialChanged(r)
-                )
-
                 self.table.setCellWidget(
                     row,
                     6,
                     material_combo
                 )
+
+                # ---------------------------------------------
+                # MODE
+                # ---------------------------------------------
 
                 mode_combo = QtWidgets.QComboBox()
 
@@ -1395,20 +1552,38 @@ class PartTableDialog(QtWidgets.QDialog):
                     self.isBeam(part)
                 )
 
-                mode_combo.currentIndexChanged.connect(
-                    lambda index, r=row:
-                    self.modeChanged(r)
-                )
-
                 self.table.setCellWidget(
                     row,
                     7,
                     mode_combo
                 )
 
+                # ---------------------------------------------
+                # CONNECTIONS AFTER CREATION
+                # ---------------------------------------------
+
+                type_combo.currentIndexChanged.connect(
+                    lambda index, r=row:
+                    self.typeChanged(r)
+                )
+
+                material_combo.currentIndexChanged.connect(
+                    lambda index, r=row:
+                    self.materialChanged(r)
+                )
+
+                mode_combo.currentIndexChanged.connect(
+                    lambda index, r=row:
+                    self.modeChanged(r)
+                )
+
             self.resizeColumns()
 
         finally:
+
+            self.table.blockSignals(
+                False
+            )
 
             self._loading_table = False
 
@@ -1445,13 +1620,13 @@ class PartTableDialog(QtWidgets.QDialog):
             "PositionMode"
         ):
 
-            try:
+            if not hasattr(
+                part,
+                name
+            ):
+                continue
 
-                if not hasattr(
-                    part,
-                    name
-                ):
-                    continue
+            try:
 
                 value = getattr(
                     part,
@@ -1524,6 +1699,10 @@ class PartTableDialog(QtWidgets.QDialog):
             "MaterialCode",
             ""
         )
+
+        # -----------------------------------------------------
+        # IMPORTED SAVED DATA
+        # -----------------------------------------------------
 
         if self.isImported():
 
@@ -1607,26 +1786,9 @@ class PartTableDialog(QtWidgets.QDialog):
                         )
                     )
 
-                # IMPORTANT:
-                # The saved mode is used only when the
-                # real object does not already contain one.
-                #
-                # This prevents loadTable/recalculate from
-                # unexpectedly returning Automatic to Manual.
-
-                if (
-                    not hasattr(
-                        part,
-                        "PositionMode"
-                    )
-                    or
-                    not str(
-                        getattr(
-                            part,
-                            "PositionMode",
-                            ""
-                        )
-                    ).strip()
+                if not hasattr(
+                    part,
+                    "PositionMode"
                 ):
 
                     data["PositionMode"] = (
@@ -1635,6 +1797,10 @@ class PartTableDialog(QtWidgets.QDialog):
                             "Manual"
                         )
                     )
+
+        # -----------------------------------------------------
+        # REAL PLACEMENT
+        # -----------------------------------------------------
 
         try:
 
@@ -1700,17 +1866,11 @@ class PartTableDialog(QtWidgets.QDialog):
             return
 
         if self.isImported():
-
             return
 
         for row in range(
             self.table.rowCount()
         ):
-
-            if row >= len(
-                self.parts
-            ):
-                continue
 
             if row < 5:
                 continue
@@ -1806,18 +1966,18 @@ class PartTableDialog(QtWidgets.QDialog):
 
                 mode = mode_combo.currentData()
 
+                if mode not in (
+                    "Automatic",
+                    "Manual"
+                ):
+
+                    mode = "Manual"
+
                 part["PositionMode"] = mode
                 part["PositionType"] = mode
 
     # =========================================================
     # IMPORTED TABLE DATA
-    #
-    # IMPORTANT:
-    #
-    # This method updates metadata and manual values.
-    # Automatic Shelf/Divider dimensions are NOT written
-    # from the table here because they must be calculated
-    # from the current module dimensions.
     # =========================================================
 
     def updateImportedTableData(
@@ -1828,11 +1988,12 @@ class PartTableDialog(QtWidgets.QDialog):
         if self._updating_imported:
             return
 
+        if not self.isImported():
+            return
+
         self._updating_imported = True
 
         try:
-
-            saved_parts = []
 
             proxy = getattr(
                 self.module,
@@ -1840,31 +2001,32 @@ class PartTableDialog(QtWidgets.QDialog):
                 None
             )
 
-            if (
-                proxy is not None
-                and
-                hasattr(
-                    proxy,
-                    "getUserParts"
-                )
+            if proxy is None:
+                return
+
+            if not hasattr(
+                proxy,
+                "getUserParts"
             ):
 
-                try:
+                return
 
-                    saved_parts = [
-                        dict(item)
-                        for item in proxy.getUserParts(
-                            self.module
-                        )
-                        if isinstance(
-                            item,
-                            dict
-                        )
-                    ]
+            try:
 
-                except Exception:
+                saved_parts = [
+                    dict(item)
+                    for item in proxy.getUserParts(
+                        self.module
+                    )
+                    if isinstance(
+                        item,
+                        dict
+                    )
+                ]
 
-                    saved_parts = []
+            except Exception:
+
+                saved_parts = []
 
             for row, part in enumerate(
                 self.parts
@@ -1874,6 +2036,10 @@ class PartTableDialog(QtWidgets.QDialog):
                     continue
 
                 data = {}
+
+                # ---------------------------------------------
+                # NAME
+                # ---------------------------------------------
 
                 item = self.table.item(
                     row,
@@ -1885,6 +2051,10 @@ class PartTableDialog(QtWidgets.QDialog):
                     data["Label"] = (
                         item.text().strip()
                     )
+
+                # ---------------------------------------------
+                # TYPE
+                # ---------------------------------------------
 
                 type_combo = self.table.cellWidget(
                     row,
@@ -1917,6 +2087,10 @@ class PartTableDialog(QtWidgets.QDialog):
                         data["Type"] = "Estructural"
                         data["PartType"] = "Estructural"
 
+                # ---------------------------------------------
+                # MODE
+                # ---------------------------------------------
+
                 mode_combo = self.table.cellWidget(
                     row,
                     7
@@ -1936,13 +2110,9 @@ class PartTableDialog(QtWidgets.QDialog):
                     data["PositionMode"] = mode
                     data["PositionType"] = mode
 
-                # -------------------------------------------------
-                # DIMENSIONS
-                #
-                # For Automatic Shelf/Divider we deliberately
-                # do NOT copy the table dimensions back to the
-                # object before recalculation.
-                # -------------------------------------------------
+                # ---------------------------------------------
+                # AUTOMATIC?
+                # ---------------------------------------------
 
                 automatic = (
                     data.get(
@@ -1980,6 +2150,10 @@ class PartTableDialog(QtWidgets.QDialog):
                     and
                     automatic_role
                 )
+
+                # ---------------------------------------------
+                # DIMENSIONS
+                # ---------------------------------------------
 
                 if not skip_dimensions:
 
@@ -2037,6 +2211,10 @@ class PartTableDialog(QtWidgets.QDialog):
                         )
                     )
 
+                # ---------------------------------------------
+                # MATERIAL
+                # ---------------------------------------------
+
                 material_combo = self.table.cellWidget(
                     row,
                     6
@@ -2046,8 +2224,6 @@ class PartTableDialog(QtWidgets.QDialog):
 
                     material = (
                         material_combo.currentData()
-                        or
-                        material_combo.currentText()
                         or
                         ""
                     )
@@ -2060,12 +2236,9 @@ class PartTableDialog(QtWidgets.QDialog):
                         material
                     )
 
-                # -------------------------------------------------
-                # APPLY metadata.
-                #
-                # For automatic Shelf/Divider dimensions,
-                # dimensions are deliberately skipped here.
-                # -------------------------------------------------
+                # ---------------------------------------------
+                # APPLY TO REAL OBJECT
+                # ---------------------------------------------
 
                 apply_data = dict(
                     data
@@ -2093,6 +2266,10 @@ class PartTableDialog(QtWidgets.QDialog):
                     apply_data
                 )
 
+                # ---------------------------------------------
+                # FIND SAVED RECORD
+                # ---------------------------------------------
+
                 object_name = str(
                     getattr(
                         part,
@@ -2118,12 +2295,17 @@ class PartTableDialog(QtWidgets.QDialog):
                 if record is None:
 
                     record = {
-                        "ObjectName": object_name
+                        "ObjectName":
+                            object_name
                     }
 
                     saved_parts.append(
                         record
                     )
+
+                # ---------------------------------------------
+                # RECORD
+                # ---------------------------------------------
 
                 record["Name"] = data.get(
                     "Label",
@@ -2183,8 +2365,6 @@ class PartTableDialog(QtWidgets.QDialog):
                     ""
                 )
 
-                # Do NOT overwrite automatic dimensions
-                # with the old table values.
                 if not skip_dimensions:
 
                     record["Length"] = data.get(
@@ -2228,24 +2408,29 @@ class PartTableDialog(QtWidgets.QDialog):
                         )
                     )
 
-            if (
-                proxy is not None
-                and
-                hasattr(
-                    proxy,
-                    "setUserParts"
-                )
+            # -------------------------------------------------
+            # ONE SINGLE PERSIST OPERATION
+            # -------------------------------------------------
+
+            if hasattr(
+                proxy,
+                "setUserParts"
             ):
 
-                try:
+                proxy.setUserParts(
+                    self.module,
+                    saved_parts
+                )
 
-                    proxy.setUserParts(
-                        self.module,
-                        saved_parts
-                    )
+        except Exception as error:
 
-                except Exception:
-                    pass
+            FreeCAD.Console.PrintError(
+                "Error actualizando tabla importada: "
+                +
+                str(error)
+                +
+                "\n"
+            )
 
         finally:
 
@@ -2348,131 +2533,83 @@ class PartTableDialog(QtWidgets.QDialog):
 
         if role == "Shelf":
 
-            if hasattr(
+            self.setPartAxis(
                 part,
-                "LengthAxis"
-            ):
+                "LengthAxis",
+                "X"
+            )
 
-                try:
-                    part.LengthAxis = "X"
-                except Exception:
-                    pass
-
-            if hasattr(
+            self.setPartAxis(
                 part,
-                "WidthAxis"
-            ):
+                "WidthAxis",
+                "Y"
+            )
 
-                try:
-                    part.WidthAxis = "Y"
-                except Exception:
-                    pass
-
-            if hasattr(
+            self.setPartAxis(
                 part,
-                "ThicknessAxis"
-            ):
-
-                try:
-                    part.ThicknessAxis = "Z"
-                except Exception:
-                    pass
+                "ThicknessAxis",
+                "Z"
+            )
 
         elif role == "Divider":
 
-            if hasattr(
+            self.setPartAxis(
                 part,
-                "LengthAxis"
-            ):
+                "LengthAxis",
+                "Z"
+            )
 
-                try:
-                    part.LengthAxis = "Z"
-                except Exception:
-                    pass
-
-            if hasattr(
+            self.setPartAxis(
                 part,
-                "WidthAxis"
-            ):
+                "WidthAxis",
+                "Y"
+            )
 
-                try:
-                    part.WidthAxis = "Y"
-                except Exception:
-                    pass
-
-            if hasattr(
+            self.setPartAxis(
                 part,
-                "ThicknessAxis"
-            ):
-
-                try:
-                    part.ThicknessAxis = "X"
-                except Exception:
-                    pass
+                "ThicknessAxis",
+                "X"
+            )
 
         elif role == "Back":
 
-            if hasattr(
+            self.setPartAxis(
                 part,
-                "LengthAxis"
-            ):
+                "LengthAxis",
+                "Z"
+            )
 
-                try:
-                    part.LengthAxis = "Z"
-                except Exception:
-                    pass
-
-            if hasattr(
+            self.setPartAxis(
                 part,
-                "WidthAxis"
-            ):
+                "WidthAxis",
+                "X"
+            )
 
-                try:
-                    part.WidthAxis = "X"
-                except Exception:
-                    pass
-
-            if hasattr(
+            self.setPartAxis(
                 part,
-                "ThicknessAxis"
-            ):
-
-                try:
-                    part.ThicknessAxis = "Y"
-                except Exception:
-                    pass
+                "ThicknessAxis",
+                "Y"
+            )
 
         else:
 
-            if hasattr(
+            self.setPartAxis(
                 part,
-                "LengthAxis"
-            ):
+                "LengthAxis",
+                "X"
+            )
 
-                try:
-                    part.LengthAxis = "X"
-                except Exception:
-                    pass
-
-            if hasattr(
+            self.setPartAxis(
                 part,
-                "WidthAxis"
-            ):
+                "WidthAxis",
+                "Y"
+            )
 
-                try:
-                    part.WidthAxis = "Y"
-                except Exception:
-                    pass
-
-            if hasattr(
+            self.setPartAxis(
                 part,
-                "ThicknessAxis"
-            ):
-
-                try:
-                    part.ThicknessAxis = "Z"
-                except Exception:
-                    pass
+                "ThicknessAxis",
+                "Z"
+            )
 
         try:
 
@@ -2489,112 +2626,112 @@ class PartTableDialog(QtWidgets.QDialog):
         self
     ):
 
-        if self.isImported():
+        if self._building:
+            return
+
+        self._building = True
+
+        try:
 
             # -------------------------------------------------
-            # 1. Read module values from UI.
+            # IMPORTED
             # -------------------------------------------------
+
+            if self.isImported():
+
+                self.updateModule()
+
+                self.updateImportedTableData(
+                    preserveAutomaticDimensions=True
+                )
+
+                self.recalculateImported()
+
+                self.loadImportedParts()
+
+                return
+
+            # -------------------------------------------------
+            # PARAMETRIC
+            # -------------------------------------------------
+
+            if self.module is None:
+                return
+
+            self.updateTableData()
 
             self.updateModule()
 
-            # -------------------------------------------------
-            # 2. IMPORTANT:
-            #
-            # Capture current table TYPE + MODE + MATERIAL,
-            # but do not copy old automatic dimensions.
-            # -------------------------------------------------
+            self.recalculateAutomaticUserPartPositions()
 
-            self.updateImportedTableData(
-                preserveAutomaticDimensions=True
-            )
+            self.updateModule()
 
-            # -------------------------------------------------
-            # 3. Recalculate imported automatic parts.
-            # -------------------------------------------------
+            try:
 
-            self.recalculateImported()
-
-            # -------------------------------------------------
-            # 4. Refresh objects/table using REAL values.
-            # -------------------------------------------------
-
-            self.loadImportedParts()
-
-            return
-
-        if self.module is None:
-            return
-
-        self.updateTableData()
-
-        self.updateModule()
-
-        self.recalculateAutomaticUserPartPositions()
-
-        self.updateModule()
-
-        try:
-
-            from core.builders.module_builder import (
-                ModuleBuilder
-            )
-
-        except Exception as error:
-
-            FreeCAD.Console.PrintError(
-                "Error importando ModuleBuilder: "
-                +
-                str(error)
-                +
-                "\n"
-            )
-
-            return
-
-        try:
-
-            ModuleBuilder.build(
-                self.module,
-                self.userParts
-            )
-
-        except Exception as error:
-
-            FreeCAD.Console.PrintError(
-                "Error construyendo módulo: "
-                +
-                str(error)
-                +
-                "\n"
-            )
-
-            return
-
-        proxy = getattr(
-            self.module,
-            "Proxy",
-            None
-        )
-
-        if proxy is None:
-
-            self.parts = []
-
-            return
-
-        try:
-
-            self.parts = list(
-                proxy.getParts(
-                    self.module
+                from core.builders.module_builder import (
+                    ModuleBuilder
                 )
+
+            except Exception as error:
+
+                FreeCAD.Console.PrintError(
+                    "Error importando ModuleBuilder: "
+                    +
+                    str(error)
+                    +
+                    "\n"
+                )
+
+                return
+
+            try:
+
+                ModuleBuilder.build(
+                    self.module,
+                    self.userParts
+                )
+
+            except Exception as error:
+
+                FreeCAD.Console.PrintError(
+                    "Error construyendo módulo: "
+                    +
+                    str(error)
+                    +
+                    "\n"
+                )
+
+                return
+
+            proxy = getattr(
+                self.module,
+                "Proxy",
+                None
             )
 
-        except Exception:
+            if proxy is None:
 
-            self.parts = []
+                self.parts = []
 
-        self.loadTable()
+                return
+
+            try:
+
+                self.parts = list(
+                    proxy.getParts(
+                        self.module
+                    )
+                )
+
+            except Exception:
+
+                self.parts = []
+
+            self.loadTable()
+
+        finally:
+
+            self._building = False
 
     # =========================================================
     # AUTOMATIC PARAMETRIC USER POSITIONS
@@ -2623,6 +2760,10 @@ class PartTableDialog(QtWidgets.QDialog):
             self.depthSpin.value()
         )
 
+        # -----------------------------------------------------
+        # SHELVES
+        # -----------------------------------------------------
+
         shelves = [
             part
             for part in self.userParts
@@ -2635,16 +2776,16 @@ class PartTableDialog(QtWidgets.QDialog):
                 )
                 ==
                 "Shelf"
-            )
-            and
-            str(
-                part.get(
-                    "PositionMode",
-                    "Automatic"
+                and
+                str(
+                    part.get(
+                        "PositionMode",
+                        "Automatic"
+                    )
                 )
+                ==
+                "Automatic"
             )
-            ==
-            "Automatic"
         ]
 
         if shelves:
@@ -2704,6 +2845,10 @@ class PartTableDialog(QtWidgets.QDialog):
                 part["PositionType"] = "Automatic"
                 part["PositionMode"] = "Automatic"
 
+        # -----------------------------------------------------
+        # DIVIDERS
+        # -----------------------------------------------------
+
         dividers = [
             part
             for part in self.userParts
@@ -2716,16 +2861,16 @@ class PartTableDialog(QtWidgets.QDialog):
                 )
                 ==
                 "Divider"
-            )
-            and
-            str(
-                part.get(
-                    "PositionMode",
-                    "Automatic"
+                and
+                str(
+                    part.get(
+                        "PositionMode",
+                        "Automatic"
+                    )
                 )
+                ==
+                "Automatic"
             )
-            ==
-            "Automatic"
         ]
 
         if dividers:
@@ -2800,7 +2945,17 @@ class PartTableDialog(QtWidgets.QDialog):
         if self._changing_type:
             return
 
-        if self.isImported():
+        if row < 0:
+            return
+
+        if row >= len(
+            self.parts
+        ):
+            return
+
+        self._changing_type = True
+
+        try:
 
             combo = self.table.cellWidget(
                 row,
@@ -2812,33 +2967,19 @@ class PartTableDialog(QtWidgets.QDialog):
 
             role = combo.currentData()
 
-            if row >= len(
-                self.parts
-            ):
-                return
+            # -------------------------------------------------
+            # IMPORTED
+            # -------------------------------------------------
 
-            part = self.parts[
-                row
-            ]
+            if self.isImported():
 
-            self._changing_type = True
-
-            try:
+                part = self.parts[
+                    row
+                ]
 
                 mode_combo = self.table.cellWidget(
                     row,
                     7
-                )
-
-                current_mode = (
-                    mode_combo.currentData()
-                    if mode_combo is not None
-                    else
-                    getattr(
-                        part,
-                        "PositionMode",
-                        "Manual"
-                    )
                 )
 
                 if role in (
@@ -2846,10 +2987,7 @@ class PartTableDialog(QtWidgets.QDialog):
                     "Divider"
                 ):
 
-                    # New Shelf/Divider always starts
-                    # in Automatic mode.
-
-                    current_mode = "Automatic"
+                    mode = "Automatic"
 
                     if mode_combo is not None:
 
@@ -2863,31 +3001,38 @@ class PartTableDialog(QtWidgets.QDialog):
                                 index
                             )
 
+                else:
+
+                    mode = (
+                        mode_combo.currentData()
+                        if mode_combo is not None
+                        else
+                        "Manual"
+                    )
+
+                part_type = (
+                    "Balda"
+                    if role == "Shelf"
+                    else
+                    "Separador"
+                    if role == "Divider"
+                    else
+                    "Personalizada"
+                    if role == "Custom"
+                    else
+                    "Estructural"
+                )
+
                 self.applyImportedPartData(
                     part,
                     {
                         "Role": role,
-                        "PartType":
-                            (
-                                "Balda"
-                                if role == "Shelf"
-                                else
-                                "Separador"
-                                if role == "Divider"
-                                else
-                                "Personalizada"
-                                if role == "Custom"
-                                else
-                                "Estructural"
-                            ),
-                        "PositionMode":
-                            current_mode,
-                        "PositionType":
-                            current_mode
+                        "PartType": part_type,
+                        "PositionMode": mode,
+                        "PositionType": mode
                     }
                 )
 
-                # Recalculate using the NEW role.
                 self.updateModule()
 
                 self.updateImportedTableData(
@@ -2898,42 +3043,31 @@ class PartTableDialog(QtWidgets.QDialog):
 
                 self.loadImportedParts()
 
-            finally:
+                if row < self.table.rowCount():
 
-                self._changing_type = False
+                    self.table.selectRow(
+                        row
+                    )
 
-            return
+                return
 
-        if row < 5:
-            return
+            # -------------------------------------------------
+            # PARAMETRIC
+            # -------------------------------------------------
 
-        userIndex = row - 5
+            if row < 5:
+                return
 
-        if userIndex < 0:
-            return
+            userIndex = row - 5
 
-        if userIndex >= len(
-            self.userParts
-        ):
-            return
+            if userIndex >= len(
+                self.userParts
+            ):
+                return
 
-        combo = self.table.cellWidget(
-            row,
-            1
-        )
-
-        if combo is None:
-            return
-
-        role = combo.currentData()
-
-        part = self.userParts[
-            userIndex
-        ]
-
-        self._changing_type = True
-
-        try:
+            part = self.userParts[
+                userIndex
+            ]
 
             part["Role"] = role
 
@@ -2975,6 +3109,12 @@ class PartTableDialog(QtWidgets.QDialog):
         if self._loading_table:
             return
 
+        if self._changing_mode:
+            return
+
+        if row < 0:
+            return
+
         if row >= len(
             self.parts
         ):
@@ -2997,133 +3137,104 @@ class PartTableDialog(QtWidgets.QDialog):
 
             mode = "Manual"
 
-        # -----------------------------------------------------
-        # IMPORTED
-        # -----------------------------------------------------
+        self._changing_mode = True
 
-        if self.isImported():
+        try:
 
-            part = self.parts[
-                row
+            # -------------------------------------------------
+            # IMPORTED
+            # -------------------------------------------------
+
+            if self.isImported():
+
+                part = self.parts[
+                    row
+                ]
+
+                role = str(
+                    getattr(
+                        part,
+                        "Role",
+                        "Custom"
+                    )
+                )
+
+                self.setPartMode(
+                    part,
+                    mode
+                )
+
+                if (
+                    mode == "Automatic"
+                    and
+                    role in (
+                        "Shelf",
+                        "Divider"
+                    )
+                ):
+
+                    self.updateModule()
+
+                    self.recalculateImported()
+
+                else:
+
+                    try:
+
+                        part.touch()
+
+                    except Exception:
+                        pass
+
+                    try:
+
+                        if part.Document is not None:
+
+                            part.Document.recompute()
+
+                    except Exception:
+                        pass
+
+                self.updateImportedTableData(
+                    preserveAutomaticDimensions=True
+                )
+
+                self.loadImportedParts()
+
+                if row < self.table.rowCount():
+
+                    self.table.selectRow(
+                        row
+                    )
+
+                return
+
+            # -------------------------------------------------
+            # PARAMETRIC
+            # -------------------------------------------------
+
+            if row < 5:
+                return
+
+            userIndex = row - 5
+
+            if userIndex >= len(
+                self.userParts
+            ):
+                return
+
+            part = self.userParts[
+                userIndex
             ]
 
-            role = str(
-                getattr(
-                    part,
-                    "Role",
-                    "Custom"
-                )
-            )
+            part["PositionMode"] = mode
+            part["PositionType"] = mode
 
-            # -------------------------------------------------
-            # IMPORTANT:
-            #
-            # Write the mode DIRECTLY to the real object.
-            # Do not call updateImportedTableData first,
-            # because that was the source of the Automatic ->
-            # Manual overwrite.
-            # -------------------------------------------------
+            self.calculateParts()
 
-            try:
+        finally:
 
-                if hasattr(
-                    part,
-                    "PositionMode"
-                ):
-
-                    part.PositionMode = mode
-
-            except Exception:
-                pass
-
-            try:
-
-                if hasattr(
-                    part,
-                    "PositionType"
-                ):
-
-                    part.PositionType = mode
-
-            except Exception:
-                pass
-
-            # -------------------------------------------------
-            # If automatic, immediately calculate.
-            # -------------------------------------------------
-
-            if (
-                mode == "Automatic"
-                and
-                role in (
-                    "Shelf",
-                    "Divider"
-                )
-            ):
-
-                self.updateModule()
-
-                self.recalculateImported()
-
-            else:
-
-                try:
-
-                    part.touch()
-
-                    if part.Document is not None:
-
-                        part.Document.recompute()
-
-                except Exception:
-                    pass
-
-            # -------------------------------------------------
-            # Save metadata WITHOUT reading old dimensions
-            # over the new calculated values.
-            # -------------------------------------------------
-
-            self.updateImportedTableData(
-                preserveAutomaticDimensions=True
-            )
-
-            self.loadImportedParts()
-
-            # Restore selected row.
-
-            if row < self.table.rowCount():
-
-                self.table.selectRow(
-                    row
-                )
-
-            return
-
-        # -----------------------------------------------------
-        # PARAMETRIC
-        # -----------------------------------------------------
-
-        if row < 5:
-            return
-
-        userIndex = row - 5
-
-        if userIndex < 0:
-            return
-
-        if userIndex >= len(
-            self.userParts
-        ):
-            return
-
-        part = self.userParts[
-            userIndex
-        ]
-
-        part["PositionMode"] = mode
-        part["PositionType"] = mode
-
-        self.calculateParts()
+            self._changing_mode = False
 
     # =========================================================
     # MATERIAL
@@ -3140,6 +3251,9 @@ class PartTableDialog(QtWidgets.QDialog):
         if self._changing_material:
             return
 
+        if row < 0:
+            return
+
         combo = self.table.cellWidget(
             row,
             6
@@ -3154,35 +3268,40 @@ class PartTableDialog(QtWidgets.QDialog):
             ""
         )
 
-        if not self.isImported():
+        self._changing_material = True
 
-            if row < 5:
+        try:
+
+            if not self.isImported():
+
+                if row < 5:
+                    return
+
+                userIndex = row - 5
+
+                if userIndex >= len(
+                    self.userParts
+                ):
+                    return
+
+                self.userParts[
+                    userIndex
+                ]["MaterialCode"] = str(
+                    material
+                )
+
                 return
 
-            userIndex = row - 5
-
-            if userIndex < 0:
-                return
-
-            if userIndex >= len(
-                self.userParts
-            ):
-                return
-
-            self.userParts[
-                userIndex
-            ]["MaterialCode"] = str(
-                material
+            self.updateImportedTableData(
+                preserveAutomaticDimensions=True
             )
 
-            return
+        finally:
 
-        self.updateImportedTableData(
-            preserveAutomaticDimensions=True
-        )
+            self._changing_material = False
 
     # =========================================================
-    # MATERIALS
+    # MATERIAL COMBO
     # =========================================================
 
     def createMaterialCombo(
@@ -3372,7 +3491,7 @@ class PartTableDialog(QtWidgets.QDialog):
         return ""
 
     # =========================================================
-    # ADD CUSTOM / IMPORTED
+    # ADD CUSTOM
     # =========================================================
 
     def addCustomPart(
@@ -3480,6 +3599,10 @@ class PartTableDialog(QtWidgets.QDialog):
             self.table.selectRow(
                 self.table.rowCount() - 1
             )
+
+    # =========================================================
+    # ADD IMPORTED
+    # =========================================================
 
     def addImportedPart(
         self
@@ -3739,7 +3862,9 @@ class PartTableDialog(QtWidgets.QDialog):
         if self.isImported():
 
             self.duplicateImportedPart(
-                self.parts[row]
+                self.parts[
+                    row
+                ]
             )
 
             return
@@ -3810,6 +3935,10 @@ class PartTableDialog(QtWidgets.QDialog):
         )
 
         self.calculateParts()
+
+    # =========================================================
+    # DUPLICATE IMPORTED
+    # =========================================================
 
     def duplicateImportedPart(
         self,
@@ -3969,6 +4098,10 @@ class PartTableDialog(QtWidgets.QDialog):
 
         self.loadImportedParts()
 
+    # =========================================================
+    # NEXT IMPORTED CODE
+    # =========================================================
+
     def nextImportedCode(
         self
     ):
@@ -4029,6 +4162,10 @@ class PartTableDialog(QtWidgets.QDialog):
             row
         ]
 
+        # -----------------------------------------------------
+        # IMPORTED
+        # -----------------------------------------------------
+
         if self.isImported():
 
             data = self.partToData(
@@ -4057,6 +4194,10 @@ class PartTableDialog(QtWidgets.QDialog):
             )
 
             return
+
+        # -----------------------------------------------------
+        # PARAMETRIC
+        # -----------------------------------------------------
 
         code = str(
             getattr(
@@ -4154,6 +4295,8 @@ class PartTableDialog(QtWidgets.QDialog):
             self.structuralPlacements[
                 code
             ] = placement_data
+
+            self.persistStructuralPlacements()
 
         else:
 
@@ -4298,31 +4441,17 @@ class PartTableDialog(QtWidgets.QDialog):
                     except Exception:
                         pass
 
-            if hasattr(
+            self.setPartMode(
                 part,
-                "PositionMode"
-            ):
+                "Manual"
+            )
 
-                try:
+            try:
 
-                    part.PositionMode = "Manual"
+                part.touch()
 
-                except Exception:
-                    pass
-
-            if hasattr(
-                part,
-                "PositionType"
-            ):
-
-                try:
-
-                    part.PositionType = "Manual"
-
-                except Exception:
-                    pass
-
-            part.touch()
+            except Exception:
+                pass
 
             if part.Document is not None:
 
@@ -4376,7 +4505,7 @@ class PartTableDialog(QtWidgets.QDialog):
             thickness = self.thicknessSpin.value()
 
             # -------------------------------------------------
-            # First collect all automatic shelves/dividers.
+            # SHELVES
             # -------------------------------------------------
 
             shelves = [
@@ -4404,36 +4533,6 @@ class PartTableDialog(QtWidgets.QDialog):
                     "Automatic"
                 )
             ]
-
-            dividers = [
-                part
-                for part in self.parts
-                if (
-                    str(
-                        getattr(
-                            part,
-                            "Role",
-                            ""
-                        )
-                    )
-                    ==
-                    "Divider"
-                    and
-                    str(
-                        getattr(
-                            part,
-                            "PositionMode",
-                            "Manual"
-                        )
-                    )
-                    ==
-                    "Automatic"
-                )
-            ]
-
-            # -------------------------------------------------
-            # SHELF DIMENSIONS + POSITION
-            # -------------------------------------------------
 
             if shelves:
 
@@ -4481,10 +4580,6 @@ class PartTableDialog(QtWidgets.QDialog):
                         thickness * index
                     )
 
-                    # -------------------------------------------------
-                    # REAL DIMENSIONS
-                    # -------------------------------------------------
-
                     self.setPartDimension(
                         part,
                         "Length",
@@ -4502,10 +4597,6 @@ class PartTableDialog(QtWidgets.QDialog):
                         "Thickness",
                         thickness
                     )
-
-                    # -------------------------------------------------
-                    # AXES
-                    # -------------------------------------------------
 
                     self.setPartAxis(
                         part,
@@ -4525,24 +4616,11 @@ class PartTableDialog(QtWidgets.QDialog):
                         "Z"
                     )
 
-                    # -------------------------------------------------
-                    # POSITION
-                    #
-                    # X = panel thickness
-                    # Y = untouched
-                    # Z = calculated
-                    # -------------------------------------------------
-
                     self.setRealPosition(
                         part,
                         x=thickness,
                         z=z
                     )
-
-                    # -------------------------------------------------
-                    # IMPORTANT:
-                    # explicitly preserve Automatic mode.
-                    # -------------------------------------------------
 
                     self.setPartMode(
                         part,
@@ -4550,8 +4628,34 @@ class PartTableDialog(QtWidgets.QDialog):
                     )
 
             # -------------------------------------------------
-            # DIVIDER DIMENSIONS + POSITION
+            # DIVIDERS
             # -------------------------------------------------
+
+            dividers = [
+                part
+                for part in self.parts
+                if (
+                    str(
+                        getattr(
+                            part,
+                            "Role",
+                            ""
+                        )
+                    )
+                    ==
+                    "Divider"
+                    and
+                    str(
+                        getattr(
+                            part,
+                            "PositionMode",
+                            "Manual"
+                        )
+                    )
+                    ==
+                    "Automatic"
+                )
+            ]
 
             if dividers:
 
@@ -4599,10 +4703,6 @@ class PartTableDialog(QtWidgets.QDialog):
                         thickness * index
                     )
 
-                    # -------------------------------------------------
-                    # REAL DIMENSIONS
-                    # -------------------------------------------------
-
                     self.setPartDimension(
                         part,
                         "Length",
@@ -4620,10 +4720,6 @@ class PartTableDialog(QtWidgets.QDialog):
                         "Thickness",
                         thickness
                     )
-
-                    # -------------------------------------------------
-                    # AXES
-                    # -------------------------------------------------
 
                     self.setPartAxis(
                         part,
@@ -4643,14 +4739,6 @@ class PartTableDialog(QtWidgets.QDialog):
                         "X"
                     )
 
-                    # -------------------------------------------------
-                    # POSITION
-                    #
-                    # X = calculated
-                    # Y = untouched
-                    # Z = panel thickness
-                    # -------------------------------------------------
-
                     self.setRealPosition(
                         part,
                         x=x,
@@ -4668,14 +4756,12 @@ class PartTableDialog(QtWidgets.QDialog):
 
             try:
 
-                self.module.Document.recompute()
+                if self.module.Document is not None:
+
+                    self.module.Document.recompute()
 
             except Exception:
                 pass
-
-            # -------------------------------------------------
-            # Persist calculated dimensions and modes.
-            # -------------------------------------------------
 
             self.persistImportedCalculatedParts()
 
@@ -4700,18 +4786,19 @@ class PartTableDialog(QtWidgets.QDialog):
             None
         )
 
-        if (
-            proxy is None
-            or
-            not hasattr(
-                proxy,
-                "getUserParts"
-            )
-            or
-            not hasattr(
-                proxy,
-                "setUserParts"
-            )
+        if proxy is None:
+            return
+
+        if not hasattr(
+            proxy,
+            "getUserParts"
+        ):
+
+            return
+
+        if not hasattr(
+            proxy,
+            "setUserParts"
         ):
 
             return
@@ -4732,6 +4819,8 @@ class PartTableDialog(QtWidgets.QDialog):
         except Exception:
 
             saved_parts = []
+
+        changed = False
 
         for part in self.parts:
 
@@ -4786,7 +4875,8 @@ class PartTableDialog(QtWidgets.QDialog):
             if record is None:
 
                 record = {
-                    "ObjectName": object_name
+                    "ObjectName":
+                        object_name
                 }
 
                 saved_parts.append(
@@ -4801,17 +4891,22 @@ class PartTableDialog(QtWidgets.QDialog):
                 )
             )
 
-            if role == "Shelf":
-
-                record["Type"] = "Balda"
-
-            elif role == "Divider":
-
-                record["Type"] = "Separador"
+            record["Type"] = (
+                "Balda"
+                if role == "Shelf"
+                else
+                "Separador"
+            )
 
             record["Role"] = role
-            record["PositionMode"] = "Automatic"
-            record["PositionType"] = "Automatic"
+
+            record["PositionMode"] = (
+                "Automatic"
+            )
+
+            record["PositionType"] = (
+                "Automatic"
+            )
 
             record["Length"] = self.value(
                 getattr(
@@ -4868,6 +4963,11 @@ class PartTableDialog(QtWidgets.QDialog):
                     part.Placement.Base.z
                 )
             )
+
+            changed = True
+
+        if not changed:
+            return
 
         try:
 
@@ -4989,7 +5089,9 @@ class PartTableDialog(QtWidgets.QDialog):
                     "Role",
                     ""
                 )
-            ) == "Shelf"
+            )
+            ==
+            "Shelf"
             and
             str(
                 getattr(
@@ -4997,10 +5099,15 @@ class PartTableDialog(QtWidgets.QDialog):
                     "PositionMode",
                     "Manual"
                 )
-            ) == "Automatic"
+            )
+            ==
+            "Automatic"
         ]
 
         if not shelves:
+            return 0
+
+        if part not in shelves:
             return 0
 
         index = shelves.index(
@@ -5053,7 +5160,9 @@ class PartTableDialog(QtWidgets.QDialog):
                     "Role",
                     ""
                 )
-            ) == "Divider"
+            )
+            ==
+            "Divider"
             and
             str(
                 getattr(
@@ -5061,10 +5170,15 @@ class PartTableDialog(QtWidgets.QDialog):
                     "PositionMode",
                     "Manual"
                 )
-            ) == "Automatic"
+            )
+            ==
+            "Automatic"
         ]
 
         if not dividers:
+            return 0
+
+        if part not in dividers:
             return 0
 
         index = dividers.index(
@@ -5123,13 +5237,6 @@ class PartTableDialog(QtWidgets.QDialog):
                 placement.Base.y,
                 placement.Base.z
             )
-
-            # -------------------------------------------------
-            # Only requested axes are changed.
-            #
-            # Y is deliberately preserved.
-            # Rotation is deliberately preserved.
-            # -------------------------------------------------
 
             if x is not None:
 
@@ -5196,9 +5303,6 @@ class PartTableDialog(QtWidgets.QDialog):
                     except Exception:
                         pass
 
-            # Keep PositionY synchronized with the real
-            # placement, but NEVER modify it.
-
             if hasattr(
                 part,
                 "PositionY"
@@ -5213,7 +5317,12 @@ class PartTableDialog(QtWidgets.QDialog):
                 except Exception:
                     pass
 
-            part.touch()
+            try:
+
+                part.touch()
+
+            except Exception:
+                pass
 
         except Exception as error:
 
@@ -5226,7 +5335,7 @@ class PartTableDialog(QtWidgets.QDialog):
             )
 
     # =========================================================
-    # STRUCTURAL / BEAM
+    # STRUCTURAL
     # =========================================================
 
     def isStructuralPart(
@@ -5293,10 +5402,11 @@ class PartTableDialog(QtWidgets.QDialog):
 
             if self.isImported():
 
-                self.updateModule()
+                # ---------------------------------------------
+                # SINGLE FINAL SYNC
+                # ---------------------------------------------
 
-                # Capture mode/type/material without
-                # destroying automatic dimensions.
+                self.updateModule()
 
                 self.updateImportedTableData(
                     preserveAutomaticDimensions=True
@@ -5306,9 +5416,13 @@ class PartTableDialog(QtWidgets.QDialog):
 
                 self.updateModule()
 
+                self.persistImportedCalculatedParts()
+
                 try:
 
-                    self.module.Document.recompute()
+                    if self.module.Document is not None:
+
+                        self.module.Document.recompute()
 
                 except Exception:
                     pass
@@ -5316,6 +5430,10 @@ class PartTableDialog(QtWidgets.QDialog):
                 self.accept()
 
                 return
+
+            # -------------------------------------------------
+            # PARAMETRIC
+            # -------------------------------------------------
 
             self.updateTableData()
 
@@ -5326,6 +5444,17 @@ class PartTableDialog(QtWidgets.QDialog):
             self.updateTableData()
 
             self.updateModule()
+
+            self.persistUserParts()
+            self.persistStructuralPlacements()
+
+            try:
+
+                if self.module is not None:
+                    self.module.Document.recompute()
+
+            except Exception:
+                pass
 
             self.accept()
 

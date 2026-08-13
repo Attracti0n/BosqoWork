@@ -54,5 +54,33 @@
         "GrainDirection": "Sin veta",
         "Price": 0.0,
         "Currency": "EUR"
+    },
+    {
+    "Code": "CHAPA_BLANCA",
+    "MaterialName": "Chapa blanca",
+    "MaterialType": "Chapa",
+    "Category": "",
+    "Thickness": 0.6,
+    "SheetLength": 0.0,
+    "SheetWidth": 0.0,
+    "Supplier": "Gabarro",
+    "Finish": "",
+    "GrainDirection": "Sin veta",
+    "Price": 5.0,
+    "Currency": "EUR"
+    }, 
+    {
+    "Code": "CANTO_BLANCO",
+    "MaterialName": "Canto blanco",
+    "MaterialType": "Canto",
+    "Category": "",
+    "Thickness": 1.0,
+    "SheetLength": 0.0,
+    "SheetWidth": 23.0,
+    "Supplier": "Gabarro",
+    "Finish": "",
+    "GrainDirection": "Sin veta",
+    "Price": 0.50,
+    "Currency": "EUR"
     }
 ]

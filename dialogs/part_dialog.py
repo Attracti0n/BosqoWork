@@ -26,9 +26,9 @@ class PartDialog(QtWidgets.QDialog):
         self.createUI()
 
 
-    #
-    # Create UI
-    #
+    # =========================================================
+    # CREATE UI
+    # =========================================================
 
     def createUI(
         self
@@ -37,9 +37,9 @@ class PartDialog(QtWidgets.QDialog):
         layout = QtWidgets.QFormLayout()
 
 
-        #
-        # Name
-        #
+        # =====================================================
+        # NAME
+        # =====================================================
 
         self.nameEdit = QtWidgets.QLineEdit()
 
@@ -53,9 +53,9 @@ class PartDialog(QtWidgets.QDialog):
         )
 
 
-        #
-        # Dimensions
-        #
+        # =====================================================
+        # DIMENSIONS
+        # =====================================================
 
         self.lengthSpin = QtWidgets.QDoubleSpinBox()
 
@@ -120,11 +120,13 @@ class PartDialog(QtWidgets.QDialog):
         )
 
 
-        #
-        # Material
-        #
+        # =====================================================
+        # MATERIAL
+        # =====================================================
 
-        self.materialCombo = QtWidgets.QComboBox()
+        self.materialCombo = (
+            QtWidgets.QComboBox()
+        )
 
         self.loadMaterials()
 
@@ -134,18 +136,18 @@ class PartDialog(QtWidgets.QDialog):
         )
 
 
-        #
-        # Material change
-        #
+        # =====================================================
+        # MATERIAL CHANGE
+        # =====================================================
 
         self.materialCombo.currentIndexChanged.connect(
             self.onMaterialChanged
         )
 
 
-        #
-        # Buttons
-        #
+        # =====================================================
+        # BUTTONS
+        # =====================================================
 
         buttons = QtWidgets.QDialogButtonBox()
 
@@ -177,9 +179,9 @@ class PartDialog(QtWidgets.QDialog):
         )
 
 
-    #
-    # Load materials
-    #
+    # =========================================================
+    # LOAD MATERIALS
+    # =========================================================
 
     def loadMaterials(
         self
@@ -188,9 +190,9 @@ class PartDialog(QtWidgets.QDialog):
         self.materialCombo.clear()
 
 
-        #
-        # No material
-        #
+        # =====================================================
+        # NO MATERIAL
+        # =====================================================
 
         self.materialCombo.addItem(
             "— Sin material —",
@@ -198,16 +200,24 @@ class PartDialog(QtWidgets.QDialog):
         )
 
 
-        #
-        # Get materials from persistent library
-        #
+        # =====================================================
+        # GET MATERIALS
+        # =====================================================
 
-        materials = MaterialLibrary.all()
+        try:
+
+            materials = (
+                MaterialLibrary.all()
+            )
+
+        except Exception:
+
+            materials = []
 
 
-        #
-        # Materials from JSON are dictionaries
-        #
+        # =====================================================
+        # ONLY BOARDS
+        # =====================================================
 
         for material in materials:
 
@@ -219,9 +229,31 @@ class PartDialog(QtWidgets.QDialog):
                 continue
 
 
+            # -------------------------------------------------
+            # MATERIAL TYPE
+            # -------------------------------------------------
+
+            materialType = str(
+                material.get(
+                    "MaterialType",
+                    ""
+                )
+            ).strip()
+
+
             #
-            # Code
+            # Only Tablero is a base
+            # material for a new part.
             #
+
+            if materialType.lower() != "tablero":
+
+                continue
+
+
+            # -------------------------------------------------
+            # CODE
+            # -------------------------------------------------
 
             code = str(
                 material.get(
@@ -236,9 +268,9 @@ class PartDialog(QtWidgets.QDialog):
                 continue
 
 
-            #
-            # Name
-            #
+            # -------------------------------------------------
+            # NAME
+            # -------------------------------------------------
 
             name = str(
                 material.get(
@@ -248,16 +280,18 @@ class PartDialog(QtWidgets.QDialog):
             ).strip()
 
 
-            #
-            # Display text
-            #
+            # -------------------------------------------------
+            # DISPLAY TEXT
+            # -------------------------------------------------
 
             if name:
 
                 text = (
                     code
-                    + " — "
-                    + name
+                    +
+                    " — "
+                    +
+                    name
                 )
 
             else:
@@ -265,9 +299,9 @@ class PartDialog(QtWidgets.QDialog):
                 text = code
 
 
-            #
-            # Add material
-            #
+            # -------------------------------------------------
+            # ADD MATERIAL
+            # -------------------------------------------------
 
             self.materialCombo.addItem(
                 text,
@@ -275,17 +309,19 @@ class PartDialog(QtWidgets.QDialog):
             )
 
 
-    #
-    # Material changed
-    #
+    # =========================================================
+    # MATERIAL CHANGED
+    # =========================================================
 
     def onMaterialChanged(
         self,
         index
     ):
 
-        code = self.materialCombo.itemData(
-            index
+        code = (
+            self.materialCombo.itemData(
+                index
+            )
         )
 
 
@@ -294,9 +330,15 @@ class PartDialog(QtWidgets.QDialog):
             return
 
 
-        material = MaterialLibrary.get(
-            code
-        )
+        try:
+
+            material = MaterialLibrary.get(
+                code
+            )
+
+        except Exception:
+
+            material = None
 
 
         if material is None:
@@ -304,9 +346,9 @@ class PartDialog(QtWidgets.QDialog):
             return
 
 
-        #
-        # Get thickness
-        #
+        # =====================================================
+        # GET THICKNESS
+        # =====================================================
 
         if isinstance(
             material,
@@ -327,9 +369,9 @@ class PartDialog(QtWidgets.QDialog):
             )
 
 
-        #
-        # Update thickness
-        #
+        # =====================================================
+        # UPDATE THICKNESS
+        # =====================================================
 
         if thickness is None:
 
@@ -359,9 +401,9 @@ class PartDialog(QtWidgets.QDialog):
                 pass
 
 
-    #
-    # Return data
-    #
+    # =========================================================
+    # RETURN DATA
+    # =========================================================
 
     def getData(
         self

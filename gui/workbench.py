@@ -4,6 +4,9 @@ import FreeCADGui
 
 import commands.add_part
 import commands.project_properties
+from commands.bosqo_finish import register as register_finish
+
+register_finish()
 
 
 ICON_PATH = os.path.join(
@@ -46,6 +49,7 @@ class BosqoWorkbench(FreeCADGui.Workbench):
                 "Bosqo_ProjectProperties",
                 "Bosqo_PartsTable",
                 "Bosqo_Materials",
+                "Bosqo_Finish"
             ]
         )
 
@@ -71,7 +75,8 @@ class BosqoWorkbench(FreeCADGui.Workbench):
                 "Bosqo_ModulePlacement",
                 "Bosqo_ProjectProperties",
                 "Bosqo_PartsTable",
-                "Bosqo_Materials"
+                "Bosqo_Materials",
+                "Bosqo_Finish"
             ]
         )
 

@@ -5,9 +5,9 @@ import json
 
 class MaterialLibrary:
 
-    #
-    # Persistent library
-    #
+    # =========================================================
+    # PERSISTENT LIBRARY
+    # =========================================================
 
     LIBRARY_DIR = os.path.dirname(
         os.path.abspath(__file__)
@@ -19,16 +19,16 @@ class MaterialLibrary:
     )
 
 
-    #
-    # Cache
-    #
+    # =========================================================
+    # CACHE
+    # =========================================================
 
     _materials = None
 
 
-    #
-    # Load persistent library
-    #
+    # =========================================================
+    # LOAD
+    # =========================================================
 
     @classmethod
     def _load(
@@ -88,9 +88,9 @@ class MaterialLibrary:
         return cls._materials
 
 
-    #
-    # Save persistent library
-    #
+    # =========================================================
+    # SAVE
+    # =========================================================
 
     @classmethod
     def _save(
@@ -129,9 +129,9 @@ class MaterialLibrary:
             return False
 
 
-    #
-    # Reload
-    #
+    # =========================================================
+    # RELOAD
+    # =========================================================
 
     @classmethod
     def reload(
@@ -143,9 +143,9 @@ class MaterialLibrary:
         return cls._load()
 
 
-    #
-    # Persistent materials
-    #
+    # =========================================================
+    # ALL
+    # =========================================================
 
     @classmethod
     def all(
@@ -154,7 +154,7 @@ class MaterialLibrary:
     ):
 
         #
-        # If document is supplied,
+        # With document:
         # return BosqoMaterial objects
         #
 
@@ -166,16 +166,16 @@ class MaterialLibrary:
 
 
         #
-        # Without document return
-        # persistent material data
+        # Without document:
+        # return persistent data
         #
 
         return cls._load()
 
 
-    #
-    # Materials inside document
-    #
+    # =========================================================
+    # DOCUMENT MATERIALS
+    # =========================================================
 
     @classmethod
     def _documentMaterials(
@@ -222,20 +222,15 @@ class MaterialLibrary:
         return materials
 
 
-    #
-    # Material codes
-    #
+    # =========================================================
+    # CODES
+    # =========================================================
 
     @classmethod
     def codes(
         cls,
         document=None
     ):
-
-        #
-        # Codes come from the persistent
-        # library, not only the document.
-        #
 
         materials = cls._load()
 
@@ -275,9 +270,9 @@ class MaterialLibrary:
         return codes
 
 
-    #
-    # Get material
-    #
+    # =========================================================
+    # GET
+    # =========================================================
 
     @classmethod
     def get(
@@ -297,13 +292,17 @@ class MaterialLibrary:
 
 
         #
-        # First look inside document
+        # Use active document when possible
         #
 
         if document is None:
 
             document = FreeCAD.ActiveDocument
 
+
+        #
+        # First search document
+        #
 
         if document is not None:
 
@@ -319,13 +318,15 @@ class MaterialLibrary:
                     continue
 
 
-                if material.Code == code:
+                if str(
+                    material.Code
+                ).strip() == code:
 
                     return material
 
 
         #
-        # Then persistent library
+        # Then search persistent library
         #
 
         for data in cls._load():
@@ -352,8 +353,8 @@ class MaterialLibrary:
 
 
             #
-            # Material is in library
-            # but not in document.
+            # If there is no document,
+            # return raw dictionary.
             #
 
             if document is None:
@@ -362,7 +363,8 @@ class MaterialLibrary:
 
 
             #
-            # Create material inside document
+            # Material exists in library
+            # but not yet in document.
             #
 
             return cls._createDocumentMaterial(
@@ -374,9 +376,9 @@ class MaterialLibrary:
         return None
 
 
-    #
-    # Get material by name
-    #
+    # =========================================================
+    # GET BY NAME
+    # =========================================================
 
     @classmethod
     def getByName(
@@ -395,14 +397,14 @@ class MaterialLibrary:
         ).strip()
 
 
-        #
-        # Document first
-        #
-
         if document is None:
 
             document = FreeCAD.ActiveDocument
 
+
+        #
+        # Document first
+        #
 
         if document is not None:
 
@@ -418,7 +420,9 @@ class MaterialLibrary:
                     continue
 
 
-                if material.MaterialName == name:
+                if str(
+                    material.MaterialName
+                ).strip() == name:
 
                     return material
 
@@ -445,25 +449,28 @@ class MaterialLibrary:
             ).strip()
 
 
-            if material_name == name:
+            if material_name != name:
 
-                if document is None:
-
-                    return data
+                continue
 
 
-                return cls._createDocumentMaterial(
-                    document,
-                    data
-                )
+            if document is None:
+
+                return data
+
+
+            return cls._createDocumentMaterial(
+                document,
+                data
+            )
 
 
         return None
 
 
-    #
-    # Check existence
-    #
+    # =========================================================
+    # EXISTS
+    # =========================================================
 
     @classmethod
     def exists(
@@ -508,25 +515,23 @@ class MaterialLibrary:
         return False
 
 
-    #
-    # Add material
-    #
+    # =========================================================
+    # MATERIAL -> DICT
+    # =========================================================
 
     @classmethod
-    def add(
+    def _materialToDict(
         cls,
-        material,
-        document=None
+        material
     ):
 
         if material is None:
 
-            return False
+            return None
 
 
         #
-        # If a FreeCAD BosqoMaterial object
-        # was supplied, convert it to data.
+        # BosqoMaterial object
         #
 
         if hasattr(
@@ -539,10 +544,10 @@ class MaterialLibrary:
                 "Code"
             ):
 
-                return False
+                return None
 
 
-            data = {
+            return {
 
                 "Code":
                     getattr(
@@ -638,24 +643,43 @@ class MaterialLibrary:
             }
 
 
-        elif isinstance(
+        #
+        # Dictionary
+        #
+
+        if isinstance(
             material,
             dict
         ):
 
-            data = dict(
+            return dict(
                 material
             )
 
 
-        else:
+        return None
+
+
+    # =========================================================
+    # ADD
+    # =========================================================
+
+    @classmethod
+    def add(
+        cls,
+        material,
+        document=None
+    ):
+
+        data = cls._materialToDict(
+            material
+        )
+
+
+        if data is None:
 
             return False
 
-
-        #
-        # Code
-        #
 
         code = str(
             data.get(
@@ -696,7 +720,7 @@ class MaterialLibrary:
 
 
         #
-        # Refresh parts
+        # Refresh existing BosqoParts
         #
 
         if document is None:
@@ -714,9 +738,9 @@ class MaterialLibrary:
         return True
 
 
-    #
-    # Update material
-    #
+    # =========================================================
+    # UPDATE
+    # =========================================================
 
     @classmethod
     def update(
@@ -724,130 +748,15 @@ class MaterialLibrary:
         material
     ):
 
-        if material is None:
+        data = cls._materialToDict(
+            material
+        )
+
+
+        if data is None:
 
             return False
 
-
-        if hasattr(
-            material,
-            "Proxy"
-        ):
-
-            data = {
-
-                "Code":
-                    getattr(
-                        material,
-                        "Code",
-                        ""
-                    ),
-
-                "MaterialName":
-                    getattr(
-                        material,
-                        "MaterialName",
-                        ""
-                    ),
-
-                "MaterialType":
-                    getattr(
-                        material,
-                        "MaterialType",
-                        ""
-                    ),
-
-                "Category":
-                    getattr(
-                        material,
-                        "Category",
-                        ""
-                    ),
-
-                "Thickness":
-                    float(
-                        getattr(
-                            material,
-                            "Thickness",
-                            0
-                        )
-                    ),
-
-                "SheetLength":
-                    float(
-                        getattr(
-                            material,
-                            "SheetLength",
-                            0
-                        )
-                    ),
-
-                "SheetWidth":
-                    float(
-                        getattr(
-                            material,
-                            "SheetWidth",
-                            0
-                        )
-                    ),
-
-                "Supplier":
-                    getattr(
-                        material,
-                        "Supplier",
-                        ""
-                    ),
-
-                "Finish":
-                    getattr(
-                        material,
-                        "Finish",
-                        ""
-                    ),
-
-                "GrainDirection":
-                    getattr(
-                        material,
-                        "GrainDirection",
-                        ""
-                    ),
-
-                "Price":
-                    float(
-                        getattr(
-                            material,
-                            "Price",
-                            0
-                        )
-                    ),
-
-                "Currency":
-                    getattr(
-                        material,
-                        "Currency",
-                        "EUR"
-                    )
-            }
-
-
-        elif isinstance(
-            material,
-            dict
-        ):
-
-            data = dict(
-                material
-            )
-
-
-        else:
-
-            return False
-
-
-        #
-        # Code
-        #
 
         code = str(
             data.get(
@@ -893,7 +802,8 @@ class MaterialLibrary:
 
 
         #
-        # Not found
+        # If it does not exist,
+        # add it.
         #
 
         materials.append(
@@ -903,9 +813,9 @@ class MaterialLibrary:
         return cls._save()
 
 
-    #
-    # Remove material
-    #
+    # =========================================================
+    # REMOVE
+    # =========================================================
 
     @classmethod
     def remove(
@@ -968,11 +878,14 @@ class MaterialLibrary:
 
         cls._materials = remaining
 
-        cls._save()
+
+        if not cls._save():
+
+            return False
 
 
         #
-        # Remove from document too
+        # Remove document material
         #
 
         if document is None:
@@ -988,16 +901,21 @@ class MaterialLibrary:
                 )
             ):
 
-                if hasattr(
+                if not hasattr(
                     material,
                     "Code"
                 ):
 
-                    if material.Code == code:
+                    continue
 
-                        document.removeObject(
-                            material.Name
-                        )
+
+                if str(
+                    material.Code
+                ).strip() == code:
+
+                    document.removeObject(
+                        material.Name
+                    )
 
 
         #
@@ -1014,9 +932,9 @@ class MaterialLibrary:
         return True
 
 
-    #
-    # Create material inside document
-    #
+    # =========================================================
+    # CREATE DOCUMENT MATERIAL
+    # =========================================================
 
     @classmethod
     def _createDocumentMaterial(
@@ -1030,10 +948,6 @@ class MaterialLibrary:
             return None
 
 
-        #
-        # Check if already exists
-        #
-
         code = str(
             data.get(
                 "Code",
@@ -1042,18 +956,27 @@ class MaterialLibrary:
         ).strip()
 
 
+        #
+        # Check if already exists
+        #
+
         for material in cls._documentMaterials(
             document
         ):
 
-            if hasattr(
+            if not hasattr(
                 material,
                 "Code"
             ):
 
-                if material.Code == code:
+                continue
 
-                    return material
+
+            if str(
+                material.Code
+            ).strip() == code:
+
+                return material
 
 
         #
@@ -1076,7 +999,7 @@ class MaterialLibrary:
 
 
         #
-        # Apply data
+        # Apply library data
         #
 
         if hasattr(
@@ -1101,16 +1024,17 @@ class MaterialLibrary:
 
             if material.MaterialName:
 
-                material.Label = material.MaterialName
+                material.Label = (
+                    material.MaterialName
+                )
 
 
         return material
 
 
-    #
-    # Synchronize persistent library
-    # with document
-    #
+    # =========================================================
+    # SYNC
+    # =========================================================
 
     @classmethod
     def sync(
@@ -1152,7 +1076,7 @@ class MaterialLibrary:
 
 
             #
-            # Only create if missing
+            # Only create missing materials
             #
 
             existing = cls.get(
@@ -1169,10 +1093,9 @@ class MaterialLibrary:
                 )
 
 
-    #
-    # Refresh material lists
-    # in BosqoPart objects
-    #
+    # =========================================================
+    # REFRESH BOSQOPART MATERIAL LISTS
+    # =========================================================
 
     @classmethod
     def refreshParts(

@@ -9,6 +9,10 @@ from core.builders.geometry_builder import GeometryBuilder
 from core.builders.placement_builder import PlacementBuilder
 
 
+# =============================================================
+# BOSQO PART
+# =============================================================
+
 class BosqoPart:
 
     def __init__(
@@ -101,7 +105,7 @@ class BosqoPart:
 
 
         # =====================================================
-        # POSITION DEFINITION
+        # POSITION
         # =====================================================
 
         self.addLength(
@@ -201,17 +205,6 @@ class BosqoPart:
         # BASE MATERIAL
         # =====================================================
 
-        #
-        # This is the REAL material of the part.
-        #
-        # Example:
-        #
-        # MaterialCode = MDF19_WHITE
-        #
-        # The base board remains independent from
-        # face finishes and lacquering.
-        #
-
         if not hasattr(
             obj,
             "MaterialCode"
@@ -268,18 +261,8 @@ class BosqoPart:
 
 
         # =====================================================
-        # FACE FINISH
+        # FACE FINISH CODES
         # =====================================================
-
-        #
-        # These are additions to the base material.
-        #
-        # Example:
-        #
-        # MaterialCode    -> MDF19
-        # FaceTopCode     -> CHAPA_ROBLE
-        # FaceBottomCode  -> CHAPA_ROBLE
-        #
 
         self.addFinishEnumeration(
             obj,
@@ -315,21 +298,6 @@ class BosqoPart:
         # LACQUER
         # =====================================================
 
-        #
-        # Lacquer is NOT a material and NOT an edgebanding.
-        #
-        # It is informational finishing applied to the part.
-        #
-        # Example:
-        #
-        # Lacquered   = Sí
-        # LacquerRAL  = RAL 9016
-        # LacquerFinish = Mate
-        #
-        # It does not modify the base material,
-        # thickness or geometry.
-        #
-
         self.addEnumeration(
             obj,
             "Lacquered",
@@ -357,17 +325,8 @@ class BosqoPart:
 
 
         # =====================================================
-        # EDGEBANDING
+        # EDGE FINISH CODES
         # =====================================================
-
-        #
-        # These are additions to the base material.
-        #
-        # Example:
-        #
-        # MaterialCode -> MDF19
-        # EdgeTopCode  -> CANTO_ABS_1
-        #
 
         self.addFinishEnumeration(
             obj,
@@ -582,7 +541,6 @@ class BosqoPart:
 
         codes = []
 
-
         try:
 
             materials = MaterialLibrary.all()
@@ -644,7 +602,6 @@ class BosqoPart:
     ):
 
         codes = []
-
 
         try:
 
@@ -711,12 +668,6 @@ class BosqoPart:
         self
     ):
 
-        #
-        # Face finish is identified by:
-        #
-        # Category = "Chapa"
-        #
-
         return self.materialCodesByCategory(
             "Chapa"
         )
@@ -725,12 +676,6 @@ class BosqoPart:
     def edgeFinishCodes(
         self
     ):
-
-        #
-        # Edgebanding is identified by:
-        #
-        # MaterialType = "Canto"
-        #
 
         return self.materialCodesByType(
             "Canto"
@@ -747,15 +692,10 @@ class BosqoPart:
         name
     ):
 
-        #
-        # Creates an enumeration for an added finish.
-        #
-        # FaceTopCode / FaceBottomCode:
-        #     Category = Chapa
-        #
-        # Edge...Code:
-        #     MaterialType = Canto
-        #
+        group = self._finishGroup(
+            name
+        )
+
 
         if not hasattr(
             obj,
@@ -765,9 +705,7 @@ class BosqoPart:
             obj.addProperty(
                 "App::PropertyEnumeration",
                 name,
-                self._finishGroup(
-                    name
-                ),
+                group,
                 "Added finish selection"
             )
 
@@ -819,10 +757,6 @@ class BosqoPart:
 
             return
 
-
-        #
-        # Preserve previous selection.
-        #
 
         if current and current in values:
 
@@ -878,9 +812,6 @@ class BosqoPart:
         )
 
 
-        current = ""
-
-
         try:
 
             current = str(
@@ -889,7 +820,7 @@ class BosqoPart:
 
         except Exception:
 
-            pass
+            current = ""
 
 
         try:
@@ -901,10 +832,6 @@ class BosqoPart:
             return
 
 
-        #
-        # Preserve selected base material.
-        #
-
         if current and current in values:
 
             try:
@@ -915,10 +842,6 @@ class BosqoPart:
 
                 pass
 
-
-        #
-        # Refresh added finishes.
-        #
 
         self.refreshFinishLists(
             obj
@@ -999,6 +922,14 @@ class BosqoPart:
         obj
     ):
 
+        if not hasattr(
+            obj,
+            "MaterialCode"
+        ):
+
+            return
+
+
         if not obj.MaterialCode:
 
             return
@@ -1014,87 +945,159 @@ class BosqoPart:
             return
 
 
-        # =====================================================
-        # NAME
-        # =====================================================
-
-        if hasattr(
+        if isinstance(
             material,
-            "MaterialName"
+            dict
         ):
 
-            obj.Material = (
-                material.MaterialName
+            materialName = material.get(
+                "MaterialName",
+                material.get(
+                    "Name",
+                    ""
+                )
+            )
+
+            materialThickness = material.get(
+                "Thickness",
+                0
+            )
+
+            supplier = material.get(
+                "Supplier",
+                ""
+            )
+
+            price = material.get(
+                "Price",
+                0
+            )
+
+            grain = material.get(
+                "GrainDirection",
+                ""
+            )
+
+        else:
+
+            materialName = getattr(
+                material,
+                "MaterialName",
+                ""
+            )
+
+            materialThickness = getattr(
+                material,
+                "Thickness",
+                0
+            )
+
+            supplier = getattr(
+                material,
+                "Supplier",
+                ""
+            )
+
+            price = getattr(
+                material,
+                "Price",
+                0
+            )
+
+            grain = getattr(
+                material,
+                "GrainDirection",
+                ""
             )
 
 
-        # =====================================================
-        # THICKNESS
-        # =====================================================
-
         if hasattr(
-            material,
-            "Thickness"
+            obj,
+            "Material"
         ):
 
-            obj.MaterialThickness = (
-                material.Thickness
+            obj.Material = str(
+                materialName
             )
 
 
-            #
-            # Do not overwrite the real thickness
-            # of an imported part.
-            #
+        if hasattr(
+            obj,
+            "MaterialThickness"
+        ):
 
-            if str(
-                obj.Source
-            ) != "Imported":
+            try:
 
-                obj.Thickness = (
-                    material.Thickness
+                obj.MaterialThickness = (
+                    materialThickness
                 )
 
+            except Exception:
 
-        # =====================================================
-        # SUPPLIER
-        # =====================================================
+                pass
 
-        if hasattr(
-            material,
-            "Supplier"
+
+        #
+        # Do not overwrite the real thickness
+        # of imported geometry.
+        #
+
+        if (
+            hasattr(obj, "Thickness")
+            and
+            str(
+                getattr(
+                    obj,
+                    "Source",
+                    ""
+                )
+            ) != "Imported"
         ):
 
-            obj.MaterialSupplier = (
-                material.Supplier
+            try:
+
+                obj.Thickness = (
+                    materialThickness
+                )
+
+            except Exception:
+
+                pass
+
+
+        if hasattr(
+            obj,
+            "MaterialSupplier"
+        ):
+
+            obj.MaterialSupplier = str(
+                supplier
             )
 
 
-        # =====================================================
-        # PRICE
-        # =====================================================
-
         if hasattr(
-            material,
-            "Price"
+            obj,
+            "MaterialPrice"
         ):
 
-            obj.MaterialPrice = (
-                material.Price
-            )
+            try:
 
+                obj.MaterialPrice = float(
+                    price
+                )
 
-        # =====================================================
-        # GRAIN
-        # =====================================================
+            except Exception:
+
+                pass
+
 
         if hasattr(
-            material,
+            obj,
             "GrainDirection"
         ):
 
-            obj.GrainDirection = (
-                material.GrainDirection
+            obj.GrainDirection = str(
+                grain
             )
 
 
@@ -1109,13 +1112,33 @@ class BosqoPart:
         propertyName
     ):
 
+        #
+        # IMPORTANT:
+        # onChanged can be called while BosqoPart
+        # is still being initialized.
+        #
+
+        if not hasattr(
+            obj,
+            propertyName
+        ):
+
+            return
+
+
         if not code:
 
-            setattr(
-                obj,
-                propertyName,
-                ""
-            )
+            try:
+
+                setattr(
+                    obj,
+                    propertyName,
+                    ""
+                )
+
+            except Exception:
+
+                pass
 
             return
 
@@ -1130,24 +1153,39 @@ class BosqoPart:
             return
 
 
-        if hasattr(
+        if isinstance(
             material,
-            "MaterialName"
+            dict
         ):
 
-            setattr(
-                obj,
-                propertyName,
-                material.MaterialName
+            value = material.get(
+                "MaterialName",
+                material.get(
+                    "Name",
+                    code
+                )
             )
 
         else:
 
+            value = getattr(
+                material,
+                "MaterialName",
+                code
+            )
+
+
+        try:
+
             setattr(
                 obj,
                 propertyName,
-                code
+                str(value)
             )
+
+        except Exception:
+
+            pass
 
 
     # =========================================================
@@ -1161,13 +1199,32 @@ class BosqoPart:
         propertyName
     ):
 
+        #
+        # IMPORTANT:
+        # protect against onChanged during initialization.
+        #
+
+        if not hasattr(
+            obj,
+            propertyName
+        ):
+
+            return
+
+
         if not code:
 
-            setattr(
-                obj,
-                propertyName,
-                ""
-            )
+            try:
+
+                setattr(
+                    obj,
+                    propertyName,
+                    ""
+                )
+
+            except Exception:
+
+                pass
 
             return
 
@@ -1182,24 +1239,39 @@ class BosqoPart:
             return
 
 
-        if hasattr(
+        if isinstance(
             material,
-            "MaterialName"
+            dict
         ):
 
-            setattr(
-                obj,
-                propertyName,
-                material.MaterialName
+            value = material.get(
+                "MaterialName",
+                material.get(
+                    "Name",
+                    code
+                )
             )
 
         else:
 
+            value = getattr(
+                material,
+                "MaterialName",
+                code
+            )
+
+
+        try:
+
             setattr(
                 obj,
                 propertyName,
-                code
+                str(value)
             )
+
+        except Exception:
+
+            pass
 
 
     # =========================================================
@@ -1254,7 +1326,7 @@ class BosqoPart:
 
 
         #
-        # Refresh material information.
+        # MATERIAL
         #
 
         try:
@@ -1269,20 +1341,22 @@ class BosqoPart:
 
 
         #
-        # Refresh face finish information.
+        # FACE FINISH
         #
 
         try:
 
-            self.updateFaceFinish(
-                obj,
-                getattr(
+            if (
+                hasattr(obj, "FaceTopCode")
+                and
+                hasattr(obj, "FaceTop")
+            ):
+
+                self.updateFaceFinish(
                     obj,
-                    "FaceTopCode",
-                    ""
-                ),
-                "FaceTop"
-            )
+                    obj.FaceTopCode,
+                    "FaceTop"
+                )
 
         except Exception:
 
@@ -1291,15 +1365,17 @@ class BosqoPart:
 
         try:
 
-            self.updateFaceFinish(
-                obj,
-                getattr(
+            if (
+                hasattr(obj, "FaceBottomCode")
+                and
+                hasattr(obj, "FaceBottom")
+            ):
+
+                self.updateFaceFinish(
                     obj,
-                    "FaceBottomCode",
-                    ""
-                ),
-                "FaceBottom"
-            )
+                    obj.FaceBottomCode,
+                    "FaceBottom"
+                )
 
         except Exception:
 
@@ -1307,79 +1383,65 @@ class BosqoPart:
 
 
         #
-        # Refresh edge information.
+        # EDGE FINISH
         #
 
-        try:
-
-            self.updateEdgeFinish(
-                obj,
-                getattr(
-                    obj,
-                    "EdgeTopCode",
-                    ""
-                ),
+        edgePairs = (
+            (
+                "EdgeTopCode",
                 "EdgeTop"
-            )
-
-        except Exception:
-
-            pass
-
-
-        try:
-
-            self.updateEdgeFinish(
-                obj,
-                getattr(
-                    obj,
-                    "EdgeBottomCode",
-                    ""
-                ),
+            ),
+            (
+                "EdgeBottomCode",
                 "EdgeBottom"
-            )
-
-        except Exception:
-
-            pass
-
-
-        try:
-
-            self.updateEdgeFinish(
-                obj,
-                getattr(
-                    obj,
-                    "EdgeLeftCode",
-                    ""
-                ),
+            ),
+            (
+                "EdgeLeftCode",
                 "EdgeLeft"
-            )
-
-        except Exception:
-
-            pass
-
-
-        try:
-
-            self.updateEdgeFinish(
-                obj,
-                getattr(
-                    obj,
-                    "EdgeRightCode",
-                    ""
-                ),
+            ),
+            (
+                "EdgeRightCode",
                 "EdgeRight"
             )
+        )
+
+
+        for codeProperty, valueProperty in edgePairs:
+
+            try:
+
+                if (
+                    hasattr(obj, codeProperty)
+                    and
+                    hasattr(obj, valueProperty)
+                ):
+
+                    self.updateEdgeFinish(
+                        obj,
+                        getattr(
+                            obj,
+                            codeProperty
+                        ),
+                        valueProperty
+                    )
+
+            except Exception:
+
+                pass
+
+
+        try:
+
+            obj.touch()
 
         except Exception:
 
             pass
 
 
-        obj.touch()
-
+    # =========================================================
+    # PART DATA
+    # =========================================================
 
     def getPartData(
         self,
@@ -1388,9 +1450,7 @@ class BosqoPart:
 
         from core.data.part_data import PartData
 
-
         data = PartData()
-
 
         return data.fromObject(
             obj
@@ -1406,23 +1466,11 @@ class BosqoPart:
         obj,
         original
     ):
-        """
-        Assign an imported FreeCAD object as the
-        geometry source of this BosqoPart.
-
-        The imported Shape remains local and
-        the original Placement is assigned to
-        the BosqoPart.
-        """
 
         if original is None:
 
             return False
 
-
-        # =====================================================
-        # GET ORIGINAL SHAPE
-        # =====================================================
 
         try:
 
@@ -1449,9 +1497,9 @@ class BosqoPart:
             pass
 
 
-        # =====================================================
-        # GET ORIGINAL PLACEMENT
-        # =====================================================
+        #
+        # ORIGINAL PLACEMENT
+        #
 
         try:
 
@@ -1476,9 +1524,9 @@ class BosqoPart:
                 )
 
 
-        # =====================================================
-        # KEEP REFERENCE
-        # =====================================================
+        #
+        # REFERENCE
+        #
 
         try:
 
@@ -1489,9 +1537,9 @@ class BosqoPart:
             pass
 
 
-        # =====================================================
-        # MARK AS IMPORTED
-        # =====================================================
+        #
+        # SOURCE
+        #
 
         try:
 
@@ -1502,24 +1550,18 @@ class BosqoPart:
             pass
 
 
-        # =====================================================
-        # COPY GEOMETRY
-        # =====================================================
+        #
+        # COPY SHAPE
+        #
 
         try:
 
-            localShape = (
-                shape.copy()
-            )
+            localShape = shape.copy()
 
         except Exception:
 
             return False
 
-
-        # =====================================================
-        # RESET SHAPE PLACEMENT
-        # =====================================================
 
         try:
 
@@ -1532,10 +1574,6 @@ class BosqoPart:
             pass
 
 
-        # =====================================================
-        # ASSIGN LOCAL SHAPE
-        # =====================================================
-
         try:
 
             obj.Shape = localShape
@@ -1545,9 +1583,9 @@ class BosqoPart:
             return False
 
 
-        # =====================================================
-        # ASSIGN ORIGINAL PLACEMENT
-        # =====================================================
+        #
+        # ORIGINAL PLACEMENT
+        #
 
         try:
 
@@ -1555,16 +1593,7 @@ class BosqoPart:
                 originalPlacement
             )
 
-        except Exception as error:
-
-            FreeCAD.Console.PrintWarning(
-                "No se pudo conservar el Placement "
-                "de la pieza importada: "
-                +
-                str(error)
-                +
-                "\n"
-            )
+        except Exception:
 
             try:
 
@@ -1577,52 +1606,9 @@ class BosqoPart:
                 pass
 
 
-        # =====================================================
-        # DEBUG PLACEMENT
-        # =====================================================
-
-        try:
-
-            base = (
-                obj.Placement.Base
-            )
-
-            FreeCAD.Console.PrintMessage(
-                "BOSQO PART IMPORTADA | "
-                +
-                str(
-                    getattr(
-                        obj,
-                        "Name",
-                        "?"
-                    )
-                )
-                +
-                " | Placement = "
-                +
-                "X:"
-                +
-                "%.2f" % float(base.x)
-                +
-                " Y:"
-                +
-                "%.2f" % float(base.y)
-                +
-                " Z:"
-                +
-                "%.2f" % float(base.z)
-                +
-                "\n"
-            )
-
-        except Exception:
-
-            pass
-
-
-        # =====================================================
+        #
         # VISIBILITY
-        # =====================================================
+        #
 
         try:
 
@@ -1633,9 +1619,9 @@ class BosqoPart:
             pass
 
 
-        # =====================================================
-        # COPY LABEL
-        # =====================================================
+        #
+        # LABEL
+        #
 
         try:
 
@@ -1648,15 +1634,13 @@ class BosqoPart:
             pass
 
 
-        # =====================================================
+        #
         # REAL DIMENSIONS
-        # =====================================================
+        #
 
         try:
 
-            box = (
-                localShape.BoundBox
-            )
+            box = localShape.BoundBox
 
             x = abs(
                 float(
@@ -1686,9 +1670,9 @@ class BosqoPart:
             pass
 
 
-        # =====================================================
-        # GEOMETRY STATUS
-        # =====================================================
+        #
+        # STATUS
+        #
 
         try:
 
@@ -1701,13 +1685,20 @@ class BosqoPart:
             pass
 
 
-        obj.touch()
+        try:
+
+            obj.touch()
+
+        except Exception:
+
+            pass
+
 
         return True
 
 
     # =========================================================
-    # FREECAD
+    # FREECAD ON CHANGED
     # =========================================================
 
     def onChanged(
@@ -1716,113 +1707,142 @@ class BosqoPart:
         prop
     ):
 
-        # =====================================================
-        # BASE MATERIAL
-        # =====================================================
+        #
+        # During creation/loading FreeCAD may call onChanged
+        # before all properties exist.
+        #
 
-        if prop == "MaterialCode":
+        try:
 
-            self.updateMaterial(
-                obj
-            )
+            if prop == "MaterialCode":
 
-
-        # =====================================================
-        # FACE TOP
-        # =====================================================
-
-        elif prop == "FaceTopCode":
-
-            self.updateFaceFinish(
-                obj,
-                obj.FaceTopCode,
-                "FaceTop"
-            )
+                self.updateMaterial(
+                    obj
+                )
 
 
-        # =====================================================
-        # FACE BOTTOM
-        # =====================================================
+            elif prop == "FaceTopCode":
 
-        elif prop == "FaceBottomCode":
+                if (
+                    hasattr(obj, "FaceTopCode")
+                    and
+                    hasattr(obj, "FaceTop")
+                ):
 
-            self.updateFaceFinish(
-                obj,
-                obj.FaceBottomCode,
-                "FaceBottom"
-            )
-
-
-        # =====================================================
-        # EDGES
-        # =====================================================
-
-        elif prop == "EdgeTopCode":
-
-            self.updateEdgeFinish(
-                obj,
-                obj.EdgeTopCode,
-                "EdgeTop"
-            )
+                    self.updateFaceFinish(
+                        obj,
+                        obj.FaceTopCode,
+                        "FaceTop"
+                    )
 
 
-        elif prop == "EdgeBottomCode":
+            elif prop == "FaceBottomCode":
 
-            self.updateEdgeFinish(
-                obj,
-                obj.EdgeBottomCode,
-                "EdgeBottom"
-            )
+                if (
+                    hasattr(obj, "FaceBottomCode")
+                    and
+                    hasattr(obj, "FaceBottom")
+                ):
 
-
-        elif prop == "EdgeLeftCode":
-
-            self.updateEdgeFinish(
-                obj,
-                obj.EdgeLeftCode,
-                "EdgeLeft"
-            )
+                    self.updateFaceFinish(
+                        obj,
+                        obj.FaceBottomCode,
+                        "FaceBottom"
+                    )
 
 
-        elif prop == "EdgeRightCode":
+            elif prop == "EdgeTopCode":
 
-            self.updateEdgeFinish(
-                obj,
-                obj.EdgeRightCode,
-                "EdgeRight"
-            )
+                if (
+                    hasattr(obj, "EdgeTopCode")
+                    and
+                    hasattr(obj, "EdgeTop")
+                ):
+
+                    self.updateEdgeFinish(
+                        obj,
+                        obj.EdgeTopCode,
+                        "EdgeTop"
+                    )
 
 
-        # =====================================================
-        # LACQUER
-        # =====================================================
+            elif prop == "EdgeBottomCode":
 
-        elif prop == "Lacquered":
+                if (
+                    hasattr(obj, "EdgeBottomCode")
+                    and
+                    hasattr(obj, "EdgeBottom")
+                ):
+
+                    self.updateEdgeFinish(
+                        obj,
+                        obj.EdgeBottomCode,
+                        "EdgeBottom"
+                    )
+
+
+            elif prop == "EdgeLeftCode":
+
+                if (
+                    hasattr(obj, "EdgeLeftCode")
+                    and
+                    hasattr(obj, "EdgeLeft")
+                ):
+
+                    self.updateEdgeFinish(
+                        obj,
+                        obj.EdgeLeftCode,
+                        "EdgeLeft"
+                    )
+
+
+            elif prop == "EdgeRightCode":
+
+                if (
+                    hasattr(obj, "EdgeRightCode")
+                    and
+                    hasattr(obj, "EdgeRight")
+                ):
+
+                    self.updateEdgeFinish(
+                        obj,
+                        obj.EdgeRightCode,
+                        "EdgeRight"
+                    )
+
+
+            elif prop == "Lacquered":
+
+                if (
+                    hasattr(obj, "Lacquered")
+                    and
+                    str(obj.Lacquered) == "No"
+                ):
+
+                    if hasattr(
+                        obj,
+                        "LacquerRAL"
+                    ):
+
+                        obj.LacquerRAL = ""
+
+
+                    if hasattr(
+                        obj,
+                        "LacquerFinish"
+                    ):
+
+                        obj.LacquerFinish = ""
+
+
+        except Exception:
 
             #
-            # If lacquering is disabled,
-            # clear the informational RAL and finish.
+            # Never allow initialization/load-time
+            # onChanged errors to break the object.
             #
 
-            if str(
-                obj.Lacquered
-            ) == "No":
-
-                try:
-
-                    obj.LacquerRAL = ""
-
-                except Exception:
-
-                    pass
-
-                try:
-
-                    obj.LacquerFinish = ""
-
-                except Exception:
-
-                    pass
+            pass
 
 
     # =========================================================
@@ -1834,19 +1854,19 @@ class BosqoPart:
         obj
     ):
 
-        # =====================================================
+        #
         # IMPORTED PART
-        # =====================================================
+        #
 
         try:
 
             if str(
-                obj.Source
+                getattr(
+                    obj,
+                    "Source",
+                    ""
+                )
             ) == "Imported":
-
-                # -------------------------------------------------
-                # CURRENT IMPORTED SHAPE
-                # -------------------------------------------------
 
                 if (
                     obj.Shape is not None
@@ -1857,12 +1877,12 @@ class BosqoPart:
                     return
 
 
-                # -------------------------------------------------
-                # RECOVER ORIGINAL
-                # -------------------------------------------------
-
                 original = (
-                    obj.OriginalObject
+                    getattr(
+                        obj,
+                        "OriginalObject",
+                        None
+                    )
                 )
 
 
@@ -1884,10 +1904,6 @@ class BosqoPart:
 
                     return
 
-
-                # -------------------------------------------------
-                # RECOVER PLACEMENT
-                # -------------------------------------------------
 
                 try:
 
@@ -1912,18 +1928,10 @@ class BosqoPart:
                         )
 
 
-                # -------------------------------------------------
-                # COPY SHAPE
-                # -------------------------------------------------
-
                 localShape = (
                     shape.copy()
                 )
 
-
-                # -------------------------------------------------
-                # ENSURE LOCAL SHAPE
-                # -------------------------------------------------
 
                 try:
 
@@ -1936,18 +1944,10 @@ class BosqoPart:
                     pass
 
 
-                # -------------------------------------------------
-                # ASSIGN GEOMETRY
-                # -------------------------------------------------
-
                 obj.Shape = (
                     localShape
                 )
 
-
-                # -------------------------------------------------
-                # RESTORE PLACEMENT
-                # -------------------------------------------------
 
                 try:
 
@@ -1959,10 +1959,6 @@ class BosqoPart:
 
                     pass
 
-
-                # -------------------------------------------------
-                # VISIBILITY
-                # -------------------------------------------------
 
                 try:
 
@@ -1980,13 +1976,19 @@ class BosqoPart:
             pass
 
 
-        # =====================================================
+        #
         # CREATED PART
-        # =====================================================
+        #
 
-        shape = GeometryBuilder.createBox(
-            obj
-        )
+        try:
+
+            shape = GeometryBuilder.createBox(
+                obj
+            )
+
+        except Exception:
+
+            return
 
 
         if shape is None:
@@ -1997,9 +1999,15 @@ class BosqoPart:
         obj.Shape = shape
 
 
-        PlacementBuilder.update(
-            obj
-        )
+        try:
+
+            PlacementBuilder.update(
+                obj
+            )
+
+        except Exception:
+
+            pass
 
 
     # =========================================================
@@ -2065,7 +2073,7 @@ def create_part(
 
 
     #
-    # A normal new piece is created geometry.
+    # Normal manually created part.
     #
 
     part.Source = "Created"

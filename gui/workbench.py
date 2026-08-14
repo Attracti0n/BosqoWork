@@ -4,6 +4,9 @@ import FreeCADGui
 
 import commands.add_part
 import commands.project_properties
+from commands.bosqo_drawer import (
+    BosqoDrawerCommand
+)
 from commands.bosqo_finish import register as register_finish
 
 register_finish()
@@ -45,6 +48,7 @@ class BosqoWorkbench(FreeCADGui.Workbench):
             [
                 "Bosqo_AddPart",
                 "Bosqo_ParametricModule",
+                "Bosqo_Drawer",
                 "Bosqo_ModulePlacement",
                 "Bosqo_ProjectProperties",
                 "Bosqo_PartsTable",
@@ -72,6 +76,7 @@ class BosqoWorkbench(FreeCADGui.Workbench):
             [
                 "Bosqo_AddPart",
                 "Bosqo_ParametricModule",
+                "Bosqo_Drawer",
                 "Bosqo_ModulePlacement",
                 "Bosqo_ProjectProperties",
                 "Bosqo_PartsTable",
